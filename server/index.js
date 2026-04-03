@@ -12,6 +12,7 @@ const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const emailRoutes = require('./routes/email');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +45,7 @@ require('./config/passport')(passport);
 // --- 라우트 ---
 app.use('/auth', authRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/ai', aiRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
 app.use(express.static(path.join(__dirname, '..')));
@@ -62,4 +64,5 @@ app.listen(PORT, () => {
   console.log(`   카카오 로그인: ${process.env.KAKAO_CLIENT_ID && !process.env.KAKAO_CLIENT_ID.includes('여기에') ? '✅ 설정됨' : '❌ 미설정'}`);
   console.log(`   네이버 로그인: ${process.env.NAVER_CLIENT_ID && !process.env.NAVER_CLIENT_ID.includes('여기에') ? '✅ 설정됨' : '❌ 미설정'}`);
   console.log(`   이메일 인증: ${process.env.SMTP_USER && !process.env.SMTP_USER.includes('여기에') ? '✅ 설정됨' : '❌ 미설정'}`);
+  console.log(`   AI (Gemini): ${process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.includes('여기에') ? '✅ 설정됨' : '❌ 미설정'}`);
 });

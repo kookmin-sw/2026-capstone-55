@@ -344,6 +344,8 @@ function renderNavbar() {
     { route: '/', icon: '🏠', label: '홈' },
     { route: '/breeds', icon: '🐕', label: '품종정보' },
     { route: '/education', icon: '📚', label: '교육' },
+    { route: '/ai-symptom', icon: '🩺', label: 'AI진단' },
+    { route: '/ai-consult', icon: '💭', label: 'AI상담' },
     { route: '/community', icon: '💬', label: '커뮤니티' },
     { route: '/wallet', icon: '🪙', label: '지갑' },
     { route: '/matching', icon: '🤝', label: '산책매칭' },
@@ -504,6 +506,16 @@ function renderHomePage() {
         <div class="feature-icon">📚</div>
         <h3>산책 교육</h3>
         <p>올바른 산책 자세와 안전 수칙</p>
+      </div>
+      <div class="feature-card" onclick="Router.navigate('/ai-symptom')">
+        <div class="feature-icon">🩺</div>
+        <h3>AI 질병 분석</h3>
+        <p>증상 입력하면 AI가 분석해줘요</p>
+      </div>
+      <div class="feature-card" onclick="Router.navigate('/ai-consult')">
+        <div class="feature-icon">💭</div>
+        <h3>AI 훈련사 상담</h3>
+        <p>문제 행동 고민을 AI에게 물어봐요</p>
       </div>
       <div class="feature-card" onclick="Router.navigate('/community')">
         <div class="feature-icon">💬</div>
@@ -773,6 +785,166 @@ function handleCompleteEducation(contentId) {
 
   // 상세 페이지 다시 렌더링하여 완료 상태 반영
   renderEducationDetailPage({ id: contentId });
+}
+
+// --- AI 증상 분석 페이지 ---
+function renderAiSymptomPage() {
+  const user = AuthService.getCurrentUser();
+
+  renderPage(`
+    <div class="page-header">
+      <h1>🩺 AI 질병 분석</h1>
+      <p>우리 아이 증상을 입력하면 AI가 분석해줘요~ 🐾</p>
+    </div>
+
+    <div class="card" style="padding:24px; margin-bottom:20px;">
+      <div class="form-group">
+        <label for="symptom-breed">품종</label>
+        <select id="symptom-breed" class="form-select">
+          <option value="">선택해주세요 (선택)</option>
+          ${typeof BREEDS_DATA !== 'undefined' ? BREEDS_DATA.map(b => `<option value="${b.name}">${b.name}</option>`).join('') : ''}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="symptom-age">나이</label>
+        <input type="text" id="symptom-age" class="form-input" placeholder="예: 3살">
+      </div>
+      <div class="form-group">
+        <label for="symptom-text">증상 설명</label>
+        <textarea id="symptom-text" class="form-input" placeholder="우리 아이가 어떤 증상을 보이나요? 자세히 적어주세요~&#10;예: 어제부터 밥을 안 먹고, 구토를 2번 했어요. 기운이 없고 축 처져있어요." style="min-height:120px;"></textarea>
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="handleAiSymptom()" id="symptom-btn">🩺 AI 분석하기</button>
+    </div>
+
+    <div id="symptom-result"></div>
+  `);
+}
+
+async function handleAiSymptom() {
+  const symptoms = document.getElementById('symptom-text')?.value;
+  const breed = document.getElementById('symptom-breed')?.value;
+  const age = document.getElementById('symptom-age')?.value;
+  const resultEl = document.getElementById('symptom-result');
+  const btn = document.getElementById('symptom-btn');
+
+  if (!symptoms || !symptoms.trim()) {
+    if (resultEl) resultEl.innerHTML = '<div class="alert alert-error">증상을 입력해주세요.</div>';
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = '분석 중... 🔍'; }
+  if (resultEl) resultEl.innerHTML = '<div style="text-align:center; padding:32px;"><div class="spinner"></div><p style="margin-top:12px; color:var(--color-text-muted);">AI가 분석하고 있어요...</p></div>';
+
+  try {
+    const res = await fetch('/api/ai/symptom', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symptoms, breed, age })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      const formatted = data.analysis.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      resultEl.innerHTML = `
+        <div class="card" style="padding:24px;">
+          <h3 style="margin-bottom:16px; font-weight:800;">🩺 AI 분석 결과</h3>
+          <div style="line-height:1.8; font-size:0.92rem;">${formatted}</div>
+        </div>
+      `;
+    } else {
+      resultEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+    }
+  } catch (e) {
+    resultEl.innerHTML = '<div class="alert alert-error">서버 연결에 실패했습니다.</div>';
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '🩺 AI 분석하기'; }
+}
+
+// --- AI 상담 페이지 ---
+function renderAiConsultPage() {
+  renderPage(`
+    <div class="page-header">
+      <h1>💭 AI 훈련사 상담</h1>
+      <p>문제 행동이나 고민이 있으면 AI 훈련사에게 물어봐요~ 🐾</p>
+    </div>
+
+    <div id="consult-chat" style="margin-bottom:16px;">
+      <div class="card" style="padding:20px; text-align:center; color:var(--color-text-light);">
+        <div style="font-size:2.5rem; margin-bottom:8px;">🐕‍🦺</div>
+        <p style="font-weight:700;">안녕하세요! AI 훈련사예요~</p>
+        <p style="font-size:0.85rem; margin-top:4px;">반려견 행동 문제나 훈련 방법에 대해 물어봐주세요!</p>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; position:sticky; bottom:16px;">
+      <input type="text" id="consult-input" class="form-input" placeholder="고민을 입력해주세요..." style="flex:1;" onkeydown="if(event.key==='Enter')handleAiConsult()">
+      <button class="btn btn-primary" onclick="handleAiConsult()" id="consult-btn">전송</button>
+    </div>
+  `);
+
+  // 대화 내역 초기화
+  window._consultHistory = [];
+}
+
+async function handleAiConsult() {
+  const input = document.getElementById('consult-input');
+  const chatEl = document.getElementById('consult-chat');
+  const btn = document.getElementById('consult-btn');
+  const message = input?.value?.trim();
+
+  if (!message) return;
+  input.value = '';
+
+  // 사용자 메시지 표시
+  chatEl.innerHTML += `
+    <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+      <div style="background:var(--color-primary); color:#fff; padding:12px 16px; border-radius:16px 16px 4px 16px; max-width:75%; font-size:0.9rem;">${message}</div>
+    </div>
+  `;
+
+  // 로딩 표시
+  chatEl.innerHTML += `
+    <div id="consult-loading" style="display:flex; margin-bottom:12px;">
+      <div style="background:var(--color-bg-warm); padding:12px 16px; border-radius:16px 16px 16px 4px; max-width:75%;"><div class="spinner" style="width:20px;height:20px;"></div></div>
+    </div>
+  `;
+  chatEl.scrollTop = chatEl.scrollHeight;
+
+  if (btn) { btn.disabled = true; }
+  window._consultHistory.push({ role: 'user', text: message });
+
+  try {
+    const res = await fetch('/api/ai/consult', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history: window._consultHistory })
+    });
+    const data = await res.json();
+
+    // 로딩 제거
+    const loading = document.getElementById('consult-loading');
+    if (loading) loading.remove();
+
+    if (data.success) {
+      const formatted = data.reply.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      chatEl.innerHTML += `
+        <div style="display:flex; margin-bottom:12px;">
+          <div style="background:var(--color-bg-warm); border:2px solid var(--color-border); padding:12px 16px; border-radius:16px 16px 16px 4px; max-width:75%; font-size:0.9rem; line-height:1.7;">${formatted}</div>
+        </div>
+      `;
+      window._consultHistory.push({ role: 'ai', text: data.reply });
+    } else {
+      chatEl.innerHTML += `<div class="alert alert-error">${data.error}</div>`;
+    }
+  } catch (e) {
+    const loading = document.getElementById('consult-loading');
+    if (loading) loading.remove();
+    chatEl.innerHTML += '<div class="alert alert-error">서버 연결에 실패했습니다.</div>';
+  }
+
+  if (btn) { btn.disabled = false; }
+  chatEl.scrollTop = chatEl.scrollHeight;
 }
 
 // --- 커뮤니티 페이지 ---
@@ -2285,6 +2457,8 @@ function initApp() {
   Router.register('/breeds/:id', renderBreedDetailPage);
   Router.register('/education', renderEducationPage);
   Router.register('/education/:id', renderEducationDetailPage);
+  Router.register('/ai-symptom', renderAiSymptomPage);
+  Router.register('/ai-consult', renderAiConsultPage);
   Router.register('/community', renderCommunityPage);
   Router.register('/wallet', renderWalletPage);
   Router.register('/matching', renderMatchingPage);
