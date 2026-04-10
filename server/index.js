@@ -66,4 +66,5 @@ app.listen(PORT, () => {
   console.log(`   카카오 로그인: ${process.env.KAKAO_CLIENT_ID && !process.env.KAKAO_CLIENT_ID.includes('여기에') ? '✅ 설정됨' : '❌ 미설정'}`);
   console.log(`   네이버 로그인: ${process.env.NAVER_CLIENT_ID && !process.env.NAVER_CLIENT_ID.includes('여기에') ? '✅ 설정됨' : '❌ 미설정'}`);
   console.log(`   이메일 인증: ${process.env.SMTP_USER && !process.env.SMTP_USER.includes('여기에') ? '✅ 설정됨' : '❌ 미설정'}`);
+  console.log(`   AI (Gemini): ${process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.includes('여기에') ? '✅ 설정됨' : '❌ 미설정'}`);
 });
