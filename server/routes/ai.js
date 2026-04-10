@@ -6,6 +6,41 @@
 
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+
+// ===== RAG: 지식 데이터 로드 =====
+let knowledgeBase = [];
+try {
+  const dataPath = path.join(__dirname, '..', 'data', 'knowledge.json');
+  knowledgeBase = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+  console.log(`[RAG] 지식 데이터 ${knowledgeBase.length}개 로드 완료`);
+} catch (e) {
+  console.warn('[RAG] 지식 데이터 로드 실패:', e.message);
+}
+
+/**
+ * 간단한 키워드 기반 관련 지식 검색
+ */
+function searchKnowledge(query, maxResults = 3) {
+  if (knowledgeBase.length === 0) return [];
+
+  const queryWords = query.toLowerCase().replace(/[?!.,]/g, '').split(/\s+/);
+
+  const scored = knowledgeBase.map(item => {
+    const text = (item.title + ' ' + item.content + ' ' + item.category).toLowerCase();
+    let score = 0;
+    queryWords.forEach(word => {
+      if (word.length >= 2 && text.includes(word)) score++;
+    });
+    return { ...item, score };
+  });
+
+  return scored
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxResults);
+}
 
 // ===== Gemini 설정 =====
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -15,7 +50,19 @@ function getGeminiModel() {
     return null;
   }
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return {
+    async generateContent(prompt) {
+      // 먼저 gemini-2.5-flash 시도, 실패하면 gemini-2.0-flash-lite로 폴백
+      try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        return await model.generateContent(prompt);
+      } catch (e) {
+        console.log('[AI] gemini-2.5-flash 실패, gemini-2.5-flash-lite로 시도...');
+        const fallback = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+        return await fallback.generateContent(prompt);
+      }
+    }
+  };
 }
 
 // ===== Claude 설정 =====
@@ -59,7 +106,13 @@ router.post('/symptom', async (req, res) => {
   }
 
   try {
-    const prompt = `${SYSTEM_PROMPTS.symptom}\n\n[반려견 정보]\n품종: ${breed || '미상'}\n나이: ${age || '미상'}\n\n[증상]\n${symptoms}`;
+    const ragResults = searchKnowledge(symptoms + ' ' + (breed || ''));
+    let ragContext = '';
+    if (ragResults.length > 0) {
+      ragContext = '\n\n[참고 자료]\n' + ragResults.map(r => `- ${r.title}: ${r.content}`).join('\n');
+    }
+
+    const prompt = `${SYSTEM_PROMPTS.symptom}\n\n[반려견 정보]\n품종: ${breed || '미상'}\n나이: ${age || '미상'}\n\n[증상]\n${symptoms}${ragContext}`;
     const result = await model.generateContent(prompt);
     const response = result.response.text();
     res.json({ success: true, analysis: response });
@@ -87,6 +140,15 @@ router.post('/consult', async (req, res) => {
 
   try {
     let prompt = SYSTEM_PROMPTS.consult + '\n\n';
+
+    // RAG: 관련 지식 검색
+    const ragResults = searchKnowledge(message);
+    if (ragResults.length > 0) {
+      prompt += '[참고 자료 - 이 내용을 바탕으로 답변해주세요]\n';
+      ragResults.forEach(r => { prompt += `- ${r.title}: ${r.content}\n`; });
+      prompt += '\n';
+    }
+
     if (history && history.length > 0) {
       prompt += '[이전 대화]\n';
       history.slice(-6).forEach(h => {
