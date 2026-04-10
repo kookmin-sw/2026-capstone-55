@@ -1,0 +1,14 @@
+[
+  {
+    "id": "id-mnsm12ov-kpkaldi",
+    "email": "pawsitivecompanyofficial@gmail.com",
+    "name": "Pawsitive 관리자",
+    "nickname": "관리자",
+    "passwordHash": "hash_kv85c1",
+    "referralCode": "PAW-ADMIN",
+    "isAdmin": true,
+    "dogs": [],
+    "pawCoins": 0,
+    "createdAt": "2026-04-10T07:54:18.464Z"
+  }
+]
