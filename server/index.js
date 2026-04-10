@@ -12,6 +12,7 @@ const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const emailRoutes = require('./routes/email');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +45,7 @@ require('./config/passport')(passport);
 // --- 라우트 ---
 app.use('/auth', authRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/ai', aiRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
 app.use(express.static(path.join(__dirname, '..')));

@@ -56,10 +56,18 @@ const MatchingService = (() => {
       userName,
       role: data.role,
       location: data.location,
+      lat: data.lat || null,
+      lng: data.lng || null,
       dogSize,
       preferredTime: data.preferredTime,
       message: data.message || '',
+      price: data.price || 0,
+      experience: data.experience || '없음',
+      acceptedSizes: data.acceptedSizes || ['small', 'medium', 'large'],
+      specialty: data.specialty || '',
+      isAvailable: true,
       rating: 5.0,
+      reviewCount: 0,
       createdAt: StorageService.now()
     };
 
@@ -250,6 +258,52 @@ const MatchingService = (() => {
     return getAllReviews().filter(r => r.scheduleId === scheduleId);
   }
 
+  function getAllWalkers() {
+    return getAllProfiles().filter(p => p.role === 'walker');
+  }
+
+  /**
+   * 가용 상태 토글
+   * @param {string} userId
+   * @returns {Object} 업데이트된 프로필
+   */
+  function toggleAvailability(userId) {
+    const profiles = getAllProfiles();
+    const idx = profiles.findIndex(p => p.userId === userId);
+    if (idx === -1) return null;
+    profiles[idx].isAvailable = !profiles[idx].isAvailable;
+    saveProfiles(profiles);
+    return profiles[idx];
+  }
+
+  /**
+   * Haversine 공식으로 두 GPS 좌표 사이의 거리(km) 계산
+   */
+  function haversineDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  /**
+   * 근방 도그워커 조회 (가용 상태 + GPS 좌표 있는 walker만)
+   * @param {number} lat 사용자 위도
+   * @param {number} lng 사용자 경도
+   * @param {number} radiusKm 반경(km), 기본 10km
+   * @returns {Object[]} 거리순 정렬된 walker 배열 (distance 필드 포함)
+   */
+  function getNearbyWalkers(lat, lng, radiusKm = 10) {
+    return getAllWalkers()
+      .filter(w => w.lat && w.lng)
+      .map(w => ({ ...w, distance: haversineDistance(lat, lng, w.lat, w.lng) }))
+      .filter(w => w.distance <= radiusKm)
+      .sort((a, b) => a.distance - b.distance);
+  }
+
   function getUserName(userId) {
     const profile = getAllProfiles().find(p => p.userId === userId);
     if (profile) return profile.userName;
@@ -263,6 +317,9 @@ const MatchingService = (() => {
     getMyProfile,
     registerProfile,
     removeProfile,
+    getAllWalkers,
+    toggleAvailability,
+    getNearbyWalkers,
     getRecommendations,
     sendRequest,
     acceptRequest,
