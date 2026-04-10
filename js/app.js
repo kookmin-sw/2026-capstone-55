@@ -3445,11 +3445,13 @@ function renderNotFoundPage() {
 // ============================================================
 
 function initApp() {
-  // 관리자 계정 자동 생성
-  ensureAdminAccount();
+  // 서버에서 공유 데이터 로드 후 앱 시작
+  StorageService.syncFromServer().then(() => {
+    // 관리자 계정 자동 생성
+    ensureAdminAccount();
 
-  // 네비게이션 바 렌더링
-  renderNavbar();
+    // 네비게이션 바 렌더링
+    renderNavbar();
 
   // 라우트 등록
   Router.register('/', renderHomePage);
@@ -3479,6 +3481,12 @@ function initApp() {
   Router.init();
 
   console.log('[Pawsitive] 앱이 초기화되었습니다. 🐾');
+  }).catch(e => {
+    console.error('[Pawsitive] 서버 동기화 실패, 로컬 모드로 시작:', e);
+    ensureAdminAccount();
+    renderNavbar();
+    Router.init();
+  });
 }
 
 // DOM 로드 후 앱 초기화
