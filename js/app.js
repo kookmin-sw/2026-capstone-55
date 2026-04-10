@@ -2319,10 +2319,11 @@ function _dwWalkerCard(w, user) {
     </div>`;
 }
 
-function renderDogWalkerPage() {
+async function renderDogWalkerPage() {
+  await MatchingService.refreshFromServer();
   const user      = AuthService.getCurrentUser();
   const walkers   = MatchingService.getAllWalkers();
-  const myProfile = user ? MatchingService.getMyProfile(user.id) : null;
+  const myProfile = user ? (walkers.find(w => w.userId === user.id) || MatchingService.getMyProfile(user.id)) : null;
   const isWalker  = myProfile && myProfile.role === 'walker';
 
   // 가용 도그워커 수
@@ -2534,7 +2535,8 @@ function loadDWDiscovery() {
 }
 
 /** 탐색 지도 실제 렌더링 */
-function _renderDiscMap(userLat, userLng, radiusKm) {
+async function _renderDiscMap(userLat, userLng, radiusKm) {
+  await MatchingService.refreshFromServer();
   if (_dwDiscMap) { try { _dwDiscMap.remove(); } catch(e) {} _dwDiscMap = null; }
 
   const container = document.getElementById('dw-disc-map');
@@ -2649,7 +2651,7 @@ function initDWRegMap() {
 }
 
 /** 도그워커 등록 처리 */
-function handleDogWalkerRegister() {
+async function handleDogWalkerRegister() {
   const user = AuthService.getCurrentUser();
   if (!user) { Router.navigate('/login'); return; }
 
@@ -2670,25 +2672,35 @@ function handleDogWalkerRegister() {
   if (checkedSizes.length === 0)    { errEl.innerHTML = '<div class="alert alert-error">가능한 견종 크기를 하나 이상 선택해주세요.</div>'; return; }
   if (!message)             { errEl.innerHTML = '<div class="alert alert-error">자기소개를 입력해주세요.</div>'; return; }
 
-  MatchingService.registerProfile(user.id, {
-    role: 'walker', location, lat, lng,
-    preferredTime, price: Number(price),
-    experience: experience || '없음',
-    acceptedSizes: checkedSizes,
-    specialty, message
-  });
+  const btn = document.querySelector('.dw-submit-btn');
+  if (btn) { btn.textContent = '등록 중...'; btn.disabled = true; }
 
-  renderDogWalkerPage();
+  try {
+    await MatchingService.registerProfileRemote(user.id, {
+      role: 'walker', location, lat, lng,
+      preferredTime, price: Number(price),
+      experience: experience || '없음',
+      acceptedSizes: checkedSizes,
+      specialty, message
+    });
+    renderDogWalkerPage();
+  } catch(e) {
+    if (errEl) errEl.innerHTML = '<div class="alert alert-error">등록 중 오류가 발생했습니다. 다시 시도해주세요.</div>';
+    if (btn) { btn.textContent = '🦮 도그워커 등록 완료'; btn.disabled = false; }
+  }
 }
 
 /** 가용 상태 토글 */
-function handleToggleAvailability() {
+async function handleToggleAvailability() {
   const user = AuthService.getCurrentUser();
   if (!user) return;
-  const updated = MatchingService.toggleAvailability(user.id);
-  if (!updated) return;
-  const statusEl = document.getElementById('dw-avail-status');
-  if (statusEl) statusEl.textContent = updated.isAvailable ? '🟢 매칭 ON' : '⭕ 매칭 OFF';
+  try {
+    const result = await MatchingService.toggleAvailabilityRemote(user.id);
+    const statusEl = document.getElementById('dw-avail-status');
+    if (statusEl) statusEl.textContent = result.isAvailable ? '🟢 매칭 ON' : '⭕ 매칭 OFF';
+  } catch(e) {
+    console.error('토글 실패:', e);
+  }
 }
 
 // ============================================================
@@ -2710,6 +2722,7 @@ async function handleAIRecommend() {
     return;
   }
 
+  await MatchingService.refreshFromServer();
   const walkers = MatchingService.getAllWalkers()
     .filter(w => w.isAvailable && w.userId !== user.id);
 

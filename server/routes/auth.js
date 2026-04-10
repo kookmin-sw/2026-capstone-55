@@ -58,9 +58,10 @@ router.get('/kakao', (req, res) => {
   if (!process.env.KAKAO_CLIENT_ID || process.env.KAKAO_CLIENT_ID.includes('여기에')) {
     return res.status(503).json({ error: '카카오 로그인이 아직 설정되지 않았습니다.' });
   }
+  const base = process.env.BASE_URL || 'http://localhost:3000';
   const kakaoAuthUrl = 'https://kauth.kakao.com/oauth/authorize'
     + '?client_id=' + process.env.KAKAO_CLIENT_ID
-    + '&redirect_uri=' + encodeURIComponent('http://localhost:3000/auth/kakao/callback')
+    + '&redirect_uri=' + encodeURIComponent(`${base}/auth/kakao/callback`)
     + '&response_type=code'
     + '&prompt=login';
   res.redirect(kakaoAuthUrl);
@@ -75,9 +76,10 @@ router.get('/kakao/register', async (req, res) => {
   if (!process.env.KAKAO_CLIENT_ID || process.env.KAKAO_CLIENT_ID.includes('여기에')) {
     return res.status(503).json({ error: '카카오 로그인이 아직 설정되지 않았습니다.' });
   }
+  const base = process.env.BASE_URL || 'http://localhost:3000';
   const kakaoAuthUrl = 'https://kauth.kakao.com/oauth/authorize'
     + '?client_id=' + process.env.KAKAO_CLIENT_ID
-    + '&redirect_uri=' + encodeURIComponent('http://localhost:3000/auth/kakao/register/callback')
+    + '&redirect_uri=' + encodeURIComponent(`${base}/auth/kakao/register/callback`)
     + '&response_type=code'
     + '&prompt=login'
     + '&scope=profile_nickname,profile_image';
@@ -94,11 +96,12 @@ router.get('/naver', (req, res) => {
   if (!process.env.NAVER_CLIENT_ID || process.env.NAVER_CLIENT_ID.includes('여기에')) {
     return res.status(503).json({ error: '네이버 로그인이 아직 설정되지 않았습니다.' });
   }
+  const base = process.env.BASE_URL || 'http://localhost:3000';
   const state = Math.random().toString(36).substring(2);
   req.session.naverState = state;
   const naverAuthUrl = 'https://nid.naver.com/oauth2.0/authorize'
     + '?client_id=' + process.env.NAVER_CLIENT_ID
-    + '&redirect_uri=' + encodeURIComponent('http://localhost:3000/auth/naver/callback')
+    + '&redirect_uri=' + encodeURIComponent(`${base}/auth/naver/callback`)
     + '&response_type=code'
     + '&state=' + state
     + '&auth_type=reauthenticate';
@@ -114,11 +117,12 @@ router.get('/naver/register', (req, res) => {
   if (!process.env.NAVER_CLIENT_ID || process.env.NAVER_CLIENT_ID.includes('여기에')) {
     return res.status(503).json({ error: '네이버 로그인이 아직 설정되지 않았습니다.' });
   }
+  const base = process.env.BASE_URL || 'http://localhost:3000';
   const state = Math.random().toString(36).substring(2);
   req.session.naverRegState = state;
   const naverAuthUrl = 'https://nid.naver.com/oauth2.0/authorize'
     + '?client_id=' + process.env.NAVER_CLIENT_ID
-    + '&redirect_uri=' + encodeURIComponent('http://localhost:3000/auth/naver/register/callback')
+    + '&redirect_uri=' + encodeURIComponent(`${base}/auth/naver/register/callback`)
     + '&response_type=code'
     + '&state=' + state
     + '&auth_type=reauthenticate';

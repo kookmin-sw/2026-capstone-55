@@ -258,14 +258,64 @@ const MatchingService = (() => {
     return getAllReviews().filter(r => r.scheduleId === scheduleId);
   }
 
+  // 서버에서 가져온 워커 캐시
+  let _serverWalkersCache = null;
+
+  async function refreshFromServer() {
+    try {
+      const res = await fetch('/api/walkers');
+      _serverWalkersCache = await res.json();
+    } catch(e) {
+      console.error('[MatchingService] 서버 동기화 실패:', e);
+      _serverWalkersCache = null;
+    }
+  }
+
   function getAllWalkers() {
+    if (_serverWalkersCache !== null) return _serverWalkersCache;
     return getAllProfiles().filter(p => p.role === 'walker');
   }
 
+  async function registerProfileRemote(userId, data) {
+    const users = StorageService.get('users', []);
+    const user = users.find(u => u.id === userId);
+    const payload = {
+      userId,
+      userName: user ? user.name : '알 수 없음',
+      role: 'walker',
+      location: data.location,
+      lat: data.lat || null,
+      lng: data.lng || null,
+      preferredTime: data.preferredTime,
+      price: data.price || 0,
+      experience: data.experience || '없음',
+      acceptedSizes: data.acceptedSizes || ['small', 'medium', 'large'],
+      specialty: data.specialty || '',
+      message: data.message || ''
+    };
+    const res = await fetch('/api/walkers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    await refreshFromServer();
+    return result.walker;
+  }
+
+  async function toggleAvailabilityRemote(userId) {
+    const res = await fetch('/api/walkers/toggle', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
+    const result = await res.json();
+    await refreshFromServer();
+    return result;
+  }
+
   /**
-   * 가용 상태 토글
-   * @param {string} userId
-   * @returns {Object} 업데이트된 프로필
+   * 가용 상태 토글 (로컬 fallback)
    */
   function toggleAvailability(userId) {
     const profiles = getAllProfiles();
@@ -316,9 +366,12 @@ const MatchingService = (() => {
   return {
     getMyProfile,
     registerProfile,
+    registerProfileRemote,
     removeProfile,
     getAllWalkers,
+    refreshFromServer,
     toggleAvailability,
+    toggleAvailabilityRemote,
     getNearbyWalkers,
     getRecommendations,
     sendRequest,
