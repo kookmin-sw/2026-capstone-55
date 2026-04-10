@@ -13,7 +13,7 @@ function getModel() {
     return null;
   }
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 }
 
 // 시스템 프롬프트
@@ -57,7 +57,11 @@ router.post('/symptom', async (req, res) => {
     res.json({ success: true, analysis: response });
   } catch (e) {
     console.error('[AI 증상 분석 오류]', e.message);
-    res.status(500).json({ success: false, error: 'AI 분석 중 오류가 발생했습니다.' });
+    if (e.message && e.message.includes('429')) {
+      res.status(429).json({ success: false, error: '요청이 너무 빨라요. 잠시 후 다시 시도해주세요~ (무료 티어 분당 제한)' });
+    } else {
+      res.status(500).json({ success: false, error: 'AI 분석 중 오류가 발생했어요. 잠시 후 다시 시도해주세요~' });
+    }
   }
 });
 
@@ -91,9 +95,14 @@ router.post('/consult', async (req, res) => {
     const response = result.response.text();
 
     res.json({ success: true, reply: response });
+
   } catch (e) {
     console.error('[AI 상담 오류]', e.message);
-    res.status(500).json({ success: false, error: 'AI 응답 중 오류가 발생했습니다.' });
+    if (e.message && e.message.includes('429')) {
+      res.status(429).json({ success: false, error: '요청이 너무 빨라요. 잠시 후 다시 시도해주세요~ (무료 티어 분당 제한)' });
+    } else {
+      res.status(500).json({ success: false, error: 'AI 응답 중 오류가 발생했어요. 잠시 후 다시 시도해주세요~' });
+    }
   }
 });
 

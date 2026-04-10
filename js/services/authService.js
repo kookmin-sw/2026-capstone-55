@@ -78,6 +78,12 @@ const AuthService = (() => {
     users.push(newUser);
     saveUsers(users);
 
+    // 가입 축하 3,000 PAW 코인 지급
+    if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
+      WalletService.earnCoins(newUser.id, 3000, '회원가입 축하 보상 🎉');
+    }
+    newUser.pawCoins = 3000;
+
     // 자동 로그인
     const token = createAuthToken(newUser.id);
     setCurrentUser(newUser);
@@ -269,10 +275,59 @@ const AuthService = (() => {
     const index = users.findIndex(u => u.id === userId);
     if (index === -1) return { success: false, error: '사용자를 찾을 수 없습니다.' };
 
+    // 2주 제한 체크 (첫 설정은 제한 없음)
+    if (users[index].nickname && users[index].nicknameChangedAt) {
+      const lastChanged = new Date(users[index].nicknameChangedAt);
+      const twoWeeks = 14 * 24 * 60 * 60 * 1000;
+      if (Date.now() - lastChanged.getTime() < twoWeeks) {
+        const nextDate = new Date(lastChanged.getTime() + twoWeeks);
+        return { success: false, error: `닉네임은 2주에 한 번만 변경할 수 있어요. 다음 변경 가능일: ${nextDate.toLocaleDateString('ko-KR')}` };
+      }
+    }
+
     users[index].nickname = nickname.trim();
+    users[index].nicknameChangedAt = StorageService.now();
     saveUsers(users);
     setCurrentUser(users[index]);
     return { success: true };
+  }
+
+  /**
+   * 추천인 코드 적용 (한 번만 가능)
+   */
+  function applyReferralCode(userId, code) {
+    if (!code || !code.trim()) {
+      return { success: false, error: '추천인 코드를 입력해주세요.' };
+    }
+    const users = getUsers();
+    const index = users.findIndex(u => u.id === userId);
+    if (index === -1) return { success: false, error: '사용자를 찾을 수 없습니다.' };
+
+    if (users[index].usedReferralCode) {
+      return { success: false, error: '이미 추천인 코드를 사용했어요.' };
+    }
+
+    const trimmedCode = code.trim().toUpperCase();
+    if (trimmedCode === users[index].referralCode) {
+      return { success: false, error: '본인의 추천인 코드는 입력할 수 없어요.' };
+    }
+
+    const referrer = findByReferralCode(trimmedCode);
+    if (!referrer) {
+      return { success: false, error: '존재하지 않는 추천인 코드예요.' };
+    }
+
+    users[index].usedReferralCode = trimmedCode;
+    saveUsers(users);
+    setCurrentUser(users[index]);
+
+    // 코인 지급
+    if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
+      WalletService.earnCoins(userId, 3000, '추천인 코드 입력 보상');
+      WalletService.earnCoins(referrer.id, 1500, (users[index].nickname || users[index].name) + '님의 추천 보상');
+    }
+
+    return { success: true, referrerName: referrer.nickname || referrer.name };
   }
 
   /**
@@ -301,6 +356,7 @@ const AuthService = (() => {
     generateReferralCode,
     findByReferralCode,
     setNickname,
+    applyReferralCode,
     hashPassword
   };
 })();

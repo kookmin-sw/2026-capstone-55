@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Pawsitive - 반려견 산책 매칭 웹 애플리케이션
  * 메인 애플리케이션 로직, 라우팅, 네비게이션
  */
@@ -1678,19 +1678,52 @@ function renderProfilePage() {
 
   renderPage(`
     <div class="page-header">
-      <h1>👤 내 프로필</h1>
+      <h1>내 프로필</h1>
     </div>
     <div class="card" style="padding:24px; margin-bottom:16px;">
-      <h3 style="margin-bottom:12px;">${user.nickname || user.name}</h3>
-      <p style="color:var(--color-text-light); font-size:0.9rem;">📧 ${user.email}</p>
-      <p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">🪙 ${user.pawCoins || 0} PAW (${user.pawCoins || 0}원)</p>
+      <h3 style="margin-bottom:4px;">${user.nickname || user.name}</h3>
+      <p style="color:var(--color-text-light); font-size:0.82rem; margin-bottom:10px;">닉네임</p>
+      <p style="color:var(--color-text); font-size:0.9rem;">이름: ${user.name}</p>
+      <p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">이메일: ${user.email}</p>
+      <p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">코인: ${user.pawCoins || 0} PAW (${user.pawCoins || 0}원)</p>
       <p style="color:var(--color-text-muted); font-size:0.8rem; margin-top:8px;">가입일: ${new Date(user.createdAt).toLocaleDateString('ko-KR')}</p>
+      <p style="color:var(--color-text-muted); font-size:0.72rem; margin-top:4px;">* 이름은 본인만 볼 수 있어요. 다른 사람에게는 닉네임만 표시돼요.</p>
       ${user.referralCode ? `<div style="margin-top:12px; background:var(--color-bg-warm); border-radius:10px; padding:10px 14px; display:inline-block;">
         <span style="font-size:0.8rem; color:var(--color-text-light);">내 추천인 코드:</span>
         <span style="font-weight:900; color:var(--color-primary-dark); margin-left:6px; letter-spacing:1px;">${user.referralCode}</span>
       </div>` : ''}
       <button class="btn btn-danger btn-sm" style="margin-top:16px;" onclick="handleLogout()">로그아웃</button>
       <button class="btn btn-sm" style="margin-top:8px; background:none; color:var(--color-text-muted); text-decoration:underline; font-size:0.8rem;" onclick="handleDeleteAccount()">회원탈퇴</button>
+    </div>
+
+    <div class="card" style="padding:24px; margin-bottom:16px;">
+      <h3 style="margin-bottom:16px;">✏️ 닉네임 변경</h3>
+      <div id="nickname-error"></div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="profile-nickname" class="form-input" placeholder="새 닉네임 (2~12자)" maxlength="12" value="${user.nickname || ''}" style="flex:1;">
+        <button class="btn btn-primary btn-sm" onclick="handleChangeNickname()">변경</button>
+      </div>
+      <p style="font-size:0.75rem; color:var(--color-text-muted); margin-top:6px;">닉네임은 2주에 한 번 변경할 수 있어요${user.nicknameChangedAt ? ' · 마지막 변경: ' + new Date(user.nicknameChangedAt).toLocaleDateString('ko-KR') : ''}</p>
+    </div>
+
+    <div class="card" style="padding:24px; margin-bottom:16px;">
+      <h3 style="margin-bottom:16px;">🎁 추천인 코드</h3>
+      <div style="background:var(--color-bg-warm); border-radius:10px; padding:12px 16px; margin-bottom:16px;">
+        <span style="font-size:0.82rem; color:var(--color-text-light);">내 추천인 코드:</span>
+        <span style="font-weight:900; color:var(--color-primary-dark); margin-left:6px; letter-spacing:1px;">${user.referralCode || '없음'}</span>
+        <p style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;">친구에게 공유하고, 친구가 가입 시 입력하면 1,500 PAW 코인을 받아요!</p>
+      </div>
+      ${user.usedReferralCode
+        ? `<div style="padding:12px 16px; background:var(--color-mint-light); border-radius:10px;">
+            <span style="font-size:0.85rem; font-weight:700; color:#2D8B5E;">✅ 사용한 추천인 코드: ${user.usedReferralCode}</span>
+          </div>`
+        : `<div id="referral-error"></div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="profile-referral" class="form-input" placeholder="추천인 코드 입력" style="flex:1; text-transform:uppercase;">
+            <button class="btn btn-primary btn-sm" onclick="handleApplyReferral()">적용</button>
+          </div>
+          <p style="font-size:0.75rem; color:var(--color-text-muted); margin-top:6px;">추천인 코드는 한 번만 입력할 수 있어요. 입력 시 3,000 PAW 지급!</p>`
+      }
     </div>
 
     <div class="card" style="padding:24px; margin-bottom:16px;">
@@ -1739,6 +1772,45 @@ function renderProfilePage() {
       <button class="btn btn-primary" style="width:100%;" onclick="handleRegisterDog()">반려견 등록</button>
     </div>
   `);
+}
+
+/**
+ * 닉네임 변경 핸들러
+ */
+function handleChangeNickname() {
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  const nickname = document.getElementById('profile-nickname')?.value;
+  const errEl = document.getElementById('nickname-error');
+
+  const result = AuthService.setNickname(user.id, nickname);
+  if (result.success) {
+    if (errEl) errEl.innerHTML = '<div class="alert alert-success">닉네임이 변경되었어요! 🐾</div>';
+    updateNavAuth();
+    setTimeout(() => renderProfilePage(), 1500);
+  } else {
+    if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
+  }
+}
+
+/**
+ * 추천인 코드 적용 핸들러
+ */
+function handleApplyReferral() {
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  const code = document.getElementById('profile-referral')?.value;
+  const errEl = document.getElementById('referral-error');
+
+  const result = AuthService.applyReferralCode(user.id, code);
+  if (result.success) {
+    alert(`추천인 코드가 적용되었어요! 🎉\n\n🪙 3,000 PAW 코인이 지급되었어요!\n추천인 ${result.referrerName}님에게도 1,500 PAW가 지급되었어요!`);
+    renderProfilePage();
+  } else {
+    if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
+  }
 }
 
 /**
@@ -2005,6 +2077,11 @@ function handleSocialAgreeSubmit() {
   StorageService.set('users', existingUsers);
   StorageService.remove('pendingSocialUser');
 
+  // 가입 축하 3,000 PAW 코인 지급
+  if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
+    WalletService.earnCoins(user.id, 3000, '회원가입 축하 보상 🎉');
+  }
+
   // 로그인 처리
   const safeUser = { ...user };
   delete safeUser.passwordHash;
@@ -2017,6 +2094,7 @@ function handleSocialAgreeSubmit() {
 
   updateNavAuth();
   // 닉네임 + 추천인 설정 페이지로 이동
+  alert('🎉 회원가입을 축하해요!\n\n🪙 가입 축하 3,000 PAW 코인이 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');
   Router.navigate('/welcome-setup');
 }
 
@@ -2056,13 +2134,13 @@ function renderWelcomeSetupPage() {
         <div class="form-group">
           <label for="setup-referral">추천인 코드 (선택)</label>
           <input type="text" id="setup-referral" class="form-input" placeholder="추천인 코드가 있다면 입력해주세요" style="text-transform:uppercase;">
-          <p style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">추천인 입력 시 나와 추천인 모두 50 PAW 코인 지급! 🪙</p>
+          <p style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">추천인 입력 시 나에게 3,000 PAW, 추천인에게 1,500 PAW 지급! 🪙</p>
         </div>
 
         <div style="background:var(--color-bg-warm); border-radius:12px; padding:14px; margin-bottom:20px; text-align:center;">
           <p style="font-size:0.82rem; color:var(--color-text-light);">내 추천인 코드</p>
           <p style="font-size:1.2rem; font-weight:900; color:var(--color-primary-dark); letter-spacing:2px; margin-top:4px;">${user.referralCode || '생성 중...'}</p>
-          <p style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">친구에게 공유하면 코인을 받을 수 있어요!</p>
+          <p style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">친구에게 공유하고, 친구가 가입 시 입력하면 1,500 PAW 코인을 받아요!</p>
         </div>
 
         <button class="btn btn-primary" style="width:100%; font-size:1rem; padding:14px;" onclick="handleWelcomeSetup()">설정 완료 🐾</button>
@@ -2108,14 +2186,30 @@ function handleWelcomeSetup() {
       return;
     }
 
-    // 양쪽에 50 PAW 코인 지급
+    // 추천인 코드 사용 기록 저장
+    const users = StorageService.get('users', []);
+    const userIndex = users.findIndex(u => u.id === user.id);
+    if (userIndex !== -1) {
+      users[userIndex].usedReferralCode = referralCode;
+      StorageService.set('users', users);
+    }
+
+    // 양쪽에 코인 지급 (입력한 사람 3000, 추천인 1500)
     if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
-      WalletService.earnCoins(user.id, 50, '추천인 코드 입력 보상');
-      WalletService.earnCoins(referrer.id, 50, user.nickname + '님의 추천 보상');
+      WalletService.earnCoins(user.id, 3000, '추천인 코드 입력 보상');
+      WalletService.earnCoins(referrer.id, 1500, (user.nickname || user.name) + '님의 추천 보상');
     }
   }
 
-  alert('설정 완료! Pawsitive에 오신 걸 환영해요 🐾');
+  // 완료 메시지
+  let welcomeMsg = '🎉 회원가입을 축하해요!\n\n🪙 가입 축하 3,000 PAW 코인이 지급되었어요!';
+  if (referralCode && AuthService.findByReferralCode(referralCode)) {
+    welcomeMsg += '\n🪙 추천인 보상 3,000 PAW 코인이 추가 지급되었어요!';
+    welcomeMsg += '\n\n총 6,000 PAW 코인으로 시작해요! 🐾';
+  } else {
+    welcomeMsg += '\n\nPawsitive에 오신 걸 환영해요! 🐾';
+  }
+  alert(welcomeMsg);
   Router.navigate('/');
 }
 
@@ -2128,6 +2222,7 @@ function handleSkipSetup() {
     // 닉네임 없으면 이름으로 기본 설정
     AuthService.setNickname(user.id, user.name);
   }
+  alert('Pawsitive에 오신 걸 환영해요! 🐾\n\n닉네임과 추천인 코드는 프로필에서 언제든 설정할 수 있어요~');
   Router.navigate('/');
 }
 
@@ -2337,6 +2432,7 @@ function handleRegister() {
   const result = AuthService.register({ name, email, password });
   if (result.success) {
     updateNavAuth();
+    alert('🎉 회원가입을 축하해요!\n\n🪙 가입 축하 3,000 PAW 코인이 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');
     Router.navigate('/welcome-setup');
   } else {
     const errEl = document.getElementById('register-error');
