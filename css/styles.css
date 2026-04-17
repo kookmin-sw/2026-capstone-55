@@ -164,7 +164,10 @@ input, textarea, select {
   gap: 2px;
   margin-left: 28px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   flex: 1;
+  min-width: 0;
+  scrollbar-width: none;
 }
 
 .navbar__links::-webkit-scrollbar {
@@ -184,6 +187,7 @@ input, textarea, select {
   transition: all 0.2s ease;
   cursor: pointer;
   background: none;
+  flex-shrink: 0;
 }
 
 .navbar__link:hover {

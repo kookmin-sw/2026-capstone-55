@@ -350,6 +350,7 @@ function renderNavbar() {
     { route: '/wallet', icon: '🪙', label: '지갑' },
     { route: '/matching', icon: '🤝', label: '산책매칭' },
     { route: '/dog-walker', icon: '🦮', label: '도그워커' },
+    { route: '/health', icon: '❤️', label: '건강분석' },
     { route: '/profile', icon: '👤', label: '프로필' }
   ];
 
@@ -3514,6 +3515,395 @@ function adminSendNotice() {
   document.getElementById('admin-notice').value = '';
 }
 
+// --- GPS 산책 트래킹 페이지 ---
+function renderWalkTrackingPage() {
+  const user = AuthService.getCurrentUser();
+  if (!user) { Router.navigate('/login'); return; }
+
+  const dog = user.dogs && user.dogs.length > 0 ? user.dogs[0] : null;
+
+  renderPage(`
+    <div class="page-header">
+      <h1>🏃 산책 트래킹</h1>
+      <p>GPS로 산책을 기록하고 건강 데이터를 수집해요</p>
+    </div>
+
+    <div id="tracking-alert"></div>
+
+    <div class="card" style="padding:24px; margin-bottom:16px; text-align:center;">
+      <div id="tracking-status" style="margin-bottom:16px;">
+        <div style="font-size:3rem; margin-bottom:8px;">🐾</div>
+        <p style="font-size:1.1rem; font-weight:700;">산책을 시작해볼까요?</p>
+        <p style="color:var(--color-text-light); font-size:0.85rem;">GPS로 거리, 시간, 칼로리를 자동 기록해요</p>
+      </div>
+
+      <div id="tracking-data" style="display:none; margin-bottom:20px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+          <div class="card" style="padding:16px; background:var(--color-bg);">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">거리</div>
+            <div id="track-distance" style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">0.000 km</div>
+          </div>
+          <div class="card" style="padding:16px; background:var(--color-bg);">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">시간</div>
+            <div id="track-duration" style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">0 분</div>
+          </div>
+          <div class="card" style="padding:16px; background:var(--color-bg);">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">속도</div>
+            <div id="track-pace" style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">0.0 km/h</div>
+          </div>
+          <div class="card" style="padding:16px; background:var(--color-bg);">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">칼로리</div>
+            <div id="track-calories" style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">0 kcal</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tracking-map" style="height:300px; border-radius:12px; margin-bottom:16px; display:none;"></div>
+
+      <div id="tracking-buttons">
+        <button class="btn btn-primary" style="width:100%; padding:16px; font-size:1.1rem;" onclick="handleStartTracking()">🏃 산책 시작</button>
+      </div>
+    </div>
+
+    <div id="walk-history-section"></div>
+  `);
+
+  loadWalkHistory(user.id);
+}
+
+let _trackingMap = null;
+let _trackingPolyline = null;
+let _trackingTimer = null;
+
+function handleStartTracking() {
+  const result = GPSTrackingService.startTracking((data) => {
+    document.getElementById('track-distance').textContent = data.distance.toFixed(3) + ' km';
+    document.getElementById('track-duration').textContent = data.duration + ' 분';
+    document.getElementById('track-pace').textContent = data.avgPace.toFixed(1) + ' km/h';
+    document.getElementById('track-calories').textContent = data.calories + ' kcal';
+
+    if (data.lastPosition && _trackingMap) {
+      _trackingMap.setView([data.lastPosition.lat, data.lastPosition.lng], 16);
+      if (_trackingPolyline && data.coordinates.length > 1) {
+        _trackingPolyline.setLatLngs(data.coordinates.map(c => [c.lat, c.lng]));
+      }
+    }
+  });
+
+  if (!result.success) {
+    const alertEl = document.getElementById('tracking-alert');
+    if (alertEl) alertEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
+    return;
+  }
+
+  document.getElementById('tracking-data').style.display = 'block';
+  document.getElementById('tracking-map').style.display = 'block';
+  document.getElementById('tracking-status').innerHTML = `
+    <div style="font-size:2rem; margin-bottom:8px;">🏃‍♂️</div>
+    <p style="font-size:1.1rem; font-weight:700; color:var(--color-success);">산책 중...</p>
+  `;
+  document.getElementById('tracking-buttons').innerHTML = `
+    <button class="btn btn-danger" style="width:100%; padding:16px; font-size:1.1rem;" onclick="handleStopTracking()">⏹ 산책 종료</button>
+  `;
+
+  // 지도 초기화
+  const mapEl = document.getElementById('tracking-map');
+  if (mapEl && typeof L !== 'undefined') {
+    _trackingMap = L.map(mapEl).setView([37.5665, 126.978], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(_trackingMap);
+    _trackingPolyline = L.polyline([], { color: '#F59E0B', weight: 4 }).addTo(_trackingMap);
+
+    navigator.geolocation.getCurrentPosition((pos) => {
+      _trackingMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
+    });
+  }
+
+  // 타이머 업데이트
+  _trackingTimer = setInterval(() => {
+    const data = GPSTrackingService.getCurrentData();
+    document.getElementById('track-duration').textContent = data.duration + ' 분';
+  }, 10000);
+}
+
+async function handleStopTracking() {
+  if (_trackingTimer) { clearInterval(_trackingTimer); _trackingTimer = null; }
+
+  const walkData = GPSTrackingService.stopTracking();
+  if (!walkData) return;
+
+  const user = AuthService.getCurrentUser();
+  const dog = user.dogs && user.dogs.length > 0 ? user.dogs[0] : null;
+
+  // 서버에 저장
+  const result = await GPSTrackingService.saveWalkToServer(
+    user.id,
+    dog ? dog.name : 'default',
+    dog ? dog.name : '우리 강아지',
+    walkData
+  );
+
+  // 코인 적립
+  if (walkData.distance > 0.1 && typeof WalletService !== 'undefined') {
+    const coins = Math.round(walkData.distance * 10);
+    WalletService.earnCoins(user.id, coins, `산책 완료 (${walkData.distance.toFixed(2)}km)`);
+  }
+
+  document.getElementById('tracking-status').innerHTML = `
+    <div style="font-size:2rem; margin-bottom:8px;">✅</div>
+    <p style="font-size:1.1rem; font-weight:700;">산책 완료!</p>
+    <p style="color:var(--color-text-light); font-size:0.85rem;">
+      ${walkData.distance.toFixed(2)}km · ${walkData.duration}분 · ${walkData.calories}kcal
+    </p>
+  `;
+  document.getElementById('tracking-buttons').innerHTML = `
+    <button class="btn btn-primary" style="width:100%; padding:14px;" onclick="Router.navigate('/health')">❤️ 건강 분석 보기</button>
+    <button class="btn btn-secondary" style="width:100%; padding:14px; margin-top:8px;" onclick="renderWalkTrackingPage()">🏃 다시 산책하기</button>
+  `;
+
+  if (_trackingMap) { try { _trackingMap.remove(); } catch(e) {} _trackingMap = null; }
+}
+
+async function loadWalkHistory(userId) {
+  const section = document.getElementById('walk-history-section');
+  if (!section) return;
+
+  const walks = await GPSTrackingService.getWalkHistory(userId);
+  if (walks.length === 0) {
+    section.innerHTML = `
+      <div class="card" style="padding:24px; text-align:center;">
+        <div style="font-size:2rem; margin-bottom:8px;">📝</div>
+        <p style="color:var(--color-text-muted);">아직 산책 기록이 없어요</p>
+      </div>
+    `;
+    return;
+  }
+
+  section.innerHTML = `
+    <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:12px;">📋 최근 산책 기록</h3>
+    ${walks.slice(0, 10).map(w => `
+      <div class="card" style="padding:16px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-weight:700; font-size:0.9rem;">${new Date(w.createdAt).toLocaleDateString('ko-KR')} ${new Date(w.createdAt).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}</div>
+          <div style="font-size:0.8rem; color:var(--color-text-light);">${w.dogName || '산책'}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-weight:700; color:var(--color-primary-dark);">${(w.distance || 0).toFixed(2)} km</div>
+          <div style="font-size:0.8rem; color:var(--color-text-muted);">${w.duration || 0}분 · ${w.calories || 0}kcal</div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+// --- 건강 분석 대시보드 페이지 ---
+async function renderHealthDashboardPage() {
+  const user = AuthService.getCurrentUser();
+  if (!user) { Router.navigate('/login'); return; }
+
+  const dog = user.dogs && user.dogs.length > 0 ? user.dogs[0] : null;
+
+  renderPage(`
+    <div class="page-header">
+      <h1>❤️ 건강 분석 대시보드</h1>
+      <p>${dog ? dog.name + '의' : '반려견'} AI 건강 분석 리포트</p>
+    </div>
+
+    <div id="health-alert"></div>
+
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <button class="btn btn-primary" onclick="Router.navigate('/walk-tracking')">🏃 산책 시작</button>
+      <button class="btn btn-secondary" onclick="handleRunHealthAnalysis()">🔬 AI 건강 분석</button>
+    </div>
+
+    <div id="health-stats-section">
+      <div style="text-align:center; padding:40px;">
+        <div class="spinner"></div>
+        <p style="margin-top:12px; color:var(--color-text-muted);">데이터 로딩 중...</p>
+      </div>
+    </div>
+
+    <div id="health-analysis-section"></div>
+  `);
+
+  await loadHealthDashboard(user);
+}
+
+async function loadHealthDashboard(user) {
+  const statsSection = document.getElementById('health-stats-section');
+  const analysisSection = document.getElementById('health-analysis-section');
+
+  // 산책 통계 로드
+  const stats = await GPSTrackingService.getWalkStats(user.id);
+  const activityScore = HealthAnalysisService.calcActivityScore(stats);
+
+  if (statsSection) {
+    if (!stats || stats.total.count === 0) {
+      statsSection.innerHTML = `
+        <div class="card" style="padding:24px; text-align:center; margin-bottom:16px;">
+          <div style="font-size:2.5rem; margin-bottom:8px;">🐾</div>
+          <p style="font-weight:700; margin-bottom:8px;">아직 산책 데이터가 없어요</p>
+          <p style="color:var(--color-text-light); font-size:0.85rem; margin-bottom:16px;">산책을 시작하면 AI가 건강을 분석해줘요!</p>
+          <button class="btn btn-primary" onclick="Router.navigate('/walk-tracking')">🏃 첫 산책 시작하기</button>
+        </div>
+      `;
+    } else {
+      statsSection.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+          <div class="card" style="padding:16px; text-align:center;">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">활동 점수</div>
+            <div style="font-size:2rem; font-weight:900; color:${activityScore >= 70 ? 'var(--color-success)' : activityScore >= 40 ? 'var(--color-primary-dark)' : 'var(--color-error)'};">${activityScore}</div>
+            <div style="font-size:0.75rem; color:var(--color-text-muted);">/100</div>
+          </div>
+          <div class="card" style="padding:16px; text-align:center;">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">이번 주 산책</div>
+            <div style="font-size:2rem; font-weight:900; color:var(--color-primary-dark);">${stats.weekly.count}</div>
+            <div style="font-size:0.75rem; color:var(--color-text-muted);">회</div>
+          </div>
+          <div class="card" style="padding:16px; text-align:center;">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">이번 주 거리</div>
+            <div style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">${stats.weekly.totalDistance}</div>
+            <div style="font-size:0.75rem; color:var(--color-text-muted);">km</div>
+          </div>
+          <div class="card" style="padding:16px; text-align:center;">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">총 칼로리</div>
+            <div style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">${stats.weekly.totalCalories}</div>
+            <div style="font-size:0.75rem; color:var(--color-text-muted);">kcal</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:16px; margin-bottom:16px;">
+          <h3 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">📊 전체 통계</h3>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border);">
+            <span style="color:var(--color-text-light);">총 산책 횟수</span>
+            <span style="font-weight:700;">${stats.total.count}회</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border);">
+            <span style="color:var(--color-text-light);">총 거리</span>
+            <span style="font-weight:700;">${stats.total.totalDistance} km</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border);">
+            <span style="color:var(--color-text-light);">평균 거리</span>
+            <span style="font-weight:700;">${stats.total.avgDistance} km</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0;">
+            <span style="color:var(--color-text-light);">평균 시간</span>
+            <span style="font-weight:700;">${stats.total.avgDuration}분</span>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // 캐시된 분석 결과 표시
+  const cached = HealthAnalysisService.getCachedAnalysis(user.id);
+  if (cached && analysisSection) {
+    renderHealthAnalysisResult(cached.analysis, analysisSection);
+  }
+}
+
+async function handleRunHealthAnalysis() {
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  const dog = user.dogs && user.dogs.length > 0 ? user.dogs[0] : null;
+  const alertEl = document.getElementById('health-alert');
+  const section = document.getElementById('health-analysis-section');
+
+  if (section) {
+    section.innerHTML = `
+      <div class="card" style="padding:24px; text-align:center;">
+        <div class="spinner"></div>
+        <p style="margin-top:12px; color:var(--color-text-muted);">AI가 건강을 분석하고 있어요... 🔬</p>
+      </div>
+    `;
+  }
+
+  try {
+    const analysis = await HealthAnalysisService.analyzeHealth(user.id, dog ? {
+      name: dog.name,
+      breed: dog.breed,
+      age: dog.age,
+      weight: dog.weight || null,
+      size: dog.size
+    } : {});
+
+    if (section) renderHealthAnalysisResult(analysis, section);
+  } catch (e) {
+    if (alertEl) alertEl.innerHTML = `<div class="alert alert-error">분석 실패: ${e.message}</div>`;
+    if (section) section.innerHTML = '';
+  }
+}
+
+function renderHealthAnalysisResult(analysis, container) {
+  if (!analysis || !container) return;
+
+  const riskColor = {
+    '낮음': 'var(--color-success)', '보통': 'var(--color-primary-dark)',
+    '높음': '#FF6B6B', '매우높음': 'var(--color-error)'
+  };
+
+  container.innerHTML = `
+    <h3 style="font-size:1.1rem; font-weight:800; margin:16px 0 12px;">🔬 AI 건강 분석 결과</h3>
+
+    ${analysis.overallScore !== undefined ? `
+    <div class="card" style="padding:20px; margin-bottom:12px; text-align:center;">
+      <div style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:4px;">종합 건강 점수</div>
+      <div style="font-size:2.5rem; font-weight:900; color:${analysis.overallScore >= 70 ? 'var(--color-success)' : analysis.overallScore >= 40 ? 'var(--color-primary-dark)' : 'var(--color-error)'};">${analysis.overallScore}</div>
+      <div style="font-size:0.8rem; color:var(--color-text-muted);">/100</div>
+      ${analysis.summary ? `<p style="margin-top:12px; font-size:0.9rem; color:var(--color-text-light);">${analysis.summary}</p>` : ''}
+    </div>` : ''}
+
+    ${analysis.behaviorAnalysis ? `
+    <div class="card" style="padding:20px; margin-bottom:12px;">
+      <h4 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">🐕 행동 패턴 분석</h4>
+      <p style="font-size:0.85rem; margin-bottom:8px;">${analysis.behaviorAnalysis.pattern || ''}</p>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <span class="badge badge-primary">규칙성: ${analysis.behaviorAnalysis.consistency || '-'}</span>
+      </div>
+      <p style="font-size:0.85rem; color:var(--color-text-light);">💡 ${analysis.behaviorAnalysis.recommendation || ''}</p>
+    </div>` : ''}
+
+    ${analysis.obesityRisk ? `
+    <div class="card" style="padding:20px; margin-bottom:12px;">
+      <h4 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">⚖️ 비만 위험 평가</h4>
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+        <div style="font-size:1.5rem; font-weight:900; color:${riskColor[analysis.obesityRisk.level] || 'var(--color-text)'};">${analysis.obesityRisk.level || '-'}</div>
+        ${analysis.obesityRisk.score !== undefined ? `<div style="font-size:0.85rem; color:var(--color-text-muted);">위험도 ${analysis.obesityRisk.score}/100</div>` : ''}
+      </div>
+      ${analysis.obesityRisk.factors ? `<div style="margin-bottom:8px;">${analysis.obesityRisk.factors.map(f => `<span class="badge" style="margin:2px; background:#FFF0F0; color:#D32F2F;">${f}</span>`).join('')}</div>` : ''}
+      <p style="font-size:0.85rem; color:var(--color-text-light);">💡 ${analysis.obesityRisk.recommendation || ''}</p>
+    </div>` : ''}
+
+    ${analysis.dietRecommendation ? `
+    <div class="card" style="padding:20px; margin-bottom:12px;">
+      <h4 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">🍽️ 식단 추천</h4>
+      ${analysis.dietRecommendation.dailyCalories ? `<p style="font-size:0.9rem; margin-bottom:8px;">일일 권장 칼로리: <strong>${analysis.dietRecommendation.dailyCalories} kcal</strong></p>` : ''}
+      ${analysis.dietRecommendation.mealFrequency ? `<p style="font-size:0.85rem; margin-bottom:8px;">급여 횟수: ${analysis.dietRecommendation.mealFrequency}</p>` : ''}
+      ${analysis.dietRecommendation.foods ? `<div style="margin-bottom:8px;"><span style="font-size:0.8rem; color:var(--color-text-muted);">추천 식품:</span> ${analysis.dietRecommendation.foods.map(f => `<span class="badge badge-success" style="margin:2px;">${f}</span>`).join('')}</div>` : ''}
+      ${analysis.dietRecommendation.avoid ? `<div style="margin-bottom:8px;"><span style="font-size:0.8rem; color:var(--color-text-muted);">피해야 할 식품:</span> ${analysis.dietRecommendation.avoid.map(f => `<span class="badge" style="margin:2px; background:#FFF0F0; color:#D32F2F;">${f}</span>`).join('')}</div>` : ''}
+      ${analysis.dietRecommendation.supplements ? `<div><span style="font-size:0.8rem; color:var(--color-text-muted);">추천 영양제:</span> ${analysis.dietRecommendation.supplements.map(s => `<span class="badge badge-primary" style="margin:2px;">${s}</span>`).join('')}</div>` : ''}
+    </div>` : ''}
+
+    ${analysis.vaccinationSchedule ? `
+    <div class="card" style="padding:20px; margin-bottom:12px;">
+      <h4 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">💉 예방접종 관리</h4>
+      ${analysis.vaccinationSchedule.upcoming && analysis.vaccinationSchedule.upcoming.length > 0 ? `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:0.85rem; font-weight:700; margin-bottom:8px;">📅 예정된 접종</div>
+          ${analysis.vaccinationSchedule.upcoming.map(v => `
+            <div style="display:flex; justify-content:space-between; padding:8px; background:var(--color-bg); border-radius:8px; margin-bottom:4px;">
+              <span style="font-weight:600;">${v.name}</span>
+              <span style="font-size:0.85rem; color:var(--color-text-light);">${v.dueDate || ''} · ${v.importance || ''}</span>
+            </div>
+          `).join('')}
+        </div>` : ''}
+      ${analysis.vaccinationSchedule.note ? `<p style="font-size:0.85rem; color:var(--color-text-light);">📌 ${analysis.vaccinationSchedule.note}</p>` : ''}
+    </div>` : ''}
+  `;
+}
+
 // --- 404 페이지 ---
 function renderNotFoundPage() {
   renderPage(`
@@ -3531,46 +3921,43 @@ function renderNotFoundPage() {
 // ============================================================
 
 function initApp() {
+  function registerRoutes() {
+    Router.register('/', renderHomePage);
+    Router.register('/breeds', renderBreedListPage);
+    Router.register('/breeds/:id', renderBreedDetailPage);
+    Router.register('/education', renderEducationPage);
+    Router.register('/education/:id', renderEducationDetailPage);
+    Router.register('/ai-symptom', renderAiSymptomPage);
+    Router.register('/ai-consult', renderAiConsultPage);
+    Router.register('/community', renderCommunityPage);
+    Router.register('/wallet', renderWalletPage);
+    Router.register('/matching', renderMatchingPage);
+    Router.register('/dog-walker', renderDogWalkerPage);
+    Router.register('/health', renderHealthDashboardPage);
+    Router.register('/walk-tracking', renderWalkTrackingPage);
+    Router.register('/ai-consult-claude', renderAIConsultPage);
+    Router.register('/profile', renderProfilePage);
+    Router.register('/admin', renderAdminPage);
+    Router.register('/login', renderLoginPage);
+    Router.register('/register', renderRegisterPage);
+    Router.register('/auth-callback', handleSocialAuthCallback);
+    Router.register('/social-agree', renderSocialAgreePage);
+    Router.register('/welcome-setup', renderWelcomeSetupPage);
+    Router.setNotFound(renderNotFoundPage);
+  }
+
   // 서버에서 공유 데이터 로드 후 앱 시작
   StorageService.syncFromServer().then(() => {
-    // 관리자 계정 자동 생성
     ensureAdminAccount();
-
-    // 네비게이션 바 렌더링
     renderNavbar();
-
-  // 라우트 등록
-  Router.register('/', renderHomePage);
-  Router.register('/breeds', renderBreedListPage);
-  Router.register('/breeds/:id', renderBreedDetailPage);
-  Router.register('/education', renderEducationPage);
-  Router.register('/education/:id', renderEducationDetailPage);
-  Router.register('/ai-symptom', renderAiSymptomPage);
-  Router.register('/ai-consult', renderAiConsultPage);
-  Router.register('/community', renderCommunityPage);
-  Router.register('/wallet', renderWalletPage);
-  Router.register('/matching', renderMatchingPage);
-  Router.register('/dog-walker', renderDogWalkerPage);
-  Router.register('/ai-consult-claude', renderAIConsultPage);
-  Router.register('/profile', renderProfilePage);
-  Router.register('/admin', renderAdminPage);
-  Router.register('/login', renderLoginPage);
-  Router.register('/register', renderRegisterPage);
-  Router.register('/auth-callback', handleSocialAuthCallback);
-  Router.register('/social-agree', renderSocialAgreePage);
-  Router.register('/welcome-setup', renderWelcomeSetupPage);
-
-  // 404 핸들러
-  Router.setNotFound(renderNotFoundPage);
-
-  // 라우터 시작
-  Router.init();
-
-  console.log('[Pawsitive] 앱이 초기화되었습니다. 🐾');
+    registerRoutes();
+    Router.init();
+    console.log('[Pawsitive] 앱이 초기화되었습니다. 🐾');
   }).catch(e => {
     console.error('[Pawsitive] 서버 동기화 실패, 로컬 모드로 시작:', e);
     ensureAdminAccount();
     renderNavbar();
+    registerRoutes();
     Router.init();
   });
 }

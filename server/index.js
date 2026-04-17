@@ -15,6 +15,8 @@ const emailRoutes   = require('./routes/email');
 const aiRoutes      = require('./routes/ai');
 const walkerRoutes  = require('./routes/walkers');
 const dataRoutes    = require('./routes/data');
+const walkRoutes    = require('./routes/walks');
+const healthRoutes  = require('./routes/health');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,6 +52,8 @@ app.use('/api/email', emailRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/walkers', walkerRoutes);
 app.use('/api/data', dataRoutes);
+app.use('/api/walks', walkRoutes);
+app.use('/api/health', healthRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
 app.use(express.static(path.join(__dirname, '..')));

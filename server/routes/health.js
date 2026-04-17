@@ -1,0 +1,153 @@
+/**
+ * 건강 분석 라우트 - AI 기반 반려견 건강 분석
+ * Gemini API를 사용하여 산책 데이터 기반 건강 분석 제공
+ */
+const express = require('express');
+const router = express.Router();
+const fs = require('fs');
+const path = require('path');
+
+const WALKS_FILE = path.join(__dirname, '..', 'data', 'walks.json');
+const HEALTH_FILE = path.join(__dirname, '..', 'data', 'health_profiles.json');
+
+function loadWalks() {
+  try {
+    if (fs.existsSync(WALKS_FILE)) return JSON.parse(fs.readFileSync(WALKS_FILE, 'utf8'));
+  } catch (e) {}
+  return [];
+}
+
+function loadHealthProfiles() {
+  try {
+    if (fs.existsSync(HEALTH_FILE)) return JSON.parse(fs.readFileSync(HEALTH_FILE, 'utf8'));
+  } catch (e) {}
+  return [];
+}
+
+function saveHealthProfiles(profiles) {
+  const dir = path.dirname(HEALTH_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(HEALTH_FILE, JSON.stringify(profiles, null, 2), 'utf8');
+}
+
+// Gemini 설정
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+function getGemini() {
+  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes('여기에')) return null;
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+}
+
+// 종합 건강 분석 (행동 패턴 + 비만 위험 + 식단 + 예방접종)
+router.post('/analyze', async (req, res) => {
+  try {
+    const { userId, dogInfo } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId 필요' });
+
+    const walks = loadWalks().filter(w => w.userId === userId);
+    const model = getGemini();
+    if (!model) return res.status(500).json({ error: 'AI 서비스 미설정' });
+
+    // 산책 데이터 요약
+    const recentWalks = walks.slice(-30);
+    const walkSummary = recentWalks.map(w => ({
+      date: w.createdAt?.split('T')[0],
+      distance: w.distance,
+      duration: w.duration,
+      avgPace: w.avgPace,
+      calories: w.calories
+    }));
+
+    const totalDistance = recentWalks.reduce((s, w) => s + (w.distance || 0), 0);
+    const totalDuration = recentWalks.reduce((s, w) => s + (w.duration || 0), 0);
+    const avgDaily = recentWalks.length ? totalDistance / Math.min(recentWalks.length, 30) : 0;
+
+    const prompt = `당신은 반려견 건강 전문 AI 수의사입니다. 다음 데이터를 분석하여 JSON 형식으로 응답하세요.
+
+## 반려견 정보
+- 이름: ${dogInfo?.name || '미등록'}
+- 견종: ${dogInfo?.breed || '미등록'}
+- 나이: ${dogInfo?.age || '미등록'}
+- 체중: ${dogInfo?.weight || '미등록'}kg
+- 크기: ${dogInfo?.size || '미등록'}
+
+## 최근 산책 데이터 (최대 30일)
+- 총 산책 횟수: ${recentWalks.length}회
+- 총 거리: ${totalDistance.toFixed(2)}km
+- 총 시간: ${totalDuration}분
+- 일평균 거리: ${avgDaily.toFixed(2)}km
+- 상세 기록: ${JSON.stringify(walkSummary.slice(-10))}
+
+## 분석 요청
+다음 JSON 형식으로 응답하세요 (반드시 JSON만 출력):
+{
+  "behaviorAnalysis": {
+    "pattern": "활동 패턴 설명",
+    "consistency": "규칙성 평가 (상/중/하)",
+    "recommendation": "행동 패턴 개선 제안"
+  },
+  "obesityRisk": {
+    "level": "위험도 (낮음/보통/높음/매우높음)",
+    "score": 0-100 숫자,
+    "factors": ["위험 요인들"],
+    "recommendation": "비만 예방 제안"
+  },
+  "dietRecommendation": {
+    "dailyCalories": 권장 일일 칼로리(숫자),
+    "mealFrequency": "급여 횟수 추천",
+    "foods": ["추천 식품들"],
+    "avoid": ["피해야 할 식품들"],
+    "supplements": ["추천 영양제"]
+  },
+  "vaccinationSchedule": {
+    "upcoming": [{"name": "접종명", "dueDate": "예정일", "importance": "중요도"}],
+    "overdue": [{"name": "접종명", "recommendation": "권고사항"}],
+    "note": "예방접종 관련 참고사항"
+  },
+  "overallScore": 0-100 숫자,
+  "summary": "종합 건강 평가 요약 (2-3문장)"
+}`;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    // JSON 파싱
+    let analysis;
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
+    } catch (e) {
+      analysis = { summary: text, overallScore: 50 };
+    }
+
+    // 건강 프로필 저장
+    const profiles = loadHealthProfiles();
+    const existing = profiles.findIndex(p => p.userId === userId);
+    const profile = {
+      userId,
+      dogInfo,
+      lastAnalysis: analysis,
+      analyzedAt: new Date().toISOString(),
+      walkCount: recentWalks.length,
+      totalDistance: totalDistance.toFixed(2)
+    };
+
+    if (existing >= 0) profiles[existing] = profile;
+    else profiles.push(profile);
+    saveHealthProfiles(profiles);
+
+    res.json({ success: true, analysis });
+  } catch (e) {
+    console.error('[Health] 분석 실패:', e);
+    res.status(500).json({ error: 'AI 건강 분석 실패: ' + e.message });
+  }
+});
+
+// 건강 프로필 조회
+router.get('/profile/:userId', (req, res) => {
+  const profiles = loadHealthProfiles();
+  const profile = profiles.find(p => p.userId === req.params.userId);
+  res.json({ success: true, profile: profile || null });
+});
+
+module.exports = router;
