@@ -40,82 +40,87 @@ const AuthService = (() => {
   }
 
   /**
-   * 회원가입
-   * @param {{ name: string, email: string, password: string }} data
-   * @returns {{ success: boolean, user?: User, error?: string }}
+   * 회원가입 (서버 API 연동)
    */
-  function register(data) {
+  async function register(data) {
     const { name, email, password } = data;
+    if (!name || !name.trim()) return { success: false, error: '이름을 입력하세요.' };
+    if (!email || !email.trim()) return { success: false, error: '이메일을 입력하세요.' };
+    if (!password || password.length < 4) return { success: false, error: '비밀번호는 4자 이상이어야 합니다.' };
 
-    if (!name || !name.trim()) {
-      return { success: false, error: '이름을 입력하세요.' };
+    try {
+      const res = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      const result = await res.json();
+      if (!result.success) return { success: false, error: result.error };
+
+      const newUser = result.user;
+      createAuthToken(newUser.id);
+      setCurrentUser(newUser);
+      // 로컬에도 캐시
+      const users = getUsers();
+      if (!users.find(u => u.id === newUser.id)) {
+        users.push(newUser);
+        saveUsers(users);
+      }
+      return { success: true, user: newUser };
+    } catch(e) {
+      // 서버 연결 실패 시 로컬 fallback
+      const users = getUsers();
+      const exists = users.find(u => u.email === email.trim().toLowerCase());
+      if (exists) return { success: false, error: '이미 사용 중인 이메일입니다.' };
+      const newUser = {
+        id: StorageService.generateId(),
+        email: email.trim().toLowerCase(),
+        name: name.trim(),
+        nickname: '',
+        passwordHash: hashPassword(password),
+        referralCode: generateReferralCode(),
+        dogs: [],
+        pawCoins: 3000,
+        createdAt: StorageService.now()
+      };
+      users.push(newUser);
+      saveUsers(users);
+      createAuthToken(newUser.id);
+      setCurrentUser(newUser);
+      return { success: true, user: newUser };
     }
-    if (!email || !email.trim()) {
-      return { success: false, error: '이메일을 입력하세요.' };
-    }
-    if (!password || password.length < 4) {
-      return { success: false, error: '비밀번호는 4자 이상이어야 합니다.' };
-    }
-
-    const users = getUsers();
-    const exists = users.find(u => u.email === email.trim().toLowerCase());
-    if (exists) {
-      return { success: false, error: '이미 사용 중인 이메일입니다.' };
-    }
-
-    const newUser = {
-      id: StorageService.generateId(),
-      email: email.trim().toLowerCase(),
-      name: name.trim(),
-      nickname: '',
-      passwordHash: hashPassword(password),
-      referralCode: generateReferralCode(),
-      dogs: [],
-      pawCoins: 0,
-      createdAt: StorageService.now()
-    };
-
-    users.push(newUser);
-    saveUsers(users);
-
-    // 가입 축하 3,000 PAW 코인 지급
-    if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
-      WalletService.earnCoins(newUser.id, 3000, '회원가입 축하 보상 🎉');
-    }
-    newUser.pawCoins = 3000;
-
-    // 자동 로그인
-    const token = createAuthToken(newUser.id);
-    setCurrentUser(newUser);
-
-    return { success: true, user: newUser };
   }
 
   /**
-   * 로그인
-   * @param {string} email
-   * @param {string} password
-   * @returns {{ success: boolean, token?: AuthToken, error?: string }}
+   * 로그인 (서버 API 연동)
    */
-  function login(email, password) {
-    if (!email || !password) {
-      return { success: false, error: '이메일과 비밀번호를 입력하세요.' };
+  async function login(email, password) {
+    if (!email || !password) return { success: false, error: '이메일과 비밀번호를 입력하세요.' };
+
+    try {
+      const res = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const result = await res.json();
+      if (!result.success) return { success: false, error: result.error };
+
+      const user = result.user;
+      createAuthToken(user.id);
+      setCurrentUser(user);
+      return { success: true };
+    } catch(e) {
+      // 서버 연결 실패 시 로컬 fallback
+      const users = getUsers();
+      const user = users.find(u => u.email === email.trim().toLowerCase());
+      if (!user || user.passwordHash !== hashPassword(password)) {
+        return { success: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' };
+      }
+      createAuthToken(user.id);
+      setCurrentUser(user);
+      return { success: true };
     }
-
-    const users = getUsers();
-    const user = users.find(u => u.email === email.trim().toLowerCase());
-    if (!user) {
-      return { success: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' };
-    }
-
-    if (user.passwordHash !== hashPassword(password)) {
-      return { success: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' };
-    }
-
-    const token = createAuthToken(user.id);
-    setCurrentUser(user);
-
-    return { success: true, token: token };
   }
 
   /**

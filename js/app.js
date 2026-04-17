@@ -2183,6 +2183,13 @@ function handleSocialAgreeSubmit() {
   StorageService.set('users', existingUsers);
   StorageService.remove('pendingSocialUser');
 
+  // 서버에 유저 동기화
+  fetch('/api/users/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...user, pawCoins: 3000 })
+  }).catch(() => {});
+
   // 가입 축하 3,000 PAW 코인 지급
   if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
     WalletService.earnCoins(user.id, 3000, '회원가입 축하 보상 🎉');
@@ -2460,6 +2467,13 @@ function handleSocialAuthCallback() {
         Router.navigate('/social-agree');
         return;
       }
+
+      // 서버에 유저 동기화
+      fetch('/api/users/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+      }).catch(() => {});
 
       // 로그인 처리
       const safeUser = { ...user };

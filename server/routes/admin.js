@@ -5,13 +5,12 @@
 
 const express = require('express');
 const router = express.Router();
+const db = require('../db');
 
-// 관리자 이메일 목록
 function getAdminEmails() {
   return (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
 }
 
-// 관리자 확인 미들웨어
 function isAdmin(req, res, next) {
   const { adminEmail } = req.headers;
   if (!adminEmail || !getAdminEmails().includes(adminEmail.toLowerCase())) {
@@ -20,16 +19,34 @@ function isAdmin(req, res, next) {
   next();
 }
 
-// ===== 회원 목록 조회 =====
+// 회원 목록
 router.get('/users', isAdmin, (req, res) => {
-  const StorageService = req.app.locals.StorageService;
-  // 클라이언트에서 localStorage 데이터를 보내줘야 하므로 프론트에서 처리
-  res.json({ success: true, message: '프론트엔드에서 처리' });
+  const users = db.get('users', []);
+  const safeUsers = users.map(({ passwordHash, ...rest }) => rest);
+  res.json({ success: true, users: safeUsers });
 });
 
-// ===== 사이트 통계 =====
+// 사이트 통계
 router.get('/stats', isAdmin, (req, res) => {
-  res.json({ success: true, message: '프론트엔드에서 처리' });
+  const users = db.get('users', []);
+  const walkers = db.get('walkers', []);
+  const community = db.get('community', []);
+  res.json({
+    success: true,
+    stats: {
+      totalUsers: users.length,
+      totalWalkers: walkers.length,
+      availableWalkers: walkers.filter(w => w.isAvailable).length,
+      totalPosts: community.length
+    }
+  });
+});
+
+// 회원 삭제
+router.delete('/users/:userId', isAdmin, (req, res) => {
+  const users = db.get('users', []).filter(u => u.id !== req.params.userId);
+  db.set('users', users);
+  res.json({ success: true });
 });
 
 module.exports = router;
