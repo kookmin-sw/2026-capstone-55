@@ -50,16 +50,45 @@ function getGeminiModel() {
     return null;
   }
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  return {
-    async generateContent(prompt) {
-      // 먼저 gemini-2.5-flash 시도, 실패하면 gemini-2.0-flash-lite로 폴백
+
+  // 단일 모델 호출 + 503/429 재시도 (최대 3회, 간격 2초)
+  async function callWithRetry(modelName, prompt, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: modelName });
         return await model.generateContent(prompt);
       } catch (e) {
-        console.log('[AI] gemini-2.5-flash 실패, gemini-2.5-flash-lite로 시도...');
-        const fallback = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-        return await fallback.generateContent(prompt);
+        const msg = e.message || '';
+        const isRetryable = msg.includes('503') || msg.includes('429') || msg.includes('overloaded');
+        console.log(`[AI] ${modelName} 시도 ${attempt}/${maxRetries} 실패:`, msg.substring(0, 100));
+        if (isRetryable && attempt < maxRetries) {
+          const delay = attempt * 2000; // 2초, 4초
+          console.log(`[AI] ${delay}ms 후 재시도...`);
+          await new Promise(r => setTimeout(r, delay));
+        } else {
+          throw e;
+        }
+      }
+    }
+  }
+
+  return {
+    async generateContent(prompt) {
+      // gemini-2.5-flash를 재시도 포함하여 호출
+      try {
+        return await callWithRetry('gemini-2.5-flash', prompt, 3);
+      } catch (e) {
+        console.log('[AI] gemini-2.5-flash 최종 실패, 폴백 시도...');
+        // 폴백 모델들 시도
+        const fallbacks = ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash'];
+        for (const name of fallbacks) {
+          try {
+            return await callWithRetry(name, prompt, 2);
+          } catch (e2) {
+            console.log(`[AI] ${name} 폴백도 실패`);
+          }
+        }
+        throw e;
       }
     }
   };
@@ -93,81 +122,129 @@ const SYSTEM_PROMPTS = {
 항상 따뜻하고 공감하는 톤으로 한국어로 답변하세요. 이모지를 적절히 사용해주세요.`
 };
 
-// ===== Gemini: 증상 분석 =====
+// ===== Gemini: 증상 분석 (Gemini 실패 시 Claude 폴백) =====
 router.post('/symptom', async (req, res) => {
-  const model = getGeminiModel();
-  if (!model) {
-    return res.status(503).json({ success: false, error: 'AI가 아직 설정되지 않았습니다.' });
-  }
-
   const { symptoms, breed, age } = req.body;
   if (!symptoms) {
     return res.status(400).json({ success: false, error: '증상을 입력해주세요.' });
   }
 
-  try {
-    const ragResults = searchKnowledge(symptoms + ' ' + (breed || ''));
-    let ragContext = '';
-    if (ragResults.length > 0) {
-      ragContext = '\n\n[참고 자료]\n' + ragResults.map(r => `- ${r.title}: ${r.content}`).join('\n');
-    }
+  const ragResults = searchKnowledge(symptoms + ' ' + (breed || ''));
+  let ragContext = '';
+  if (ragResults.length > 0) {
+    ragContext = '\n\n[참고 자료]\n' + ragResults.map(r => `- ${r.title}: ${r.content}`).join('\n');
+  }
+  const fullPrompt = `${SYSTEM_PROMPTS.symptom}\n\n[반려견 정보]\n품종: ${breed || '미상'}\n나이: ${age || '미상'}\n\n[증상]\n${symptoms}${ragContext}`;
 
-    const prompt = `${SYSTEM_PROMPTS.symptom}\n\n[반려견 정보]\n품종: ${breed || '미상'}\n나이: ${age || '미상'}\n\n[증상]\n${symptoms}${ragContext}`;
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
-    res.json({ success: true, analysis: response });
-  } catch (e) {
-    console.error('[AI 증상 분석 오류]', e.message);
-    if (e.message && e.message.includes('429')) {
-      res.status(429).json({ success: false, error: '요청이 너무 빨라요. 잠시 후 다시 시도해주세요~' });
-    } else {
-      res.status(500).json({ success: false, error: 'AI 분석 중 오류가 발생했어요. 잠시 후 다시 시도해주세요~' });
+  // 1차: Gemini
+  const model = getGeminiModel();
+  if (model) {
+    try {
+      const result = await model.generateContent(fullPrompt);
+      const response = result.response.text();
+      return res.json({ success: true, analysis: response });
+    } catch (e) {
+      console.error('[AI 증상] Gemini 실패:', e.message?.substring(0, 100));
     }
+  }
+
+  // 2차: Claude 폴백
+  try {
+    console.log('[AI 증상] Claude 폴백 시도...');
+    const client = getClaudeClient();
+    if (!client) {
+      return res.status(503).json({ success: false, error: 'AI 서비스가 일시적으로 불안정해요.' });
+    }
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      system: SYSTEM_PROMPTS.symptom,
+      messages: [{ role: 'user', content: `[반려견 정보]\n품종: ${breed || '미상'}\n나이: ${age || '미상'}\n\n[증상]\n${symptoms}${ragContext}` }]
+    });
+    return res.json({ success: true, analysis: response.content[0].text });
+  } catch (e2) {
+    console.error('[AI 증상] Claude 폴백도 실패:', e2.message?.substring(0, 100));
+    return res.status(500).json({ success: false, error: 'AI 분석 중 오류가 발생했어요. 잠시 후 다시 시도해주세요~' });
   }
 });
 
-// ===== Gemini: AI 상담 =====
-router.post('/consult', async (req, res) => {
-  const model = getGeminiModel();
-  if (!model) {
-    return res.status(503).json({ success: false, error: 'AI가 아직 설정되지 않았습니다.' });
-  }
+// ===== Claude 폴백 상담 함수 =====
+async function consultWithClaude(message, history) {
+  const client = getClaudeClient();
+  if (!client) return null;
 
+  let userContent = '';
+  if (history && history.length > 0) {
+    userContent += '[이전 대화]\n';
+    history.slice(-6).forEach(h => {
+      userContent += `${h.role === 'user' ? '사용자' : 'AI'}: ${h.text}\n`;
+    });
+    userContent += '\n';
+  }
+  userContent += message;
+
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1024,
+    system: SYSTEM_PROMPTS.consult,
+    messages: [{ role: 'user', content: userContent }]
+  });
+  return response.content[0].text;
+}
+
+// ===== Gemini: AI 상담 (Gemini 실패 시 Claude 폴백) =====
+router.post('/consult', async (req, res) => {
   const { message, history } = req.body;
   if (!message) {
     return res.status(400).json({ success: false, error: '메시지를 입력해주세요.' });
   }
 
+  // 1차: Gemini 시도
+  const model = getGeminiModel();
+  if (model) {
+    try {
+      let prompt = SYSTEM_PROMPTS.consult + '\n\n';
+
+      const ragResults = searchKnowledge(message);
+      if (ragResults.length > 0) {
+        prompt += '[참고 자료 - 이 내용을 바탕으로 답변해주세요]\n';
+        ragResults.forEach(r => { prompt += `- ${r.title}: ${r.content}\n`; });
+        prompt += '\n';
+      }
+
+      if (history && history.length > 0) {
+        prompt += '[이전 대화]\n';
+        history.slice(-6).forEach(h => {
+          prompt += `${h.role === 'user' ? '사용자' : 'AI'}: ${h.text}\n`;
+        });
+        prompt += '\n';
+      }
+      prompt += `사용자: ${message}`;
+
+      const result = await model.generateContent(prompt);
+      const response = result.response.text();
+      return res.json({ success: true, reply: response });
+    } catch (e) {
+      console.error('[AI 상담] Gemini 실패:', e.message?.substring(0, 100));
+      // Gemini 실패 → Claude 폴백으로 진행
+    }
+  }
+
+  // 2차: Claude 폴백
   try {
-    let prompt = SYSTEM_PROMPTS.consult + '\n\n';
-
-    // RAG: 관련 지식 검색
-    const ragResults = searchKnowledge(message);
-    if (ragResults.length > 0) {
-      prompt += '[참고 자료 - 이 내용을 바탕으로 답변해주세요]\n';
-      ragResults.forEach(r => { prompt += `- ${r.title}: ${r.content}\n`; });
-      prompt += '\n';
+    console.log('[AI 상담] Claude 폴백 시도...');
+    const reply = await consultWithClaude(message, history);
+    if (reply) {
+      return res.json({ success: true, reply });
     }
-
-    if (history && history.length > 0) {
-      prompt += '[이전 대화]\n';
-      history.slice(-6).forEach(h => {
-        prompt += `${h.role === 'user' ? '사용자' : 'AI'}: ${h.text}\n`;
-      });
-      prompt += '\n';
+    // Claude도 없으면 에러
+    return res.status(503).json({ success: false, error: 'AI 서비스가 일시적으로 불안정해요. 잠시 후 다시 시도해주세요~' });
+  } catch (e2) {
+    console.error('[AI 상담] Claude 폴백도 실패:', e2.message?.substring(0, 100));
+    if (e2.message && e2.message.includes('credit balance')) {
+      return res.status(503).json({ success: false, error: 'AI 크레딧이 부족해요. 관리자에게 문의해주세요.' });
     }
-    prompt += `사용자: ${message}`;
-
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
-    res.json({ success: true, reply: response });
-  } catch (e) {
-    console.error('[AI 상담 오류]', e.message);
-    if (e.message && e.message.includes('429')) {
-      res.status(429).json({ success: false, error: '요청이 너무 빨라요. 잠시 후 다시 시도해주세요~' });
-    } else {
-      res.status(500).json({ success: false, error: 'AI 응답 중 오류가 발생했어요. 잠시 후 다시 시도해주세요~' });
-    }
+    return res.status(500).json({ success: false, error: 'AI 응답 중 오류가 발생했어요. 잠시 후 다시 시도해주세요~' });
   }
 });
 

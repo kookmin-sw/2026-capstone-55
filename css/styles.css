@@ -306,6 +306,28 @@ input, textarea, select {
   height: 200px;
   object-fit: cover;
   background: var(--color-border);
+  transition: background 0.3s ease;
+}
+
+.card__image.breed-img {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.img-credit {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.45);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  line-height: 1.4;
 }
 
 .card__body {

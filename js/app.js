@@ -584,6 +584,8 @@ function renderBreedListPage() {
       ${renderBreedCards(BreedService.getAll())}
     </div>
   `);
+  // 견종 이미지 로드
+  setTimeout(() => BreedImageService.loadAll(), 100);
 }
 
 function renderBreedCards(breeds) {
@@ -597,7 +599,7 @@ function renderBreedCards(breeds) {
   const exerciseMap = { low: '낮음', medium: '보통', high: '높음' };
   return breeds.map(breed => `
     <div class="card" onclick="Router.navigate('/breeds/${breed.id}')" style="cursor:pointer;">
-      <div class="card__image" style="background: linear-gradient(135deg, #FFB3C6, #C9A9E9); display:flex; align-items:center; justify-content:center; font-size:3rem;">🐕</div>
+      <div class="card__image breed-img" data-breed-id="${breed.id}" style="background: linear-gradient(135deg, #FFB3C6, #C9A9E9); display:flex; align-items:center; justify-content:center; font-size:3rem; position:relative;">🐕</div>
       <div class="card__body">
         <div class="card__title">${breed.name}</div>
         <div class="card__subtitle">
@@ -615,7 +617,10 @@ function renderBreedCards(breeds) {
 function handleBreedSearch(keyword) {
   const filtered = BreedService.search(keyword);
   const list = document.getElementById('breed-list');
-  if (list) list.innerHTML = renderBreedCards(filtered);
+  if (list) {
+    list.innerHTML = renderBreedCards(filtered);
+    setTimeout(() => BreedImageService.loadAll(), 100);
+  }
 }
 
 // --- 품종 상세 페이지 ---
@@ -640,7 +645,7 @@ function renderBreedDetailPage(params) {
   renderPage(`
     <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds')" style="margin-bottom:16px;">← 목록으로</button>
     <div class="detail-header">
-      <div style="width:100%; height:260px; background: linear-gradient(135deg, #FFB3C6, #C9A9E9); border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:5rem; margin-bottom:16px;">🐕</div>
+      <div id="breed-detail-img" data-breed-id="${breed.id}" style="width:100%; height:260px; background: linear-gradient(135deg, #FFB3C6, #C9A9E9); border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:5rem; margin-bottom:16px; position:relative;">🐕</div>
       <h1>${breed.name} ${breed.nameEn ? '<span style="font-size:0.9rem; color:var(--color-text-light); font-weight:600;">' + breed.nameEn + '</span>' : ''}</h1>
       <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
         <span class="badge badge-primary">${sizeMap[breed.size]}</span>
@@ -695,6 +700,11 @@ function renderBreedDetailPage(params) {
       </div>
     </div>
   `);
+  // 견종 상세 이미지 로드
+  setTimeout(() => {
+    const imgEl = document.getElementById('breed-detail-img');
+    if (imgEl) BreedImageService.loadInto(imgEl, breed, true);
+  }, 100);
 }
 
 /**
