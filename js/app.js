@@ -356,8 +356,13 @@ function renderNavbar() {
 
   navbar.innerHTML = `
     <div class="navbar__brand" onclick="Router.navigate('/')">
-      <span class="paw-icon">🐾</span>
-      <span>Pawsitive</span>
+      <svg class="brand-paw" viewBox="0 0 32 32" width="28" height="28" fill="currentColor">
+        <ellipse cx="16" cy="22" rx="8" ry="7"/>
+        <circle cx="8" cy="11" r="4"/>
+        <circle cx="16" cy="7" r="3.5"/>
+        <circle cx="24" cy="11" r="4"/>
+      </svg>
+      <span class="brand-text">Pawsitive</span>
     </div>
     <nav class="navbar__links">
       ${navItems.map(item => `
@@ -429,144 +434,47 @@ function renderPage(html) {
 function renderHomePage() {
   const user = AuthService.getCurrentUser();
 
-  // 히어로 섹션
-  let heroHtml = '';
-  if (user) {
-    heroHtml = `
-      <div class="home-hero">
-        <h2>${user.name}님, 반가워요! 🐾💕</h2>
-        <p>오늘도 우리 아이와 행복한 하루 보내세요~</p>
-      </div>
-    `;
-  } else {
-    heroHtml = `
-      <div class="home-hero">
-        <h2>우리 아이와 함께하는 행복한 매일 🐾💕</h2>
-        <p>Pawsitive에서 반려견과의 특별한 시간을 시작하세요~</p>
-      </div>
-    `;
-  }
+  renderPage(`
+    <style>
+      .modern-home { min-height: 85vh; display:flex; flex-direction:column; justify-content:center; position:relative; }
+      .modern-tagline { font-size:clamp(2.4rem, 6vw, 4.5rem); font-weight:700; letter-spacing:-2.5px; line-height:1.05; color:var(--color-text); max-width:650px; }
+      .modern-sub { font-size:1rem; color:var(--color-text-muted); margin-top:24px; max-width:360px; line-height:1.7; font-weight:400; }
+      .modern-footer { display:flex; justify-content:space-between; align-items:center; padding:24px 0; margin-top:60px; border-top:1px solid var(--color-border); }
+      .modern-footer-item { font-size:0.72rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:1.5px; font-weight:500; }
+      .modern-scroll-hint { font-size:0.72rem; color:var(--color-text-muted); letter-spacing:1px; margin-top:48px; text-transform:uppercase; animation: fadeInUp 1.5s ease; }
+      @keyframes fadeInUp { 0%{opacity:0;transform:translateY(12px)} 100%{opacity:1;transform:translateY(0)} }
+      .modern-tagline span { display:inline-block; animation: wordReveal 0.8s ease both; }
+      @keyframes wordReveal { 0%{opacity:0;transform:translateY(20px)} 100%{opacity:1;transform:translateY(0)} }
+    </style>
 
-  // Paw 코인 잔액 요약 (로그인 시)
-  let walletSummaryHtml = '';
-  if (user) {
-    const balance = WalletService.getBalance(user.id);
-    walletSummaryHtml = `
-      <div class="home-wallet-summary" onclick="Router.navigate('/wallet')" style="cursor:pointer;">
-        <div style="display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color:#fff; border-radius:var(--radius-md); padding:20px 24px; margin-bottom:24px; box-shadow:var(--shadow-md);">
-          <div>
-            <div style="font-size:0.85rem; opacity:0.9; font-weight:700;">🪙 보유 Paw 코인</div>
-            <div style="font-size:1.8rem; font-weight:900; margin-top:4px;">${balance} <span style="font-size:0.9rem; font-weight:700;">PAW</span></div>
-          </div>
-          <div style="font-size:2.5rem;">🐾</div>
+    <div class="modern-home">
+      <div>
+        ${user
+          ? `<p style="font-size:0.82rem; color:var(--color-text-muted); margin-bottom:20px; font-weight:500;">Welcome back, ${user.nickname || user.name}</p>`
+          : `<p style="font-size:0.82rem; color:var(--color-text-muted); margin-bottom:20px; font-weight:500;">Pawsitive —</p>`
+        }
+        <h1 class="modern-tagline">
+          <span style="animation-delay:0.1s">반려견과</span><br>
+          <span style="animation-delay:0.25s">함께하는</span><br>
+          <span style="animation-delay:0.4s; color:var(--color-text-muted);">더 나은 일상.</span>
+        </h1>
+        <p class="modern-sub">
+          AI 건강 상담부터 산책 매칭까지,<br>당신과 반려견을 위한 공간.
+        </p>
+        <div style="margin-top:36px;">
+          ${!user
+            ? `<button class="btn btn-primary" onclick="Router.navigate('/register')" style="padding:12px 32px; font-size:0.9rem;">시작하기 →</button>`
+            : `<button class="btn btn-primary" onclick="Router.navigate('/dog-walker')" style="padding:12px 32px; font-size:0.9rem;">도그워커 찾기 →</button>`
+          }
         </div>
+        <p class="modern-scroll-hint">↓ scroll to explore</p>
       </div>
-    `;
-  }
 
-  // 최근 커뮤니티 게시물 미리보기 (최대 3개)
-  let recentPostsHtml = '';
-  const recentPosts = CommunityService.getFeed(1).slice(0, 3);
-  if (recentPosts.length > 0) {
-    const postsListHtml = recentPosts.map(post => {
-      const timeAgo = formatTimeAgo(post.createdAt);
-      const truncatedText = post.text.length > 60 ? post.text.substring(0, 60) + '...' : post.text;
-      return `
-        <div style="display:flex; gap:10px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--color-border);">
-          <div class="post-card__avatar" style="flex-shrink:0;">${post.authorName.charAt(0)}</div>
-          <div style="flex:1; min-width:0;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:600; font-size:0.85rem;">${post.authorName}</span>
-              <span style="font-size:0.75rem; color:var(--color-text-muted);">${timeAgo}</span>
-            </div>
-            <div style="font-size:0.85rem; color:var(--color-text); margin-top:4px;">${truncatedText}</div>
-            <div style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">❤️ ${post.likes} · 💬 ${post.comments.length}</div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    recentPostsHtml = `
-      <div style="margin-bottom:24px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="font-size:1.1rem; font-weight:800;">💬 최근 커뮤니티 소식</h3>
-          <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/community')">더보기</button>
-        </div>
-        <div class="card" style="padding:4px 16px;">
-          ${postsListHtml}
-        </div>
-      </div>
-    `;
-  }
-
-  // 비로그인 시 회원가입 유도 CTA
-  let ctaHtml = '';
-  if (!user) {
-    ctaHtml = `
-      <div style="background:var(--color-bg-card); border:2px dashed var(--color-primary-light); border-radius:var(--radius-md); padding:24px; text-align:center; margin-bottom:24px;">
-        <div style="font-size:2rem; margin-bottom:8px;">🐕</div>
-        <h3 style="font-size:1rem; font-weight:700; margin-bottom:6px;">지금 가입하고 함께해요! 🐶💗</h3>
-        <p style="font-size:0.85rem; color:var(--color-text-light); margin-bottom:16px;">회원가입하면 Paw 코인 적립, 산책 매칭, 커뮤니티 참여가 가능해요~</p>
-        <div style="display:flex; gap:8px; justify-content:center;">
-          <button class="btn btn-primary" onclick="Router.navigate('/register')">회원가입</button>
-          <button class="btn btn-secondary" onclick="Router.navigate('/login')">로그인</button>
-        </div>
-      </div>
-    `;
-  }
-
-  // 기능 카드 (기존 유지)
-  const featureCardsHtml = `
-    <div class="home-features">
-      <div class="feature-card" onclick="Router.navigate('/breeds')">
-        <div class="feature-icon">🐕</div>
-        <h3>품종 정보</h3>
-        <p>우리 아이 품종의 특성과 산책 팁</p>
-      </div>
-      <div class="feature-card" onclick="Router.navigate('/education')">
-        <div class="feature-icon">📚</div>
-        <h3>산책 교육</h3>
-        <p>올바른 산책 자세와 안전 수칙</p>
-      </div>
-      <div class="feature-card" onclick="Router.navigate('/ai-symptom')">
-        <div class="feature-icon">🩺</div>
-        <h3>AI 질병 분석</h3>
-        <p>증상 입력하면 AI가 분석해줘요</p>
-      </div>
-      <div class="feature-card" onclick="Router.navigate('/ai-consult')">
-        <div class="feature-icon">💭</div>
-        <h3>AI 훈련사 상담</h3>
-        <p>문제 행동 고민을 AI에게 물어봐요</p>
-      </div>
-      <div class="feature-card" onclick="Router.navigate('/community')">
-        <div class="feature-icon">💬</div>
-        <h3>커뮤니티</h3>
-        <p>반려인들과 소통하고 공유해요</p>
-      </div>
-      <div class="feature-card" onclick="Router.navigate('/wallet')">
-        <div class="feature-icon">🪙</div>
-        <h3>Paw 지갑</h3>
-        <p>활동으로 코인을 모으고 사용해요</p>
-      </div>
-      <div class="feature-card" onclick="Router.navigate('/matching')">
-        <div class="feature-icon">🤝</div>
-        <h3>산책 매칭</h3>
-        <p>가까운 산책 친구를 찾아봐요</p>
-      </div>
-      <div class="feature-card" onclick="Router.navigate('/profile')">
-        <div class="feature-icon">👤</div>
-        <h3>내 프로필</h3>
-        <p>프로필 관리 및 반려견 등록</p>
+      <div class="modern-footer">
+        <span class="modern-footer-item">© 2026 Pawsitive</span>
+        <span class="modern-footer-item">Seoul, Korea</span>
       </div>
     </div>
-  `;
-
-  renderPage(`
-    ${heroHtml}
-    ${walletSummaryHtml}
-    ${ctaHtml}
-    ${recentPostsHtml}
-    ${featureCardsHtml}
   `);
 }
 
@@ -2184,6 +2092,13 @@ function handleSocialAgreeSubmit() {
   StorageService.set('users', existingUsers);
   StorageService.remove('pendingSocialUser');
 
+  // 서버에 유저 동기화
+  fetch('/api/users/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...user, pawCoins: 3000 })
+  }).catch(() => {});
+
   // 가입 축하 3,000 PAW 코인 지급
   if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
     WalletService.earnCoins(user.id, 3000, '회원가입 축하 보상 🎉');
@@ -2462,6 +2377,13 @@ function handleSocialAuthCallback() {
         return;
       }
 
+      // 서버에 유저 동기화
+      fetch('/api/users/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+      }).catch(() => {});
+
       // 로그인 처리
       const safeUser = { ...user };
       delete safeUser.passwordHash;
@@ -2481,20 +2403,19 @@ function handleSocialAuthCallback() {
   }
 }
 
-function handleLogin() {
+async function handleLogin() {
   const email = document.getElementById('login-email')?.value;
   const password = document.getElementById('login-password')?.value;
   const remember = document.getElementById('login-remember')?.checked;
+  const errEl = document.getElementById('login-error');
 
   if (!email || !password) {
-    const errEl = document.getElementById('login-error');
     if (errEl) errEl.innerHTML = '<div class="alert alert-error">이메일과 비밀번호를 입력하세요.</div>';
     return;
   }
 
-  const result = AuthService.login(email, password);
+  const result = await AuthService.login(email, password);
   if (result.success) {
-    // 로그인 유지 체크 시 토큰 만료를 30일로 연장
     if (remember) {
       const token = StorageService.get('authToken');
       if (token) {
@@ -2505,12 +2426,11 @@ function handleLogin() {
     updateNavAuth();
     Router.navigate('/');
   } else {
-    const errEl = document.getElementById('login-error');
     if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
   }
 }
 
-function handleRegister() {
+async function handleRegister() {
   const name = document.getElementById('reg-name')?.value;
   const email = document.getElementById('reg-email')?.value;
   const password = document.getElementById('reg-password')?.value;
@@ -2536,7 +2456,7 @@ function handleRegister() {
     return;
   }
 
-  const result = AuthService.register({ name, email, password });
+  const result = await AuthService.register({ name, email, password });
   if (result.success) {
     updateNavAuth();
     alert('🎉 회원가입을 축하해요!\n\n🪙 가입 축하 3,000 PAW 코인이 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');

@@ -1,0 +1,65 @@
+[
+  {
+    "id": "id-mo2r9f32-eqgzlhg",
+    "userId": "id-mo2r9f31-nmcx76f",
+    "type": "earn",
+    "amount": 3000,
+    "reason": "회원가입 축하 보상 🎉",
+    "createdAt": "2026-04-17T10:18:27.614Z",
+    "balanceAfter": 3000
+  },
+  {
+    "id": "id-mo2rjvek-9cjmpci",
+    "userId": "id-mo2r9f31-nmcx76f",
+    "type": "earn",
+    "amount": 2000,
+    "reason": "그냥",
+    "createdAt": "2026-04-17T10:26:35.324Z",
+    "balanceAfter": 5000
+  },
+  {
+    "id": "id-mo2rm68s-phvn5st",
+    "userId": "id-mo2r9f31-nmcx76f",
+    "type": "spend",
+    "amount": 5000,
+    "reason": "내맘",
+    "createdAt": "2026-04-17T10:28:22.685Z",
+    "balanceAfter": 0
+  },
+  {
+    "id": "id-mo2rsxcc-qw3reuj",
+    "userId": "id-mnsm12ov-kpkaldi",
+    "type": "earn",
+    "amount": 5,
+    "reason": "교육 콘텐츠 완료",
+    "createdAt": "2026-04-17T10:33:37.740Z",
+    "balanceAfter": 5
+  },
+  {
+    "id": "id-mo2rszto-ko35wjv",
+    "userId": "id-mnsm12ov-kpkaldi",
+    "type": "earn",
+    "amount": 5,
+    "reason": "교육 콘텐츠 완료",
+    "createdAt": "2026-04-17T10:33:40.956Z",
+    "balanceAfter": 10
+  },
+  {
+    "id": "id-mo2rtc4t-0bts5et",
+    "userId": "id-mnsm12ov-kpkaldi",
+    "type": "earn",
+    "amount": 5,
+    "reason": "교육 콘텐츠 완료",
+    "createdAt": "2026-04-17T10:33:56.909Z",
+    "balanceAfter": 15
+  },
+  {
+    "id": "id-mo2s599y-5hp1iqy",
+    "userId": "id-mnsm12ov-kpkaldi",
+    "type": "earn",
+    "amount": 5,
+    "reason": "교육 콘텐츠 완료",
+    "createdAt": "2026-04-17T10:43:13.078Z",
+    "balanceAfter": 20
+  }
+]
