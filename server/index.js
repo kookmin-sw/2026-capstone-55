@@ -32,19 +32,17 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // 개발환경에서는 false
-    maxAge: 24 * 60 * 60 * 1000 // 24시간
+    secure: false,
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-// --- Passport 직렬화 ---
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
 
-// --- Passport 전략 설정 ---
 require('./config/passport')(passport);
 
 // --- 라우트 ---
@@ -60,7 +58,6 @@ app.use('/api/users', userRoutes);
 // --- 정적 파일 (프론트엔드) ---
 app.use(express.static(path.join(__dirname, '..')));
 
-// 모든 경로를 index.html로 (SPA)
 app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
