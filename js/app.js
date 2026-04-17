@@ -584,6 +584,8 @@ function renderBreedListPage() {
       ${renderBreedCards(BreedService.getAll())}
     </div>
   `);
+  // 견종 이미지 로드
+  setTimeout(() => BreedImageService.loadAll(), 100);
 }
 
 function renderBreedCards(breeds) {
@@ -597,7 +599,7 @@ function renderBreedCards(breeds) {
   const exerciseMap = { low: '낮음', medium: '보통', high: '높음' };
   return breeds.map(breed => `
     <div class="card" onclick="Router.navigate('/breeds/${breed.id}')" style="cursor:pointer;">
-      <div class="card__image" style="background: linear-gradient(135deg, #FFB3C6, #C9A9E9); display:flex; align-items:center; justify-content:center; font-size:3rem;">🐕</div>
+      <div class="card__image breed-img" data-breed-id="${breed.id}" style="background: linear-gradient(135deg, #FFB3C6, #C9A9E9); display:flex; align-items:center; justify-content:center; font-size:3rem; position:relative;">🐕</div>
       <div class="card__body">
         <div class="card__title">${breed.name}</div>
         <div class="card__subtitle">
@@ -615,7 +617,10 @@ function renderBreedCards(breeds) {
 function handleBreedSearch(keyword) {
   const filtered = BreedService.search(keyword);
   const list = document.getElementById('breed-list');
-  if (list) list.innerHTML = renderBreedCards(filtered);
+  if (list) {
+    list.innerHTML = renderBreedCards(filtered);
+    setTimeout(() => BreedImageService.loadAll(), 100);
+  }
 }
 
 // --- 품종 상세 페이지 ---
@@ -634,29 +639,110 @@ function renderBreedDetailPage(params) {
   }
 
   const sizeMap = { small: '소형', medium: '중형', large: '대형' };
-  const exerciseMap = { low: '낮음 🟢', medium: '보통 🟡', high: '높음 🔴' };
+  const levelMap = { low: '낮음', medium: '보통', high: '높음' };
+  const levelColor = { low: 'badge-success', medium: 'badge-info', high: 'badge-error' };
 
   renderPage(`
     <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds')" style="margin-bottom:16px;">← 목록으로</button>
     <div class="detail-header">
-      <div style="width:100%; height:260px; background: linear-gradient(135deg, #FFB3C6, #C9A9E9); border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:5rem; margin-bottom:16px;">🐕</div>
-      <h1>${breed.name}</h1>
-      <div style="margin-top:8px;">
+      <div id="breed-detail-img" data-breed-id="${breed.id}" style="width:100%; height:260px; background: linear-gradient(135deg, #FFB3C6, #C9A9E9); border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:5rem; margin-bottom:16px; position:relative;">🐕</div>
+      <h1>${breed.name} ${breed.nameEn ? '<span style="font-size:0.9rem; color:var(--color-text-light); font-weight:600;">' + breed.nameEn + '</span>' : ''}</h1>
+      <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
         <span class="badge badge-primary">${sizeMap[breed.size]}</span>
-        <span class="badge badge-info" style="margin-left:4px;">운동량: ${exerciseMap[breed.exerciseLevel]}</span>
+        ${breed.group ? '<span class="badge badge-info">' + breed.group + '</span>' : ''}
+        ${breed.origin ? '<span class="badge badge-success">' + breed.origin + '</span>' : ''}
       </div>
     </div>
+
+    ${breed.lifespan || breed.weight || breed.height ? `
+    <div class="card" style="padding:20px; margin-bottom:16px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:12px; text-align:center;">
+        ${breed.lifespan ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">수명</div><div style="font-weight:800; margin-top:2px;">' + breed.lifespan + '</div></div>' : ''}
+        ${breed.weight ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">체중</div><div style="font-weight:800; margin-top:2px;">' + breed.weight + '</div></div>' : ''}
+        ${breed.height ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">키</div><div style="font-weight:800; margin-top:2px;">' + breed.height + '</div></div>' : ''}
+      </div>
+    </div>` : ''}
+
+    <div class="card" style="padding:20px; margin-bottom:16px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px; text-align:center;">
+        <div><div style="font-size:0.75rem; color:var(--color-text-muted);">운동량</div><span class="badge ${levelColor[breed.exerciseLevel]}" style="margin-top:4px;">${levelMap[breed.exerciseLevel]}</span></div>
+        ${breed.groomingLevel ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">미용 관리</div><span class="badge ' + levelColor[breed.groomingLevel] + '" style="margin-top:4px;">' + levelMap[breed.groomingLevel] + '</span></div>' : ''}
+        ${breed.trainability ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">훈련 난이도</div><span class="badge ' + levelColor[breed.trainability] + '" style="margin-top:4px;">' + levelMap[breed.trainability] + '</span></div>' : ''}
+        ${breed.barkingLevel ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">짖음</div><span class="badge ' + levelColor[breed.barkingLevel] + '" style="margin-top:4px;">' + levelMap[breed.barkingLevel] + '</span></div>' : ''}
+        ${breed.childFriendly !== undefined ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">아이 친화</div><div style="font-weight:800; margin-top:4px;">' + (breed.childFriendly ? '⭕' : '❌') + '</div></div>' : ''}
+        ${breed.apartmentFriendly !== undefined ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">아파트 적합</div><div style="font-weight:800; margin-top:4px;">' + (breed.apartmentFriendly ? '⭕' : '❌') + '</div></div>' : ''}
+      </div>
+    </div>
+
     <div class="detail-section">
-      <h3>🐾 성격</h3>
+      <h3>성격</h3>
       <p>${breed.personality}</p>
     </div>
-    <div class="detail-section">
-      <h3>⚠️ 주의사항</h3>
-      <ul style="padding-left:20px;">
-        ${breed.cautions.map(c => `<li style="margin-bottom:4px;">${c}</li>`).join('')}
-      </ul>
+
+    ${breed.cautions ? '<div class="detail-section"><h3>주의사항</h3><ul style="padding-left:20px;">' + breed.cautions.map(c => '<li style="margin-bottom:4px;">' + c + '</li>').join('') + '</ul></div>' : ''}
+
+    ${breed.healthIssues ? '<div class="detail-section"><h3>주요 건강 문제</h3><ul style="padding-left:20px;">' + breed.healthIssues.map(h => '<li style="margin-bottom:4px;">' + h + '</li>').join('') + '</ul></div>' : ''}
+
+    ${breed.dietTips ? '<div class="detail-section"><h3>식이 가이드</h3><p>' + breed.dietTips + '</p></div>' : ''}
+
+    ${breed.exerciseTips ? '<div class="detail-section"><h3>운동 가이드</h3><p>' + breed.exerciseTips + '</p></div>' : ''}
+
+    ${breed.groomingTips ? '<div class="detail-section"><h3>미용/관리 가이드</h3><p>' + breed.groomingTips + '</p></div>' : ''}
+
+    ${breed.funFact ? '<div class="card" style="padding:20px; margin-bottom:16px; background:var(--color-bg-warm);"><h3 style="margin-bottom:8px;">알고 계셨나요?</h3><p style="font-size:0.9rem;">' + breed.funFact + '</p></div>' : ''}
+
+    <div class="card" style="padding:24px; margin-top:20px;">
+      <h3 style="margin-bottom:12px;">AI에게 ${breed.name}에 대해 물어보기</h3>
+      <div id="breed-ai-result"></div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="breed-ai-input" class="form-input" placeholder="${breed.name}에 대해 궁금한 점을 물어보세요~" style="flex:1;" onkeydown="if(event.key==='Enter')handleBreedAiQuestion('${breed.name}')">
+        <button class="btn btn-primary" onclick="handleBreedAiQuestion('${breed.name}')" id="breed-ai-btn">질문하기</button>
+      </div>
     </div>
   `);
+  // 견종 상세 이미지 로드
+  setTimeout(() => {
+    const imgEl = document.getElementById('breed-detail-img');
+    if (imgEl) BreedImageService.loadInto(imgEl, breed, true);
+  }, 100);
+}
+
+/**
+ * 품종 AI 질문 핸들러
+ */
+async function handleBreedAiQuestion(breedName) {
+  const input = document.getElementById('breed-ai-input');
+  const resultEl = document.getElementById('breed-ai-result');
+  const btn = document.getElementById('breed-ai-btn');
+  const question = input?.value?.trim();
+
+  if (!question) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = '답변 중...'; }
+  if (resultEl) resultEl.innerHTML = '<div style="text-align:center; padding:16px;"><div class="spinner"></div></div>';
+
+  try {
+    const res = await fetch('/api/ai/consult', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: breedName + '에 대한 질문: ' + question,
+        history: []
+      })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      const formatted = data.reply.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      resultEl.innerHTML = '<div style="background:var(--color-bg-warm); border-radius:12px; padding:16px; margin-bottom:12px; line-height:1.8; font-size:0.9rem;">' + formatted + '</div>';
+    } else {
+      resultEl.innerHTML = '<div class="alert alert-error">' + data.error + '</div>';
+    }
+  } catch (e) {
+    resultEl.innerHTML = '<div class="alert alert-error">AI 응답에 실패했어요. 잠시 후 다시 시도해주세요.</div>';
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '질문하기'; }
 }
 
 // --- 교육 콘텐츠 페이지 ---
@@ -3292,9 +3378,11 @@ function renderAdminPage() {
       <td style="padding:10px 8px; font-size:0.82rem;">${u.referralCode || '-'}</td>
       <td style="padding:10px 8px; font-size:0.82rem;">${new Date(u.createdAt).toLocaleDateString('ko-KR')}</td>
       <td style="padding:10px 8px;">
+        ${u.isAdmin ? '<span style="font-size:0.8rem; color:var(--color-text-muted); font-weight:700;">총관리자</span>' : `
         <button class="btn btn-sm btn-secondary" onclick="adminGiveCoins('${u.id}')">코인지급</button>
         <button class="btn btn-sm" style="background:var(--color-accent); color:#fff;" onclick="adminTakeCoins('${u.id}')">코인회수</button>
         <button class="btn btn-sm btn-danger" onclick="adminDeleteUser('${u.id}', '${u.nickname || u.name}')">삭제</button>
+        `}
       </td>
     </tr>
   `).join('');
@@ -3443,11 +3531,13 @@ function renderNotFoundPage() {
 // ============================================================
 
 function initApp() {
-  // 관리자 계정 자동 생성
-  ensureAdminAccount();
+  // 서버에서 공유 데이터 로드 후 앱 시작
+  StorageService.syncFromServer().then(() => {
+    // 관리자 계정 자동 생성
+    ensureAdminAccount();
 
-  // 네비게이션 바 렌더링
-  renderNavbar();
+    // 네비게이션 바 렌더링
+    renderNavbar();
 
   // 라우트 등록
   Router.register('/', renderHomePage);
@@ -3477,6 +3567,12 @@ function initApp() {
   Router.init();
 
   console.log('[Pawsitive] 앱이 초기화되었습니다. 🐾');
+  }).catch(e => {
+    console.error('[Pawsitive] 서버 동기화 실패, 로컬 모드로 시작:', e);
+    ensureAdminAccount();
+    renderNavbar();
+    Router.init();
+  });
 }
 
 // DOM 로드 후 앱 초기화

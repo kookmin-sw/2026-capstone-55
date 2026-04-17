@@ -1,155 +1,118 @@
 /**
- * LocalStorage 유틸리티 서비스
- * LocalStorage 접근 불가 시 인메모리 폴백 처리 포함
+ * StorageService - 서버 동기화 + LocalStorage 하이브리드
+ * 공유 데이터: 서버 JSON DB에 저장 (모든 사용자가 공유)
+ * 개인 데이터: localStorage에 저장 (로그인 상태 등)
  */
 
 const StorageService = (() => {
-  // 인메모리 폴백 저장소
-  const memoryStore = {};
-  let useMemory = false;
+  // 서버와 동기화할 키 목록
+  const SHARED_KEYS = ['users', 'communityPosts', 'transactions', 'matchRequests',
+    'walkSchedules', 'reviews', 'matchProfiles', 'notices', 'walkers'];
 
-  // LocalStorage 사용 가능 여부 확인
-  function isLocalStorageAvailable() {
-    try {
-      const testKey = '__pawsitive_test__';
-      localStorage.setItem(testKey, 'test');
-      localStorage.removeItem(testKey);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // 초기화 시 LocalStorage 가용성 확인
-  if (!isLocalStorageAvailable()) {
-    useMemory = true;
-    console.warn('[Pawsitive] LocalStorage를 사용할 수 없습니다. 인메모리 저장소를 사용합니다.');
-  }
+  // 로컬 캐시 (서버 데이터의 메모리 캐시)
+  const cache = {};
 
   /**
    * 데이터 저장
-   * @param {string} key - 저장 키
-   * @param {*} value - 저장할 값 (자동 JSON 직렬화)
-   * @returns {boolean} 저장 성공 여부
    */
   function set(key, value) {
-    const prefixedKey = 'pawsitive_' + key;
+    // 공유 데이터 → 서버에 저장 + 캐시 업데이트
+    if (SHARED_KEYS.includes(key)) {
+      cache[key] = value;
+      // 비동기로 서버에 저장 (UI 블로킹 안 함)
+      fetch('/api/data/' + key, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(value)
+      }).catch(e => console.warn('[Storage] 서버 저장 실패:', e.message));
+      return true;
+    }
+
+    // 개인 데이터 → localStorage
     try {
-      const serialized = JSON.stringify(value);
-      if (useMemory) {
-        memoryStore[prefixedKey] = serialized;
-      } else {
-        localStorage.setItem(prefixedKey, serialized);
-      }
+      localStorage.setItem('pawsitive_' + key, JSON.stringify(value));
       return true;
     } catch (e) {
-      console.error('[Pawsitive] 데이터 저장 실패:', e);
+      console.error('[Storage] 저장 실패:', e);
       return false;
     }
   }
 
   /**
    * 데이터 조회
-   * @param {string} key - 조회 키
-   * @param {*} defaultValue - 기본값 (키가 없을 때)
-   * @returns {*} 저장된 값 또는 기본값
    */
   function get(key, defaultValue = null) {
-    const prefixedKey = 'pawsitive_' + key;
+    // 공유 데이터 → 캐시에서 반환
+    if (SHARED_KEYS.includes(key)) {
+      return cache[key] !== undefined ? cache[key] : defaultValue;
+    }
+
+    // 개인 데이터 → localStorage
     try {
-      const raw = useMemory
-        ? memoryStore[prefixedKey]
-        : localStorage.getItem(prefixedKey);
-      if (raw === null || raw === undefined) {
-        return defaultValue;
-      }
+      const raw = localStorage.getItem('pawsitive_' + key);
+      if (raw === null) return defaultValue;
       return JSON.parse(raw);
     } catch (e) {
-      console.error('[Pawsitive] 데이터 파싱 오류:', e);
       return defaultValue;
     }
   }
 
   /**
    * 데이터 삭제
-   * @param {string} key - 삭제할 키
-   * @returns {boolean} 삭제 성공 여부
    */
   function remove(key) {
-    const prefixedKey = 'pawsitive_' + key;
+    if (SHARED_KEYS.includes(key)) {
+      delete cache[key];
+      return true;
+    }
     try {
-      if (useMemory) {
-        delete memoryStore[prefixedKey];
-      } else {
-        localStorage.removeItem(prefixedKey);
-      }
+      localStorage.removeItem('pawsitive_' + key);
       return true;
     } catch (e) {
-      console.error('[Pawsitive] 데이터 삭제 실패:', e);
       return false;
     }
   }
 
   /**
-   * Pawsitive 관련 모든 데이터 삭제
-   * @returns {boolean} 성공 여부
+   * 서버에서 공유 데이터 로드 (앱 시작 시 호출)
    */
-  function clear() {
-    try {
-      if (useMemory) {
-        Object.keys(memoryStore).forEach(key => {
-          if (key.startsWith('pawsitive_')) {
-            delete memoryStore[key];
-          }
-        });
-      } else {
-        const keys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('pawsitive_')) {
-            keys.push(key);
-          }
+  async function syncFromServer() {
+    for (const key of SHARED_KEYS) {
+      try {
+        const res = await fetch('/api/data/' + key);
+        if (res.ok) {
+          const data = await res.json();
+          cache[key] = data;
         }
-        keys.forEach(key => localStorage.removeItem(key));
+      } catch (e) {
+        console.warn('[Storage] 서버 동기화 실패 (' + key + '):', e.message);
+        cache[key] = [];
       }
-      return true;
-    } catch (e) {
-      console.error('[Pawsitive] 데이터 초기화 실패:', e);
-      return false;
     }
+    console.log('[Storage] 서버 데이터 동기화 완료');
   }
 
-  /**
-   * 인메모리 모드 여부 확인
-   * @returns {boolean}
-   */
-  function isUsingMemory() {
-    return useMemory;
+  function clear() {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('pawsitive_')) keys.push(key);
+    }
+    keys.forEach(key => localStorage.removeItem(key));
+    return true;
   }
 
-  /**
-   * UUID 생성 유틸리티
-   * @returns {string}
-   */
+  function isUsingMemory() { return false; }
+
   function generateId() {
     return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 9);
   }
 
-  /**
-   * 현재 ISO 타임스탬프 반환
-   * @returns {string}
-   */
   function now() {
     return new Date().toISOString();
   }
 
   return {
-    set,
-    get,
-    remove,
-    clear,
-    isUsingMemory,
-    generateId,
-    now
+    set, get, remove, clear, isUsingMemory, generateId, now, syncFromServer
   };
 })();
