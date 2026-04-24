@@ -376,74 +376,76 @@ const MatchingService = (() => {
     return localWalkers;
   }
 
-  /** 주변 도우미 전체에게 산책 요청 브로드캐스트 */
-  function broadcastWalkRequest(fromId, requestData) {
-    const targets = getAvailableWalkers().filter(w => {
-      if (w.userId === fromId) return false;
-      if (!requestData.location || !w.location) return true;
-      const reqCity = requestData.location.trim().split(' ')[0];
-      return w.location.includes(reqCity);
-    });
-
-    if (targets.length === 0) {
-      return { success: false, error: '현재 주변에 산책 가능한 도우미가 없습니다.' };
-    }
-
-    const broadcastId = StorageService.generateId();
-    const requests = getAllRequests();
-
-    targets.forEach(walker => {
-      requests.push({
-        id: StorageService.generateId(),
-        broadcastId,
-        fromUserId: fromId,
-        toUserId: walker.userId,
-        requestData: { ...requestData },
-        status: 'pending',
-        createdAt: StorageService.now()
+  /** 브로드캐스트 요청 — 서버 API 우선, 실패 시 로컬 fallback */
+  async function broadcastWalkRequest(fromId, requestData) {
+    try {
+      const res    = await fetch('/api/matching/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromUserId: fromId, requestData })
       });
-    });
-
-    saveRequests(requests);
-    return { success: true, broadcastId, targetCount: targets.length };
+      return await res.json();
+    } catch (e) {
+      // 로컬 fallback
+      const targets = getAvailableWalkers().filter(w => {
+        if (w.userId === fromId) return false;
+        if (!requestData.location || !w.location) return true;
+        return w.location.includes(requestData.location.trim().split(' ')[0]);
+      });
+      if (targets.length === 0) return { success: false, error: '현재 주변에 산책 가능한 도우미가 없습니다.' };
+      const broadcastId = StorageService.generateId();
+      const requests    = getAllRequests();
+      targets.forEach(walker => {
+        requests.push({ id: StorageService.generateId(), broadcastId, fromUserId: fromId, toUserId: walker.userId, requestData: { ...requestData }, status: 'pending', createdAt: StorageService.now() });
+      });
+      saveRequests(requests);
+      return { success: true, broadcastId, targetCount: targets.length };
+    }
   }
 
-  /** 브로드캐스트 요청 수락 — 먼저 수락한 도우미가 매칭, 나머지는 자동 거절 */
-  function acceptBroadcastRequest(requestId) {
-    const requests = getAllRequests();
-    const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) return { success: false, error: '요청을 찾을 수 없습니다.' };
-
-    const req = requests[idx];
-    if (req.status !== 'pending') {
-      return { success: false, alreadyMatched: true };
+  /** 받은 요청 조회 — 서버 API 우선 */
+  async function getReceivedRequestsRemote(userId) {
+    try {
+      const res    = await fetch(`/api/matching/requests?userId=${userId}`);
+      const result = await res.json();
+      return result.requests || [];
+    } catch (e) {
+      return getAllRequests().filter(r => r.toUserId === userId && (r.status === 'pending' || r.status === 'accepted'));
     }
+  }
 
-    requests[idx].status = 'accepted';
-
-    if (req.broadcastId) {
-      requests.forEach((r, i) => {
-        if (r.broadcastId === req.broadcastId && r.id !== requestId && r.status === 'pending') {
-          requests[i].status = 'rejected_matched';
-        }
-      });
+  /** 브로드캐스트 요청 수락 — 서버 API 우선 */
+  async function acceptBroadcastRequest(requestId) {
+    try {
+      const res    = await fetch(`/api/matching/requests/${requestId}/accept`, { method: 'PATCH' });
+      return await res.json();
+    } catch (e) {
+      // 로컬 fallback
+      const requests = getAllRequests();
+      const idx      = requests.findIndex(r => r.id === requestId);
+      if (idx === -1) return { success: false };
+      if (requests[idx].status !== 'pending') return { success: false, alreadyMatched: true };
+      requests[idx].status = 'accepted';
+      if (requests[idx].broadcastId) {
+        requests.forEach((r, i) => {
+          if (r.broadcastId === requests[idx].broadcastId && r.id !== requestId && r.status === 'pending') requests[i].status = 'rejected_matched';
+        });
+      }
+      saveRequests(requests);
+      const r        = requests[idx];
+      const schedule = { id: StorageService.generateId(), matchRequestId: r.id, participants: [r.fromUserId, r.toUserId], scheduledAt: new Date(Date.now() + 86400000).toISOString(), status: 'scheduled' };
+      const schedules = getAllSchedules(); schedules.push(schedule); saveSchedules(schedules);
+      return { success: true, schedule };
     }
+  }
 
-    saveRequests(requests);
-
-    const schedule = {
-      id: StorageService.generateId(),
-      matchRequestId: req.id,
-      participants: [req.fromUserId, req.toUserId],
-      scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      status: 'scheduled'
-    };
-
-    const schedules = getAllSchedules();
-    schedules.push(schedule);
-    saveSchedules(schedules);
-
-    return { success: true, schedule };
+  /** 요청 거절 — 서버 API 우선 */
+  async function rejectRequestRemote(requestId) {
+    try {
+      await fetch(`/api/matching/requests/${requestId}/reject`, { method: 'PATCH' });
+    } catch (e) {
+      rejectRequest(requestId);
+    }
   }
 
   return {
@@ -463,6 +465,8 @@ const MatchingService = (() => {
     acceptBroadcastRequest,
     broadcastWalkRequest,
     rejectRequest,
+    rejectRequestRemote,
+    getReceivedRequestsRemote,
     completeWalk,
     addReview,
     getReceivedRequests,

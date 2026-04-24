@@ -415,6 +415,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   margin: 0 auto;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes pawFloat { 0%,100%{transform:none;} }
 
 /* ===== RESPONSIVE ===== */

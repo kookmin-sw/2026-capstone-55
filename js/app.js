@@ -267,6 +267,9 @@ const Router = (() => {
   function resolve() {
     const path = getPath();
 
+    // 매칭 페이지 벗어나면 폴링 정지
+    if (typeof stopWalkerPolling === 'function' && path !== '/matching') stopWalkerPolling();
+
     // 정확한 매칭 먼저 시도
     if (routes[path]) {
       currentRoute = path;
@@ -1435,9 +1438,49 @@ function handleRegisterMatchProfile(role) {
   renderMatchingPage();
 }
 
+// 도우미 폴링 인터벌 관리
+let _walkerPollInterval = null;
+let _walkerLastRequestIds = new Set();
+
+function startWalkerPolling(userId) {
+  stopWalkerPolling();
+  _walkerPollInterval = setInterval(async () => {
+    try {
+      const requests = await MatchingService.getReceivedRequestsRemote(userId);
+      const pending  = requests.filter(r => r.status === 'pending');
+      const newOnes  = pending.filter(r => !_walkerLastRequestIds.has(r.id));
+      if (newOnes.length > 0) {
+        newOnes.forEach(r => _walkerLastRequestIds.add(r.id));
+        showWalkerNotification(newOnes.length);
+        const user = AuthService.getCurrentUser();
+        const profile = MatchingService.getMyProfile(userId);
+        if (user && profile) renderWalkerDashboard(user, profile);
+      }
+    } catch (e) { /* 네트워크 오류 무시 */ }
+  }, 5000);
+}
+
+function stopWalkerPolling() {
+  if (_walkerPollInterval) { clearInterval(_walkerPollInterval); _walkerPollInterval = null; }
+}
+
+function showWalkerNotification(count) {
+  let notif = document.getElementById('walker-notif-popup');
+  if (!notif) {
+    notif = document.createElement('div');
+    notif.id = 'walker-notif-popup';
+    notif.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;background:#1A1A1A;color:#fff;padding:16px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25);font-size:0.9rem;font-weight:600;display:flex;align-items:center;gap:10px;animation:slideInRight 0.3s ease;max-width:280px;';
+    document.body.appendChild(notif);
+  }
+  notif.innerHTML = `<span style="font-size:1.4rem;">🔔</span><div><div style="font-weight:700;">근처에서 산책 요청이 들어왔어요!</div><div style="font-size:0.78rem;opacity:0.8;margin-top:2px;">새 요청 ${count}건 · 지금 확인하세요</div></div>`;
+  notif.style.display = 'flex';
+  clearTimeout(notif._hideTimer);
+  notif._hideTimer = setTimeout(() => { if (notif) notif.style.display = 'none'; }, 6000);
+}
+
 /** 산책 도우미 대시보드 */
-function renderWalkerDashboard(user, myProfile) {
-  const receivedRequests = MatchingService.getReceivedRequests(user.id);
+async function renderWalkerDashboard(user, myProfile) {
+  const receivedRequests = await MatchingService.getReceivedRequestsRemote(user.id);
   const scheduledWalks   = MatchingService.getScheduledWalks(user.id);
   const completedWalks   = MatchingService.getCompletedWalks(user.id);
   const isAvail          = myProfile.isAvailable;
@@ -1548,6 +1591,9 @@ function renderWalkerDashboard(user, myProfile) {
     ${completedWalks.length > 0 ? `<div class="match-section"><h2 class="match-section__title">✅ 완료된 산책</h2>${completedHtml}</div>` : ''}
     <div id="review-form-container"></div>
   `);
+
+  // 폴링 시작 — 5초마다 새 요청 확인
+  startWalkerPolling(user.id);
 }
 
 /** 산책 요청자 대시보드 */
@@ -1660,13 +1706,13 @@ function handleToggleMatcherAvailability() {
 }
 
 /** 전체 브로드캐스트 요청 */
-function handleBroadcastWalkRequest() {
+async function handleBroadcastWalkRequest() {
   const user = AuthService.getCurrentUser();
   if (!user) return;
   const myProfile = MatchingService.getMyProfile(user.id);
   if (!myProfile) return;
 
-  const result = MatchingService.broadcastWalkRequest(user.id, {
+  const result = await MatchingService.broadcastWalkRequest(user.id, {
     dogName:     myProfile.dogName || '',
     dogSize:     myProfile.dogSize || '',
     location:    myProfile.location || '',
@@ -1689,10 +1735,11 @@ function handleBroadcastWalkRequest() {
 }
 
 /** 브로드캐스트 요청 수락 (선착순 매칭) */
-function handleAcceptBroadcastRequest(requestId) {
-  const result = MatchingService.acceptBroadcastRequest(requestId);
+async function handleAcceptBroadcastRequest(requestId) {
+  const result  = await MatchingService.acceptBroadcastRequest(requestId);
   const alertEl = document.getElementById('matching-alert');
   if (result.success) {
+    stopWalkerPolling();
     if (alertEl) {
       alertEl.innerHTML = '<div class="alert alert-success">✅ 산책 요청을 수락했습니다. 매칭이 완료되었습니다!</div>';
       setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
@@ -1707,8 +1754,8 @@ function handleAcceptBroadcastRequest(requestId) {
 }
 
 /** 요청 거절 */
-function handleRejectMatchRequest(requestId) {
-  MatchingService.rejectRequest(requestId);
+async function handleRejectMatchRequest(requestId) {
+  await MatchingService.rejectRequestRemote(requestId);
   renderMatchingPage();
 }
 

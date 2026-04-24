@@ -10,12 +10,13 @@ const passport = require('passport');
 const cors = require('cors');
 const path = require('path');
 
-const authRoutes    = require('./routes/auth');
-const emailRoutes   = require('./routes/email');
-const aiRoutes      = require('./routes/ai');
-const walkerRoutes  = require('./routes/walkers');
-const dataRoutes    = require('./routes/data');
-const userRoutes    = require('./routes/users');
+const authRoutes     = require('./routes/auth');
+const emailRoutes    = require('./routes/email');
+const aiRoutes       = require('./routes/ai');
+const walkerRoutes   = require('./routes/walkers');
+const dataRoutes     = require('./routes/data');
+const userRoutes     = require('./routes/users');
+const matchingRoutes = require('./routes/matching');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,6 +53,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/walkers', walkerRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/matching', matchingRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
 app.use(express.static(path.join(__dirname, '..')));
