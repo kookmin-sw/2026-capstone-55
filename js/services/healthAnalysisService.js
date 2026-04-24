@@ -5,7 +5,7 @@
 const HealthAnalysisService = (() => {
 
   // AI 건강 분석 요청
-  async function analyzeHealth(userId, dogInfo) {
+  async function analyzeHealth(userId, dogInfo, dogId) {
     try {
       const resp = await fetch('/api/health/analyze', {
         method: 'POST',
@@ -14,8 +14,9 @@ const HealthAnalysisService = (() => {
       });
       const data = await resp.json();
       if (data.success) {
-        // 로컬 캐시
-        StorageService.set(`healthAnalysis_${userId}`, {
+        // 반려견별 로컬 캐시
+        const cacheKey = `healthAnalysis_${userId}_${dogId || '_all'}`;
+        StorageService.set(cacheKey, {
           analysis: data.analysis,
           analyzedAt: new Date().toISOString()
         });
@@ -28,9 +29,10 @@ const HealthAnalysisService = (() => {
     }
   }
 
-  // 캐시된 분석 결과 조회
-  function getCachedAnalysis(userId) {
-    return StorageService.get(`healthAnalysis_${userId}`, null);
+  // 캐시된 분석 결과 조회 (반려견별)
+  function getCachedAnalysis(userId, dogId) {
+    const cacheKey = `healthAnalysis_${userId}_${dogId || '_all'}`;
+    return StorageService.get(cacheKey, null);
   }
 
   // 건강 프로필 조회

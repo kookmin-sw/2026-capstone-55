@@ -35,7 +35,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 function getGemini() {
   if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes('여기에')) return null;
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 }
 
 // 종합 건강 분석 (행동 패턴 + 비만 위험 + 식단 + 예방접종)
@@ -44,9 +44,26 @@ router.post('/analyze', async (req, res) => {
     const { userId, dogInfo } = req.body;
     if (!userId) return res.status(400).json({ error: 'userId 필요' });
 
-    const walks = loadWalks().filter(w => w.userId === userId);
+    // dogInfo.name 기준으로 산책 데이터 필터링
+    let walks = loadWalks().filter(w => w.userId === userId);
+    if (dogInfo?.name) {
+      walks = walks.filter(w => w.dogName === dogInfo.name || w.dogId === dogInfo.name);
+    }
     const model = getGemini();
     if (!model) return res.status(500).json({ error: 'AI 서비스 미설정' });
+
+    // 업로드된 서류 정보 로드
+    let uploadedDocs = [];
+    try {
+      const metaFile = path.join(__dirname, '..', 'uploads', 'metadata.json');
+      if (fs.existsSync(metaFile)) {
+        const allDocs = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+        uploadedDocs = allDocs.filter(d => d.userId === userId);
+      }
+    } catch(e) {}
+
+    const vaccinationDocs = uploadedDocs.filter(d => d.type === 'vaccination');
+    const diagnosisDocs = uploadedDocs.filter(d => d.type === 'diagnosis');
 
     // 산책 데이터 요약
     const recentWalks = walks.slice(-30);
@@ -70,6 +87,14 @@ router.post('/analyze', async (req, res) => {
 - 나이: ${dogInfo?.age || '미등록'}
 - 체중: ${dogInfo?.weight || '미등록'}kg
 - 크기: ${dogInfo?.size || '미등록'}
+- 성별: ${dogInfo?.gender === 'male' ? '수컷' : dogInfo?.gender === 'female' ? '암컷' : '미등록'}
+- 중성화: ${dogInfo?.neutered === true ? '완료' : dogInfo?.neutered === false ? '미완료' : '미등록'}
+- 성향: ${dogInfo?.personality || '미등록'}
+- 건강 특이사항: ${dogInfo?.healthNote || '없음'}
+
+## 건강 서류 현황
+- 예방접종 기록: ${vaccinationDocs.length > 0 ? vaccinationDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
+- 진단서: ${diagnosisDocs.length > 0 ? diagnosisDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
 
 ## 최근 산책 데이터 (최대 30일)
 - 총 산책 횟수: ${recentWalks.length}회

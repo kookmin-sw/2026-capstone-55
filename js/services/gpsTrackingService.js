@@ -141,9 +141,10 @@ const GPSTrackingService = (() => {
   }
 
   // 산책 기록 조회
-  async function getWalkHistory(userId) {
+  async function getWalkHistory(userId, dogId) {
     try {
-      const resp = await fetch(`/api/walks/history/${userId}`);
+      const url = dogId ? `/api/walks/history/${userId}?dogId=${encodeURIComponent(dogId)}` : `/api/walks/history/${userId}`;
+      const resp = await fetch(url);
       const data = await resp.json();
       return data.success ? data.walks : [];
     } catch (e) {
@@ -152,9 +153,10 @@ const GPSTrackingService = (() => {
   }
 
   // 산책 통계 조회
-  async function getWalkStats(userId) {
+  async function getWalkStats(userId, dogId) {
     try {
-      const resp = await fetch(`/api/walks/stats/${userId}`);
+      const url = dogId ? `/api/walks/stats/${userId}?dogId=${encodeURIComponent(dogId)}` : `/api/walks/stats/${userId}`;
+      const resp = await fetch(url);
       const data = await resp.json();
       return data.success ? data.stats : null;
     } catch (e) {

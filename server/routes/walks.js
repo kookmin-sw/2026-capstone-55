@@ -56,23 +56,28 @@ router.post('/save', (req, res) => {
   }
 });
 
-// 사용자 산책 기록 조회
+// 사용자 산책 기록 조회 (dogId 쿼리 파라미터로 필터링 가능)
 router.get('/history/:userId', (req, res) => {
   try {
     const walks = loadWalks();
-    const userWalks = walks
-      .filter(w => w.userId === req.params.userId)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    let userWalks = walks.filter(w => w.userId === req.params.userId);
+    if (req.query.dogId) {
+      userWalks = userWalks.filter(w => w.dogId === req.query.dogId || w.dogName === req.query.dogId);
+    }
+    userWalks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     res.json({ success: true, walks: userWalks });
   } catch (e) {
     res.status(500).json({ error: '산책 기록 조회 실패' });
   }
 });
 
-// 산책 통계 조회
+// 산책 통계 조회 (dogId 쿼리 파라미터로 필터링 가능)
 router.get('/stats/:userId', (req, res) => {
   try {
-    const walks = loadWalks().filter(w => w.userId === req.params.userId);
+    let walks = loadWalks().filter(w => w.userId === req.params.userId);
+    if (req.query.dogId) {
+      walks = walks.filter(w => w.dogId === req.query.dogId || w.dogName === req.query.dogId);
+    }
     const now = new Date();
     const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
     const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);

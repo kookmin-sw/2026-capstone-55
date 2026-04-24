@@ -18,6 +18,7 @@ const dataRoutes    = require('./routes/data');
 const walkRoutes    = require('./routes/walks');
 const healthRoutes  = require('./routes/health');
 const userRoutes    = require('./routes/users');
+const uploadRoutes  = require('./routes/upload');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -54,6 +55,7 @@ app.use('/api/data', dataRoutes);
 app.use('/api/walks', walkRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
 app.use(express.static(path.join(__dirname, '..')));
