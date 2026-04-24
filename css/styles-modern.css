@@ -661,6 +661,268 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .ai-rec-reason { font-size: 0.82rem; color: var(--color-text-light); line-height: 1.6; }
 .ai-rec-meta { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 6px; }
 
+/* ===== 산책 매칭 페이지 ===== */
+
+.match-hero {
+  padding: 48px 0 36px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--color-border);
+}
+.match-hero__title {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin: 6px 0 10px;
+}
+.match-hero__sub { font-size: 0.9rem; color: var(--color-text-light); }
+.match-hero__sub strong { color: var(--color-text); }
+
+.match-role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.match-role-card {
+  position: relative;
+  background: var(--color-bg-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.match-role-card:hover { border-color: var(--color-text-muted); background: var(--color-bg-section); }
+.match-role-card--selected {
+  border-color: var(--color-text);
+  border-width: 2px;
+  background: var(--color-bg-section);
+}
+.match-role-card__badge {
+  position: absolute;
+  top: -10px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+.match-role-card__icon { font-size: 2.4rem; margin-bottom: 10px; }
+.match-role-card__title { font-size: 1rem; font-weight: 800; margin-bottom: 6px; }
+.match-role-card__desc { font-size: 0.8rem; color: var(--color-text-light); line-height: 1.5; }
+
+.match-role-hint {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  padding: 24px 0;
+}
+
+.match-form-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 32px 36px;
+  margin-bottom: 24px;
+}
+.match-form-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  letter-spacing: -0.3px;
+}
+.match-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.match-check-group { display: flex; gap: 20px; padding: 10px 0; flex-wrap: wrap; }
+.match-submit-btn { width: 100%; padding: 13px; font-size: 0.95rem; margin-top: 4px; }
+
+/* 상태 배너 */
+.match-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  border: 1.5px solid;
+}
+.match-status-banner--on {
+  background: #F0FAF5;
+  border-color: #99D9C0;
+}
+.match-status-banner--off {
+  background: var(--color-bg-section);
+  border-color: var(--color-border);
+}
+.match-status-banner__main {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 3px;
+}
+.match-status-banner__sub {
+  font-size: 0.82rem;
+  color: var(--color-text-light);
+}
+
+/* 내 프로필 카드 */
+.match-profile-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.match-profile-card__left { display: flex; align-items: flex-start; gap: 14px; flex: 1; }
+.match-profile-card__avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--color-text);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; font-weight: 800; flex-shrink: 0;
+}
+.match-profile-card__name { font-size: 0.95rem; font-weight: 700; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.match-profile-card__meta { font-size: 0.8rem; color: var(--color-text-light); }
+.match-profile-card__bio { font-size: 0.8rem; color: var(--color-text-light); font-style: italic; margin-top: 3px; }
+
+/* 브로드캐스트 배너 */
+.match-broadcast-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--color-text);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.match-broadcast-banner__title { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+.match-broadcast-banner__sub { font-size: 0.8rem; opacity: 0.75; }
+.match-broadcast-banner .btn-primary {
+  background: #fff;
+  color: var(--color-text);
+  flex-shrink: 0;
+  font-weight: 700;
+}
+.match-broadcast-banner .btn-primary:hover { opacity: 0.9; }
+
+/* 섹션 */
+.match-section { margin-bottom: 36px; }
+.match-section__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 받은 요청 카드 */
+.match-request-card {
+  background: var(--color-bg-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  transition: border-color 0.15s;
+}
+.match-request-card--accepted { border-color: #99D9C0; background: #F0FAF5; }
+.match-request-card__top { display: flex; align-items: flex-start; gap: 12px; }
+.match-request-card__avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: var(--color-bg-section);
+  color: var(--color-text);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 800; flex-shrink: 0;
+}
+.match-request-card__from { font-size: 0.95rem; font-weight: 700; margin-bottom: 3px; }
+.match-request-card__detail { font-size: 0.8rem; color: var(--color-text-light); }
+.match-request-card__notes { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 3px; font-style: italic; }
+.match-request-card__alert {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: #FFF8E1;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-top: 10px;
+  border-left: 3px solid #D4A843;
+}
+
+/* 산책 카드 */
+.match-walk-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 10px;
+}
+.match-walk-card--completed { opacity: 0.8; }
+.match-walk-card__avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--color-bg-section);
+  color: var(--color-text);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 800; flex-shrink: 0;
+}
+.match-walk-card__info { flex: 1; }
+.match-walk-card__name { font-size: 0.9rem; font-weight: 700; margin-bottom: 3px; }
+
+/* 도우미 목록 카드 (요청자 화면) */
+.match-walker-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  transition: all 0.15s ease;
+}
+.match-walker-card:hover { box-shadow: var(--shadow-md); border-color: #CBD5E0; }
+.match-walker-card__avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: #00AA76;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; font-weight: 800; flex-shrink: 0;
+}
+.match-walker-card__body { flex: 1; min-width: 0; }
+.match-walker-card__name { font-size: 0.95rem; font-weight: 700; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+.match-walker-card__meta { font-size: 0.8rem; color: var(--color-text-light); margin-bottom: 4px; }
+.match-walker-card__bio { font-size: 0.78rem; color: var(--color-text-light); font-style: italic; }
+
+@media (max-width: 768px) {
+  .match-form-grid { grid-template-columns: 1fr; }
+  .match-form-card { padding: 24px 18px; }
+  .match-role-grid { gap: 10px; }
+  .match-role-card { padding: 22px 14px; }
+  .match-broadcast-banner { flex-direction: column; align-items: flex-start; }
+  .match-walker-card { flex-wrap: wrap; }
+  .match-check-group { flex-direction: column; gap: 10px; }
+}
+
 @media (max-width: 768px) {
   .dw-hero { padding: 36px 24px; }
   .dw-hero__title { font-size: 1.4rem; }

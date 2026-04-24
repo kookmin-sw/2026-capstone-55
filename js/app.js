@@ -1235,6 +1235,10 @@ function renderWalletPage() {
 }
 
 // --- 매칭 페이지 ---
+/* ===================================================
+   산책 매칭 페이지 — 실시간 매칭 중심 UI
+   =================================================== */
+
 function renderMatchingPage() {
   const user = AuthService.getCurrentUser();
 
@@ -1246,9 +1250,7 @@ function renderMatchingPage() {
           <h2>로그인이 필요합니다</h2>
           <p style="text-align:center; color:var(--color-text-light); margin-bottom:20px;">산책 매칭을 이용하려면 먼저 로그인하세요.</p>
           <button class="btn btn-primary" style="width:100%;" onclick="Router.navigate('/login')">로그인하기</button>
-          <div class="auth-footer">
-            계정이 없으신가요? <a href="#/register">회원가입</a>
-          </div>
+          <div class="auth-footer">계정이 없으신가요? <a href="#/register">회원가입</a></div>
         </div>
       </div>
     `);
@@ -1257,343 +1259,487 @@ function renderMatchingPage() {
 
   const myProfile = MatchingService.getMyProfile(user.id);
 
-  // 역할 미등록 → 역할 선택 화면
   if (!myProfile) {
-    renderMatchingRoleSelect();
+    renderMatchingRoleSelect(null);
     return;
   }
 
-  // 역할 등록 완료 → 매칭 대시보드
-  renderMatchingDashboard(user, myProfile);
+  if (myProfile.role === 'walker') {
+    renderWalkerDashboard(user, myProfile);
+  } else {
+    renderRequesterDashboard(user, myProfile);
+  }
 }
 
-/**
- * 역할 선택 화면
- */
-function renderMatchingRoleSelect() {
+/** 역할 선택 화면 */
+function renderMatchingRoleSelect(selectedRole) {
+  const walkerSel = selectedRole === 'walker';
+  const reqSel    = selectedRole === 'requester';
+
+  const walkerFormHtml = walkerSel ? `
+    <div class="match-form-card">
+      <h3 class="match-form-title">산책 도우미 등록 및 상태 관리</h3>
+      <div id="match-register-error"></div>
+      <div class="match-form-grid">
+        <div class="form-group">
+          <label for="match-location">활동 지역 <span class="dw-required">*</span></label>
+          <input type="text" id="match-location" class="form-input" placeholder="예: 서울 마포구 합정동">
+        </div>
+        <div class="form-group">
+          <label for="match-time">산책 가능 시간 <span class="dw-required">*</span></label>
+          <select id="match-time" class="form-select">
+            <option value="">선택해주세요</option>
+            <option value="오전 (7-9시)">오전 (7~9시)</option>
+            <option value="오전 (9-11시)">오전 (9~11시)</option>
+            <option value="오후 (2-4시)">오후 (2~4시)</option>
+            <option value="오후 (5-7시)">오후 (5~7시)</option>
+            <option value="저녁 (7-9시)">저녁 (7~9시)</option>
+            <option value="상시 가능">상시 가능</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="match-experience">경력 / 특이사항</label>
+          <input type="text" id="match-experience" class="form-input" placeholder="예: 반려견 2년 경력, 응급처치 자격">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="match-message">자기소개 <span class="dw-required">*</span></label>
+        <textarea id="match-message" class="form-input" rows="3" placeholder="간단한 자기소개를 적어주세요."></textarea>
+      </div>
+      <div class="form-group">
+        <label>추가 정보</label>
+        <div class="match-check-group">
+          <label class="dw-check-label"><input type="checkbox" id="match-large-dog"> 대형견 산책 가능</label>
+          <label class="dw-check-label"><input type="checkbox" id="match-multi-dog"> 여러 마리 동시 산책 가능</label>
+        </div>
+      </div>
+      <button class="btn btn-primary match-submit-btn" onclick="handleRegisterMatchProfile('walker')">🚶‍♂️ 산책 도우미로 등록하기</button>
+    </div>
+  ` : '';
+
+  const reqFormHtml = reqSel ? `
+    <div class="match-form-card">
+      <h3 class="match-form-title">산책 요청자 등록 및 매칭 요청</h3>
+      <div id="match-register-error"></div>
+      <div class="match-form-grid">
+        <div class="form-group">
+          <label for="match-dog-name">반려견 이름 <span class="dw-required">*</span></label>
+          <input type="text" id="match-dog-name" class="form-input" placeholder="예: 초코">
+        </div>
+        <div class="form-group">
+          <label for="match-dog-size">반려견 크기 <span class="dw-required">*</span></label>
+          <select id="match-dog-size" class="form-select">
+            <option value="">선택해주세요</option>
+            <option value="small">소형견 (~10kg)</option>
+            <option value="medium">중형견 (10~25kg)</option>
+            <option value="large">대형견 (25kg~)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="match-location">산책 희망 장소 <span class="dw-required">*</span></label>
+          <input type="text" id="match-location" class="form-input" placeholder="예: 서울 마포구 합정동">
+        </div>
+        <div class="form-group">
+          <label for="match-time">원하는 산책 시간 <span class="dw-required">*</span></label>
+          <select id="match-time" class="form-select">
+            <option value="">선택해주세요</option>
+            <option value="오전 (7-9시)">오전 (7~9시)</option>
+            <option value="오전 (9-11시)">오전 (9~11시)</option>
+            <option value="오후 (2-4시)">오후 (2~4시)</option>
+            <option value="오후 (5-7시)">오후 (5~7시)</option>
+            <option value="저녁 (7-9시)">저녁 (7~9시)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="match-notes">요청사항</label>
+        <textarea id="match-notes" class="form-input" rows="2" placeholder="특별한 요청사항이 있으면 적어주세요."></textarea>
+      </div>
+      <button class="btn btn-primary match-submit-btn" onclick="handleRegisterMatchProfile('requester')">🐕 산책 요청자로 등록하기</button>
+    </div>
+  ` : '';
+
   renderPage(`
-    <div class="page-header">
-      <h1>🤝 산책 매칭</h1>
-      <p>어떤 역할로 참여하고 싶으세요? 🐾</p>
+    <div class="match-hero">
+      <div class="section-label">산책 매칭</div>
+      <h1 class="match-hero__title">지금 바로 산책 매칭을<br>시작해보세요</h1>
+      <p class="match-hero__sub">산책 도우미와 요청자를 실시간으로 연결해드려요</p>
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
-      <div class="card" style="padding:32px 20px; text-align:center; cursor:pointer; border:2px solid var(--color-border);" onclick="showMatchingRegisterForm('walker')" id="role-walker">
-        <div style="font-size:3rem; margin-bottom:12px;">🚶‍♂️</div>
-        <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:6px;">산책 도우미</h3>
-        <p style="font-size:0.82rem; color:var(--color-text-light); font-weight:600;">다른 분의 반려견을<br>산책시켜 드려요</p>
+    <div class="match-role-grid">
+      <div class="match-role-card ${walkerSel ? 'match-role-card--selected' : ''}" onclick="renderMatchingRoleSelectStatic('walker')">
+        ${walkerSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
+        <div class="match-role-card__icon">🚶‍♂️</div>
+        <h3 class="match-role-card__title">산책 도우미</h3>
+        <p class="match-role-card__desc">다른 분의 반려견을<br>산책시켜 드려요</p>
       </div>
-      <div class="card" style="padding:32px 20px; text-align:center; cursor:pointer; border:2px solid var(--color-border);" onclick="showMatchingRegisterForm('requester')" id="role-requester">
-        <div style="font-size:3rem; margin-bottom:12px;">🐕</div>
-        <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:6px;">산책 요청자</h3>
-        <p style="font-size:0.82rem; color:var(--color-text-light); font-weight:600;">우리 아이 산책을<br>부탁하고 싶어요</p>
+      <div class="match-role-card ${reqSel ? 'match-role-card--selected' : ''}" onclick="renderMatchingRoleSelectStatic('requester')">
+        ${reqSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
+        <div class="match-role-card__icon">🐕</div>
+        <h3 class="match-role-card__title">산책 요청자</h3>
+        <p class="match-role-card__desc">우리 아이 산책을<br>부탁하고 싶어요</p>
       </div>
     </div>
 
-    <div id="matching-register-form"></div>
+    ${walkerFormHtml}${reqFormHtml}
+    ${!selectedRole ? '<p class="match-role-hint">위 카드를 클릭해서 역할을 선택해주세요</p>' : ''}
   `);
 }
 
-/**
- * 역할 등록 폼 표시
- */
-function showMatchingRegisterForm(role) {
-  const roleName = role === 'walker' ? '산책 도우미 🚶‍♂️' : '산책 요청자 🐕';
-  const container = document.getElementById('matching-register-form');
-  if (!container) return;
+function renderMatchingRoleSelectStatic(role) { renderMatchingRoleSelect(role); }
 
-  // 선택된 카드 하이라이트
-  const walkerCard = document.getElementById('role-walker');
-  const requesterCard = document.getElementById('role-requester');
-  if (walkerCard) walkerCard.style.borderColor = role === 'walker' ? 'var(--color-primary)' : 'var(--color-border)';
-  if (requesterCard) requesterCard.style.borderColor = role === 'requester' ? 'var(--color-primary)' : 'var(--color-border)';
-
-  container.innerHTML = `
-    <div class="card" style="padding:24px;">
-      <h3 style="margin-bottom:16px; font-weight:800;">${roleName} 등록</h3>
-      <div id="matching-register-error"></div>
-      <div class="form-group">
-        <label for="match-location">활동 지역</label>
-        <input type="text" id="match-location" class="form-input" placeholder="예: 서울 강남구">
-      </div>
-      <div class="form-group">
-        <label for="match-time">선호 시간대</label>
-        <select id="match-time" class="form-select">
-          <option value="">선택해주세요</option>
-          <option value="오전 (7-9시)">오전 (7-9시)</option>
-          <option value="오전 (9-11시)">오전 (9-11시)</option>
-          <option value="오후 (2-4시)">오후 (2-4시)</option>
-          <option value="오후 (5-7시)">오후 (5-7시)</option>
-          <option value="저녁 (7-9시)">저녁 (7-9시)</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="match-message">소개 메시지</label>
-        <textarea id="match-message" class="form-input" placeholder="간단한 자기소개를 적어주세요~"></textarea>
-      </div>
-      <button class="btn btn-primary" style="width:100%;" onclick="handleRegisterMatchProfile('${role}')">등록하기 🐾</button>
-    </div>
-  `;
-}
-
-/**
- * 매칭 프로필 등록 핸들러
- */
+/** 매칭 프로필 등록 핸들러 */
 function handleRegisterMatchProfile(role) {
   const user = AuthService.getCurrentUser();
   if (!user) { Router.navigate('/login'); return; }
 
-  const location = document.getElementById('match-location')?.value;
+  const location     = document.getElementById('match-location')?.value;
   const preferredTime = document.getElementById('match-time')?.value;
-  const message = document.getElementById('match-message')?.value;
-  const errEl = document.getElementById('matching-register-error');
+  const message      = document.getElementById('match-message')?.value || '';
+  const errEl        = document.getElementById('match-register-error');
 
   if (!location || !location.trim()) {
-    if (errEl) errEl.innerHTML = '<div class="alert alert-error">활동 지역을 입력해주세요.</div>';
-    return;
+    if (errEl) errEl.innerHTML = '<div class="alert alert-error">활동 지역을 입력해주세요.</div>'; return;
   }
   if (!preferredTime) {
-    if (errEl) errEl.innerHTML = '<div class="alert alert-error">선호 시간대를 선택해주세요.</div>';
-    return;
+    if (errEl) errEl.innerHTML = '<div class="alert alert-error">시간대를 선택해주세요.</div>'; return;
   }
 
-  MatchingService.registerProfile(user.id, {
-    role,
-    location: location.trim(),
-    preferredTime,
-    message: message ? message.trim() : ''
-  });
+  let extra = {};
+  if (role === 'walker') {
+    if (!message.trim()) {
+      if (errEl) errEl.innerHTML = '<div class="alert alert-error">자기소개를 입력해주세요.</div>'; return;
+    }
+    extra = {
+      experience:      document.getElementById('match-experience')?.value || '',
+      canWalkLarge:    document.getElementById('match-large-dog')?.checked || false,
+      canWalkMultiple: document.getElementById('match-multi-dog')?.checked || false,
+    };
+  } else {
+    const dogName = document.getElementById('match-dog-name')?.value;
+    const dogSize = document.getElementById('match-dog-size')?.value;
+    if (!dogName?.trim()) {
+      if (errEl) errEl.innerHTML = '<div class="alert alert-error">반려견 이름을 입력해주세요.</div>'; return;
+    }
+    if (!dogSize) {
+      if (errEl) errEl.innerHTML = '<div class="alert alert-error">반려견 크기를 선택해주세요.</div>'; return;
+    }
+    extra = {
+      dogName: dogName.trim(),
+      dogSize,
+      notes: document.getElementById('match-notes')?.value || ''
+    };
+  }
 
+  MatchingService.registerProfile(user.id, { role, location: location.trim(), preferredTime, message: message.trim(), isAvailable: true, ...extra });
   renderMatchingPage();
 }
 
-/**
- * 매칭 대시보드 (역할 등록 완료 후)
- */
-function renderMatchingDashboard(user, myProfile) {
-  const recommendations = MatchingService.getRecommendations(user.id);
+/** 산책 도우미 대시보드 */
+function renderWalkerDashboard(user, myProfile) {
   const receivedRequests = MatchingService.getReceivedRequests(user.id);
-  const scheduledWalks = MatchingService.getScheduledWalks(user.id);
-  const completedWalks = MatchingService.getCompletedWalks(user.id);
+  const scheduledWalks   = MatchingService.getScheduledWalks(user.id);
+  const completedWalks   = MatchingService.getCompletedWalks(user.id);
+  const isAvail          = myProfile.isAvailable;
 
-  const sizeMap = { small: '소형견', medium: '중형견', large: '대형견' };
-  const roleLabel = myProfile.role === 'walker' ? '🚶‍♂️ 산책 도우미' : '🐕 산책 요청자';
-  const oppositeLabel = myProfile.role === 'walker' ? '산책 요청자' : '산책 도우미';
-
-  // 내 프로필 카드
-  const myProfileHtml = `
-    <div class="card" style="padding:20px; margin-bottom:24px; border-color:var(--color-primary-pale);">
-      <div style="display:flex; align-items:center; justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div class="match-card__avatar">${user.name.charAt(0)}</div>
-          <div>
-            <div style="font-weight:800; font-size:1rem;">${user.name}</div>
-            <div style="font-size:0.82rem; color:var(--color-text-light); font-weight:600;">
-              <span class="badge badge-primary">${roleLabel}</span>
-              <span style="margin-left:6px;">📍 ${myProfile.location} · ⏰ ${myProfile.preferredTime}</span>
-            </div>
-            ${myProfile.message ? `<div style="font-size:0.82rem; color:var(--color-text-light); margin-top:4px;">"${myProfile.message}"</div>` : ''}
-          </div>
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="handleRemoveMatchProfile()">등록 해제</button>
+  const statusBanner = `
+    <div class="match-status-banner ${isAvail ? 'match-status-banner--on' : 'match-status-banner--off'}">
+      <div class="match-status-banner__text">
+        <div class="match-status-banner__main">${isAvail ? '현재 산책 요청을 받을 수 있어요.' : '현재 산책 요청을 받지 않고 있어요.'}</div>
+        <div class="match-status-banner__sub">${isAvail ? '주변 산책 요청자에게 노출되고 있어요.' : '산책 요청자에게 노출되지 않습니다.'}</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+        <label class="dw-toggle">
+          <input type="checkbox" id="match-avail-toggle" ${isAvail ? 'checked' : ''} onchange="handleToggleMatcherAvailability()">
+          <span class="dw-toggle__track"></span>
+        </label>
+        <span class="dw-toggle__status">${isAvail ? '🟢 ON' : '⭕ OFF'}</span>
       </div>
     </div>
   `;
 
-  // 추천 프로필
-  const recommendationsHtml = recommendations.length > 0
-    ? recommendations.map(p => {
-      const pRoleLabel = p.role === 'walker' ? '🚶‍♂️ 도우미' : '🐕 요청자';
-      return `
-      <div class="match-card" style="margin-bottom:12px;">
-        <div class="match-card__avatar">${p.userName.charAt(0)}</div>
-        <div class="match-card__info">
-          <div class="match-card__name">${p.userName} <span class="badge badge-primary" style="font-size:0.7rem; margin-left:4px;">${pRoleLabel}</span></div>
-          <div class="match-card__details">📍 ${p.location} · ⏰ ${p.preferredTime}</div>
-          ${p.message ? `<div style="font-size:0.8rem; color:var(--color-text-light); margin-top:2px;">"${p.message}"</div>` : ''}
-          <div class="match-card__rating">⭐ ${p.rating.toFixed(1)}</div>
-        </div>
-        <div class="match-card__actions">
-          <button class="btn btn-primary btn-sm" onclick="handleSendMatchRequest('${p.userId}')">요청 보내기</button>
+  const profileCard = `
+    <div class="match-profile-card">
+      <div class="match-profile-card__left">
+        <div class="match-profile-card__avatar">${user.name.charAt(0)}</div>
+        <div>
+          <div class="match-profile-card__name">${user.name} <span class="badge badge-primary">산책 도우미</span></div>
+          <div class="match-profile-card__meta">📍 ${myProfile.location} · ⏰ ${myProfile.preferredTime}${myProfile.experience ? ' · ' + myProfile.experience : ''}</div>
+          ${myProfile.message ? `<div class="match-profile-card__bio">"${myProfile.message}"</div>` : ''}
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+            ${myProfile.canWalkLarge    ? '<span class="dw-size-tag">대형견 가능</span>' : ''}
+            ${myProfile.canWalkMultiple ? '<span class="dw-size-tag">다중 산책 가능</span>' : ''}
+          </div>
         </div>
       </div>
-    `;}).join('')
-    : `<div class="empty-state"><div class="empty-icon">🔍</div><p>아직 등록된 ${oppositeLabel}가 없어요~</p></div>`;
+      <button class="btn btn-secondary btn-sm" onclick="handleRemoveMatchProfile()">등록 해제</button>
+    </div>
+  `;
 
-  // 받은 요청
   const receivedHtml = receivedRequests.length > 0
     ? receivedRequests.map(r => {
-      const fromName = MatchingService.getUserName(r.fromUserId);
-      return `
-        <div class="match-card" style="margin-bottom:12px;">
-          <div class="match-card__avatar">${fromName.charAt(0)}</div>
-          <div class="match-card__info">
-            <div class="match-card__name">${fromName}</div>
-            <div class="match-card__details">산책 매칭 요청을 보냈어요</div>
-          </div>
-          <div class="match-card__actions">
-            <button class="btn btn-primary btn-sm" onclick="handleAcceptRequest('${r.id}')">수락</button>
-            <button class="btn btn-danger btn-sm" onclick="handleRejectRequest('${r.id}')">거절</button>
-          </div>
-        </div>
-      `;
-    }).join('')
-    : `<div class="empty-state"><div class="empty-icon">📭</div><p>받은 요청이 없어요</p></div>`;
+        const fromName = MatchingService.getUserName(r.fromUserId);
+        const rd = r.requestData || {};
+        return `
+          <div class="match-request-card ${r.status === 'accepted' ? 'match-request-card--accepted' : ''}">
+            <div class="match-request-card__top">
+              <div class="match-request-card__avatar">${fromName.charAt(0)}</div>
+              <div class="match-request-card__info">
+                <div class="match-request-card__from">${fromName}</div>
+                <div class="match-request-card__detail">
+                  ${rd.dogName ? `🐕 ${rd.dogName}` : ''}${rd.dogSize ? ` (${rd.dogSize === 'small' ? '소형' : rd.dogSize === 'medium' ? '중형' : '대형'})` : ''}
+                  ${rd.desiredTime ? ` · ⏰ ${rd.desiredTime}` : ''}
+                  ${rd.location ? ` · 📍 ${rd.location}` : ''}
+                </div>
+                ${rd.notes ? `<div class="match-request-card__notes">"${rd.notes}"</div>` : ''}
+              </div>
+            </div>
+            ${r.status === 'pending' ? `
+              <div class="match-request-card__alert">근처에서 산책 요청이 들어왔어요. 지금 수락하시겠어요?</div>
+              <div style="display:flex; gap:8px; margin-top:10px;">
+                <button class="btn btn-primary btn-sm" onclick="handleAcceptBroadcastRequest('${r.id}')">✅ 수락하기</button>
+                <button class="btn btn-secondary btn-sm" onclick="handleRejectMatchRequest('${r.id}')">거절하기</button>
+              </div>
+            ` : r.status === 'accepted'
+              ? '<div style="margin-top:8px;"><span class="badge badge-success">✓ 수락됨 · 매칭 완료</span></div>'
+              : '<div style="margin-top:8px;"><span class="badge">처리됨</span></div>'}
+          </div>`;
+      }).join('')
+    : `<div class="empty-state"><div class="empty-icon">📭</div><p>아직 받은 산책 요청이 없어요.<br>ON 상태를 유지하면 요청이 들어와요.</p></div>`;
 
-  // 예정된 산책
-  const scheduledHtml = scheduledWalks.length > 0
-    ? scheduledWalks.map(s => {
-      const partnerId = s.participants.find(id => id !== user.id) || s.participants[0];
-      const partnerName = MatchingService.getUserName(partnerId);
-      const date = new Date(s.scheduledAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-      return `
-        <div class="match-card" style="margin-bottom:12px;">
-          <div class="match-card__avatar">${partnerName.charAt(0)}</div>
-          <div class="match-card__info">
-            <div class="match-card__name">${partnerName}</div>
-            <div class="match-card__details">📅 ${date}</div>
-            <div class="match-card__rating"><span class="badge badge-info">예정됨</span></div>
-          </div>
-          <div class="match-card__actions">
-            <button class="btn btn-primary btn-sm" onclick="handleCompleteWalk('${s.id}')">산책 완료</button>
-          </div>
-        </div>
-      `;
-    }).join('')
-    : `<div class="empty-state"><div class="empty-icon">🚶</div><p>예정된 산책이 없어요</p></div>`;
+  const scheduledHtml = scheduledWalks.map(s => {
+    const pid = s.participants.find(id => id !== user.id) || s.participants[0];
+    const pName = MatchingService.getUserName(pid);
+    const date = new Date(s.scheduledAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+    return `
+      <div class="match-walk-card">
+        <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
+        <div class="match-walk-card__info"><div class="match-walk-card__name">${pName}</div><div>📅 ${date}</div></div>
+        <button class="btn btn-primary btn-sm" onclick="handleCompleteWalk('${s.id}')">산책 완료</button>
+      </div>`;
+  }).join('');
 
-  // 완료된 산책
-  const completedHtml = completedWalks.length > 0
-    ? completedWalks.map(s => {
-      const partnerId = s.participants.find(id => id !== user.id) || s.participants[0];
-      const partnerName = MatchingService.getUserName(partnerId);
-      const existingReviews = MatchingService.getReviewsForSchedule(s.id);
-      const alreadyReviewed = existingReviews.some(r => r.reviewerId === user.id);
-      const reviewBtn = alreadyReviewed
-        ? `<span class="badge badge-success">리뷰 완료</span>`
-        : `<button class="btn btn-secondary btn-sm" onclick="handleShowReviewForm('${s.id}', '${partnerId}')">리뷰 작성</button>`;
-      return `
-        <div class="match-card" style="margin-bottom:12px;">
-          <div class="match-card__avatar">${partnerName.charAt(0)}</div>
-          <div class="match-card__info">
-            <div class="match-card__name">${partnerName}</div>
-            <div class="match-card__rating"><span class="badge badge-success">완료됨</span></div>
-          </div>
-          <div class="match-card__actions">
-            ${reviewBtn}
-          </div>
-        </div>
-      `;
-    }).join('')
-    : `<div class="empty-state"><div class="empty-icon">✅</div><p>완료된 산책이 없어요</p></div>`;
+  const completedHtml = completedWalks.map(s => {
+    const pid = s.participants.find(id => id !== user.id) || s.participants[0];
+    const pName = MatchingService.getUserName(pid);
+    const reviewed = MatchingService.getReviewsForSchedule(s.id).some(r => r.reviewerId === user.id);
+    return `
+      <div class="match-walk-card match-walk-card--completed">
+        <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
+        <div class="match-walk-card__info"><div class="match-walk-card__name">${pName}</div><span class="badge badge-success">완료됨</span></div>
+        ${reviewed ? '<span class="badge badge-success">리뷰 완료</span>' : `<button class="btn btn-secondary btn-sm" onclick="handleShowReviewForm('${s.id}','${pid}')">리뷰 작성</button>`}
+      </div>`;
+  }).join('');
 
   renderPage(`
-    <div class="page-header">
-      <h1>🤝 산책 매칭</h1>
-      <p>가까운 산책 친구를 찾아봐요~ 🐾</p>
+    <div class="match-hero">
+      <div class="section-label">산책 도우미</div>
+      <h1 class="match-hero__title">산책 매칭 관리</h1>
+      <p class="match-hero__sub">ON 상태에서만 주변 산책 요청자에게 노출돼요</p>
     </div>
-
     <div id="matching-alert"></div>
-
-    ${myProfileHtml}
-
-    <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:12px;">🐕 ${oppositeLabel} 목록</h3>
-    <div id="matching-recommendations" style="margin-bottom:24px;">
-      ${recommendationsHtml}
-    </div>
-
-    <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:12px;">📩 받은 요청</h3>
-    <div id="matching-received" style="margin-bottom:24px;">
+    ${statusBanner}
+    ${profileCard}
+    <div class="match-section">
+      <h2 class="match-section__title">📩 받은 산책 요청 <span class="dw-count">${receivedRequests.length}</span></h2>
       ${receivedHtml}
     </div>
-
-    <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:12px;">🚶 예정된 산책</h3>
-    <div id="matching-scheduled" style="margin-bottom:24px;">
-      ${scheduledHtml}
-    </div>
-
-    <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:12px;">✅ 완료된 산책</h3>
-    <div id="matching-completed" style="margin-bottom:24px;">
-      ${completedHtml}
-    </div>
-
+    ${scheduledWalks.length > 0 ? `<div class="match-section"><h2 class="match-section__title">🚶 예정된 산책</h2>${scheduledHtml}</div>` : ''}
+    ${completedWalks.length > 0 ? `<div class="match-section"><h2 class="match-section__title">✅ 완료된 산책</h2>${completedHtml}</div>` : ''}
     <div id="review-form-container"></div>
   `);
 }
 
-/**
- * 매칭 프로필 등록 해제 핸들러
- */
+/** 산책 요청자 대시보드 */
+function renderRequesterDashboard(user, myProfile) {
+  const availWalkers   = MatchingService.getAvailableWalkers().filter(w => w.userId !== user.id);
+  const scheduledWalks = MatchingService.getScheduledWalks(user.id);
+  const completedWalks = MatchingService.getCompletedWalks(user.id);
+
+  const profileCard = `
+    <div class="match-profile-card">
+      <div class="match-profile-card__left">
+        <div class="match-profile-card__avatar">${user.name.charAt(0)}</div>
+        <div>
+          <div class="match-profile-card__name">${user.name} <span class="badge badge-primary">산책 요청자</span></div>
+          <div class="match-profile-card__meta">
+            ${myProfile.dogName ? `🐕 ${myProfile.dogName} · ` : ''}📍 ${myProfile.location} · ⏰ ${myProfile.preferredTime || ''}
+          </div>
+          ${myProfile.notes ? `<div class="match-profile-card__bio">"${myProfile.notes}"</div>` : ''}
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="handleRemoveMatchProfile()">등록 해제</button>
+    </div>
+  `;
+
+  const walkerListHtml = availWalkers.length > 0
+    ? availWalkers.map(w => `
+        <div class="match-walker-card">
+          <div class="match-walker-card__avatar">${w.userName.charAt(0)}</div>
+          <div class="match-walker-card__body">
+            <div class="match-walker-card__name"><span class="dw-avail-dot dw-avail-dot--on"></span>${w.userName}</div>
+            <div class="match-walker-card__meta">📍 ${w.location} · ⏰ ${w.preferredTime}</div>
+            ${w.message ? `<div class="match-walker-card__bio">"${w.message}"</div>` : ''}
+            <div style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;">
+              ${w.canWalkLarge    ? '<span class="dw-size-tag">대형견 가능</span>' : ''}
+              ${w.canWalkMultiple ? '<span class="dw-size-tag">다중 산책 가능</span>' : ''}
+              ${w.experience      ? `<span class="dw-size-tag">${w.experience}</span>` : ''}
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="handleSendMatchRequest('${w.userId}')">요청 보내기</button>
+        </div>`)
+      .join('')
+    : `<div class="empty-state"><div class="empty-icon">🔍</div><p>현재 주변에 산책 가능한 도우미가 없습니다.<br>잠시 후 다시 확인해 주세요.</p></div>`;
+
+  const scheduledHtml = scheduledWalks.map(s => {
+    const pid = s.participants.find(id => id !== user.id) || s.participants[0];
+    const pName = MatchingService.getUserName(pid);
+    const date = new Date(s.scheduledAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+    return `
+      <div class="match-walk-card">
+        <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
+        <div class="match-walk-card__info"><div class="match-walk-card__name">${pName}</div><div>📅 ${date}</div><span class="badge badge-info">예정됨</span></div>
+        <button class="btn btn-primary btn-sm" onclick="handleCompleteWalk('${s.id}')">산책 완료</button>
+      </div>`;
+  }).join('');
+
+  const completedHtml = completedWalks.map(s => {
+    const pid = s.participants.find(id => id !== user.id) || s.participants[0];
+    const pName = MatchingService.getUserName(pid);
+    const reviewed = MatchingService.getReviewsForSchedule(s.id).some(r => r.reviewerId === user.id);
+    return `
+      <div class="match-walk-card match-walk-card--completed">
+        <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
+        <div class="match-walk-card__info"><div class="match-walk-card__name">${pName}</div><span class="badge badge-success">완료됨</span></div>
+        ${reviewed ? '<span class="badge badge-success">리뷰 완료</span>' : `<button class="btn btn-secondary btn-sm" onclick="handleShowReviewForm('${s.id}','${pid}')">리뷰 작성</button>`}
+      </div>`;
+  }).join('');
+
+  renderPage(`
+    <div class="match-hero">
+      <div class="section-label">산책 요청자</div>
+      <h1 class="match-hero__title">산책 도우미를<br>찾고 있어요</h1>
+      <p class="match-hero__sub">현재 산책 가능한 도우미 <strong>${availWalkers.length}명</strong>이 근처에 있어요</p>
+    </div>
+    <div id="matching-alert"></div>
+    ${profileCard}
+
+    <div class="match-broadcast-banner">
+      <div>
+        <div class="match-broadcast-banner__title">📣 주변 도우미에게 산책 요청 보내기</div>
+        <div class="match-broadcast-banner__sub">ON 상태인 도우미 ${availWalkers.length}명에게 알림이 전송돼요. 가장 먼저 수락한 분과 매칭됩니다.</div>
+      </div>
+      <button class="btn btn-primary" onclick="handleBroadcastWalkRequest()" ${availWalkers.length === 0 ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>매칭 요청 보내기</button>
+    </div>
+
+    <div class="match-section">
+      <h2 class="match-section__title">🚶‍♂️ 주변 산책 가능한 도우미 <span class="dw-count">${availWalkers.length}</span></h2>
+      ${walkerListHtml}
+    </div>
+    ${scheduledWalks.length > 0 ? `<div class="match-section"><h2 class="match-section__title">📅 예정된 산책</h2>${scheduledHtml}</div>` : ''}
+    ${completedWalks.length > 0 ? `<div class="match-section"><h2 class="match-section__title">✅ 완료된 산책</h2>${completedHtml}</div>` : ''}
+    <div id="review-form-container"></div>
+  `);
+}
+
+/** 매칭 프로필 등록 해제 */
 function handleRemoveMatchProfile() {
+  if (!confirm('매칭 등록을 해제하시겠어요?')) return;
   const user = AuthService.getCurrentUser();
   if (!user) return;
-
-  const confirmed = confirm('매칭 등록을 해제하시겠어요?');
-  if (!confirmed) return;
-
   MatchingService.removeProfile(user.id);
   renderMatchingPage();
 }
 
-/**
- * 매칭 요청 보내기 핸들러
- * @param {string} toUserId
- */
-function handleSendMatchRequest(toUserId) {
+/** 도우미 가용 상태 토글 */
+function handleToggleMatcherAvailability() {
   const user = AuthService.getCurrentUser();
-  if (!user) { Router.navigate('/login'); return; }
-
-  MatchingService.sendRequest(user.id, toUserId);
-  const alertEl = document.getElementById('matching-alert');
-  if (alertEl) {
-    alertEl.innerHTML = '<div class="alert alert-success">매칭 요청을 보냈습니다! 🎉</div>';
-    setTimeout(() => { alertEl.innerHTML = ''; }, 3000);
-  }
-}
-
-/**
- * 매칭 요청 수락 핸들러
- * @param {string} requestId
- */
-function handleAcceptRequest(requestId) {
-  MatchingService.acceptRequest(requestId);
+  if (!user) return;
+  MatchingService.toggleAvailability(user.id);
   renderMatchingPage();
 }
 
-/**
- * 매칭 요청 거절 핸들러
- * @param {string} requestId
- */
-function handleRejectRequest(requestId) {
+/** 전체 브로드캐스트 요청 */
+function handleBroadcastWalkRequest() {
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+  const myProfile = MatchingService.getMyProfile(user.id);
+  if (!myProfile) return;
+
+  const result = MatchingService.broadcastWalkRequest(user.id, {
+    dogName:     myProfile.dogName || '',
+    dogSize:     myProfile.dogSize || '',
+    location:    myProfile.location || '',
+    desiredTime: myProfile.preferredTime || '',
+    notes:       myProfile.notes || ''
+  });
+
+  const alertEl = document.getElementById('matching-alert');
+  if (result.success) {
+    if (alertEl) {
+      alertEl.innerHTML = `<div class="alert alert-success">🎉 주변 도우미 ${result.targetCount}명에게 산책 요청을 보냈어요! 수락 대기 중...</div>`;
+      setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 5000);
+    }
+  } else {
+    if (alertEl) {
+      alertEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
+      setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
+    }
+  }
+}
+
+/** 브로드캐스트 요청 수락 (선착순 매칭) */
+function handleAcceptBroadcastRequest(requestId) {
+  const result = MatchingService.acceptBroadcastRequest(requestId);
+  const alertEl = document.getElementById('matching-alert');
+  if (result.success) {
+    if (alertEl) {
+      alertEl.innerHTML = '<div class="alert alert-success">✅ 산책 요청을 수락했습니다. 매칭이 완료되었습니다!</div>';
+      setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
+    }
+    renderMatchingPage();
+  } else if (result.alreadyMatched) {
+    if (alertEl) {
+      alertEl.innerHTML = '<div class="alert alert-error">이미 다른 도우미와 매칭이 완료된 요청입니다.</div>';
+      setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; renderMatchingPage(); }, 3000);
+    }
+  }
+}
+
+/** 요청 거절 */
+function handleRejectMatchRequest(requestId) {
   MatchingService.rejectRequest(requestId);
   renderMatchingPage();
 }
 
-/**
- * 산책 완료 핸들러
- * @param {string} scheduleId
- */
+/** 개별 요청 보내기 (요청자 → 특정 도우미) */
+function handleSendMatchRequest(toUserId) {
+  const user = AuthService.getCurrentUser();
+  if (!user) { Router.navigate('/login'); return; }
+  MatchingService.sendRequest(user.id, toUserId);
+  const alertEl = document.getElementById('matching-alert');
+  if (alertEl) {
+    alertEl.innerHTML = '<div class="alert alert-success">매칭 요청을 보냈습니다! 🎉</div>';
+    setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 3000);
+  }
+}
+
+/** 산책 완료 */
 function handleCompleteWalk(scheduleId) {
   MatchingService.completeWalk(scheduleId);
   renderMatchingPage();
   const alertEl = document.getElementById('matching-alert');
   if (alertEl) {
     alertEl.innerHTML = '<div class="alert alert-success">산책이 완료되었습니다! 🐾 10 Paw 코인이 적립되었습니다.</div>';
-    setTimeout(() => { alertEl.innerHTML = ''; }, 4000);
+    setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
   }
 }
 
-/**
- * 리뷰 작성 폼 표시
- * @param {string} scheduleId
- * @param {string} targetId
- */
+/** 리뷰 작성 폼 */
 function handleShowReviewForm(scheduleId, targetId) {
   const container = document.getElementById('review-form-container');
   if (!container) return;
-
   const targetName = MatchingService.getUserName(targetId);
-
   container.innerHTML = `
     <div class="card" style="padding:24px; margin-top:16px;">
       <h3 style="margin-bottom:16px;">📝 ${targetName}님에 대한 리뷰</h3>
@@ -1610,7 +1756,7 @@ function handleShowReviewForm(scheduleId, targetId) {
       </div>
       <div id="review-error"></div>
       <div style="display:flex; gap:8px;">
-        <button class="btn btn-primary" onclick="handleSubmitReview('${scheduleId}', '${targetId}')">리뷰 등록</button>
+        <button class="btn btn-primary" onclick="handleSubmitReview('${scheduleId}','${targetId}')">리뷰 등록</button>
         <button class="btn btn-secondary" onclick="document.getElementById('review-form-container').innerHTML=''">취소</button>
       </div>
     </div>

@@ -363,12 +363,88 @@ const MatchingService = (() => {
     return user ? user.name : '알 수 없음';
   }
 
+  /** 산책 매칭 가능 상태인 도우미만 반환 */
+  function getAvailableWalkers() {
+    return getAllProfiles().filter(p => p.role === 'walker' && p.isAvailable);
+  }
+
+  /** 주변 도우미 전체에게 산책 요청 브로드캐스트 */
+  function broadcastWalkRequest(fromId, requestData) {
+    const targets = getAvailableWalkers().filter(w => {
+      if (w.userId === fromId) return false;
+      if (!requestData.location || !w.location) return true;
+      const reqCity = requestData.location.trim().split(' ')[0];
+      return w.location.includes(reqCity);
+    });
+
+    if (targets.length === 0) {
+      return { success: false, error: '현재 주변에 산책 가능한 도우미가 없습니다.' };
+    }
+
+    const broadcastId = StorageService.generateId();
+    const requests = getAllRequests();
+
+    targets.forEach(walker => {
+      requests.push({
+        id: StorageService.generateId(),
+        broadcastId,
+        fromUserId: fromId,
+        toUserId: walker.userId,
+        requestData: { ...requestData },
+        status: 'pending',
+        createdAt: StorageService.now()
+      });
+    });
+
+    saveRequests(requests);
+    return { success: true, broadcastId, targetCount: targets.length };
+  }
+
+  /** 브로드캐스트 요청 수락 — 먼저 수락한 도우미가 매칭, 나머지는 자동 거절 */
+  function acceptBroadcastRequest(requestId) {
+    const requests = getAllRequests();
+    const idx = requests.findIndex(r => r.id === requestId);
+    if (idx === -1) return { success: false, error: '요청을 찾을 수 없습니다.' };
+
+    const req = requests[idx];
+    if (req.status !== 'pending') {
+      return { success: false, alreadyMatched: true };
+    }
+
+    requests[idx].status = 'accepted';
+
+    if (req.broadcastId) {
+      requests.forEach((r, i) => {
+        if (r.broadcastId === req.broadcastId && r.id !== requestId && r.status === 'pending') {
+          requests[i].status = 'rejected_matched';
+        }
+      });
+    }
+
+    saveRequests(requests);
+
+    const schedule = {
+      id: StorageService.generateId(),
+      matchRequestId: req.id,
+      participants: [req.fromUserId, req.toUserId],
+      scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      status: 'scheduled'
+    };
+
+    const schedules = getAllSchedules();
+    schedules.push(schedule);
+    saveSchedules(schedules);
+
+    return { success: true, schedule };
+  }
+
   return {
     getMyProfile,
     registerProfile,
     registerProfileRemote,
     removeProfile,
     getAllWalkers,
+    getAvailableWalkers,
     refreshFromServer,
     toggleAvailability,
     toggleAvailabilityRemote,
@@ -376,6 +452,8 @@ const MatchingService = (() => {
     getRecommendations,
     sendRequest,
     acceptRequest,
+    acceptBroadcastRequest,
+    broadcastWalkRequest,
     rejectRequest,
     completeWalk,
     addReview,
