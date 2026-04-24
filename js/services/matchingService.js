@@ -363,9 +363,17 @@ const MatchingService = (() => {
     return user ? user.name : '알 수 없음';
   }
 
-  /** 산책 매칭 가능 상태인 도우미만 반환 */
+  /** 산책 매칭 가능 상태인 도우미 반환 (로컬 matchProfiles + 서버 walkers 합산) */
   function getAvailableWalkers() {
-    return getAllProfiles().filter(p => p.role === 'walker' && p.isAvailable);
+    const localWalkers = getAllProfiles().filter(p => p.role === 'walker' && p.isAvailable);
+
+    if (_serverWalkersCache !== null && _serverWalkersCache.length > 0) {
+      const localIds = new Set(localWalkers.map(w => w.userId));
+      const serverAvailable = _serverWalkersCache.filter(w => w.isAvailable && !localIds.has(w.userId));
+      return [...localWalkers, ...serverAvailable];
+    }
+
+    return localWalkers;
   }
 
   /** 주변 도우미 전체에게 산책 요청 브로드캐스트 */

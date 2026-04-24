@@ -1267,7 +1267,7 @@ function renderMatchingPage() {
   if (myProfile.role === 'walker') {
     renderWalkerDashboard(user, myProfile);
   } else {
-    renderRequesterDashboard(user, myProfile);
+    MatchingService.refreshFromServer().then(() => renderRequesterDashboard(user, myProfile));
   }
 }
 
