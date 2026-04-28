@@ -347,8 +347,7 @@ function renderNavbar() {
     { route: '/', icon: '🏠', label: '홈' },
     { route: '/breeds', icon: '🐕', label: '품종정보' },
     { route: '/education', icon: '📚', label: '교육' },
-    { route: '/ai-symptom', icon: '🩺', label: 'AI진단' },
-    { route: '/ai-consult', icon: '💭', label: 'AI상담' },
+    { route: '/ai', icon: '🤖', label: 'AI상담' },
     { route: '/community', icon: '💬', label: '커뮤니티' },
     { route: '/wallet', icon: '🪙', label: '지갑' },
     { route: '/matching', icon: '🤝', label: '산책매칭' },
@@ -804,7 +803,523 @@ function handleCompleteEducation(contentId) {
   renderEducationDetailPage({ id: contentId });
 }
 
-// --- AI 증상 분석 페이지 ---
+// --- 통합 AI 상담 페이지 ---
+let _aiChatMode = 'training';
+let _aiCurrentSession = null; // { id, title, mode, messages:[] }
+let _aiSessionList = [];
+
+function renderAiPage() {
+  const user = AuthService.getCurrentUser();
+  _aiChatMode = 'training';
+  _aiCurrentSession = { id: StorageService.generateId(), title: '새 대화', mode: 'training', messages: [] };
+
+  const aiName = (user && user.aiName) || '포피';
+
+  renderPage(`
+    <div class="page-header">
+      <h1>🤖 ${aiName} - AI 반려견 상담</h1>
+      <p>훈련/행동 상담부터 건강/질병 분석까지, ${aiName}가 도와드려요~ 🐾</p>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="toggleAiSessions()" id="ai-sessions-toggle">📋 이전 대화 목록</button>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-primary btn-sm" onclick="startNewAiSession()">➕ 새 대화</button>
+        <button class="btn btn-secondary btn-sm" onclick="showAiNameSetting()">✏️ AI 비서 이름</button>
+      </div>
+    </div>
+
+    <div id="ai-sessions-panel" style="display:none; margin-bottom:12px;"></div>
+    <div id="ai-name-setting" style="display:none; margin-bottom:12px;"></div>
+
+    <div class="tabs" style="margin-bottom:16px;">
+      <button class="tab active" id="ai-tab-training" onclick="switchAiMode('training')">🐾 훈련/행동 상담</button>
+      <button class="tab" id="ai-tab-health" onclick="switchAiMode('health')">🩺 건강/질병 상담</button>
+    </div>
+
+    <div id="ai-mode-desc" class="card" style="padding:16px; margin-bottom:16px; background:var(--color-bg-warm);"></div>
+
+    <div id="ai-health-fields" style="display:none; margin-bottom:16px;">
+      <div class="card" style="padding:16px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div>
+            <label style="font-size:0.82rem; font-weight:600;">품종 (선택)</label>
+            <select id="ai-breed" class="form-select" style="margin-top:4px;">
+              <option value="">선택해주세요</option>
+              ${typeof BREEDS_DATA !== 'undefined' ? BREEDS_DATA.map(b => '<option value="' + b.name + '">' + b.name + '</option>').join('') : ''}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.82rem; font-weight:600;">나이 (선택)</label>
+            <input type="text" id="ai-age" class="form-input" placeholder="예: 3살" style="margin-top:4px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ai-chat" style="margin-bottom:16px; min-height:200px; max-height:500px; overflow-y:auto;"></div>
+
+    <div style="display:flex; gap:8px; position:sticky; bottom:16px; background:var(--color-bg); padding:8px 0;">
+      <label for="ai-file" class="btn btn-secondary btn-sm" title="사진/영상 첨부" style="padding:8px 12px; cursor:pointer; margin:0;">📎</label>
+      <input type="file" id="ai-file" accept="image/*,video/*" style="display:none;" onchange="handleAiFileSelect(this)">
+      <input type="text" id="ai-input" class="form-input" placeholder="질문을 입력해주세요..." style="flex:1;" onkeydown="if(event.key==='Enter')handleAiChat()" onpaste="handleAiPaste(event)">
+      <button class="btn btn-primary" onclick="handleAiChat()" id="ai-send-btn">전송</button>
+    </div>
+    <div id="ai-file-preview" style="display:none; padding:8px 0;"></div>
+  `);
+
+  updateAiModeDesc();
+  restoreAiChat();
+
+  // 세션 목록 로드
+  if (user) loadAiSessionList(user.id);
+}
+
+// 세션 목록 로드
+async function loadAiSessionList(userId) {
+  try {
+    const res = await fetch('/api/chat/' + userId + '/sessions');
+    if (res.ok) _aiSessionList = await res.json();
+  } catch(e) { _aiSessionList = []; }
+}
+
+// 세션 목록 패널 토글
+function toggleAiSessions() {
+  const panel = document.getElementById('ai-sessions-panel');
+  if (!panel) return;
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    renderAiSessionList();
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function renderAiSessionList() {
+  const panel = document.getElementById('ai-sessions-panel');
+  if (!panel) return;
+
+  if (_aiSessionList.length === 0) {
+    panel.innerHTML = '<div class="card" style="padding:16px;text-align:center;color:var(--color-text-muted);font-size:0.85rem;">이전 대화가 없어요.</div>';
+    return;
+  }
+
+  const modeIcon = { training: '🐾', health: '🩺' };
+  const items = _aiSessionList.map(s => {
+    const date = new Date(s.updatedAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const isActive = _aiCurrentSession && _aiCurrentSession.id === s.id;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--color-border);' + (isActive ? 'background:var(--color-bg-warm);' : '') + '"><span onclick="loadAiSession(\'' + s.id + '\')" style="cursor:pointer;">' + (modeIcon[s.mode] || '💬') + '</span><div style="flex:1;min-width:0;cursor:pointer;" onclick="loadAiSession(\'' + s.id + '\')"><div id="session-title-' + s.id + '" style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s.title + '</div><div style="font-size:0.75rem;color:var(--color-text-muted);">' + date + ' · ' + s.messageCount + '개 메시지</div></div><button onclick="event.stopPropagation();editSessionTitle(\'' + s.id + '\')" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--color-text-muted);" title="제목 수정">✏️</button><button onclick="event.stopPropagation();deleteAiSession(\'' + s.id + '\')" style="background:none;border:none;cursor:pointer;font-size:0.9rem;color:var(--color-text-muted);" title="삭제">🗑️</button></div>';
+  }).join('');
+
+  panel.innerHTML = '<div class="card" style="padding:0;max-height:300px;overflow-y:auto;">' + items + '</div>';
+}
+
+// 세션 제목 수정
+function editSessionTitle(sessionId) {
+  const titleEl = document.getElementById('session-title-' + sessionId);
+  if (!titleEl) return;
+  const currentTitle = titleEl.textContent;
+  titleEl.innerHTML = '<div style="display:flex;gap:4px;"><input type="text" id="edit-title-input-' + sessionId + '" class="form-input" value="' + currentTitle.replace(/"/g, '&quot;') + '" maxlength="30" style="font-size:0.82rem;padding:4px 8px;height:28px;" onkeydown="if(event.key===\'Enter\')confirmEditTitle(\'' + sessionId + '\');if(event.key===\'Escape\')renderAiSessionList();"><button onclick="confirmEditTitle(\'' + sessionId + '\')" style="background:var(--color-primary);color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:0.75rem;cursor:pointer;">✓</button></div>';
+  const input = document.getElementById('edit-title-input-' + sessionId);
+  if (input) { input.focus(); input.select(); }
+}
+
+async function confirmEditTitle(sessionId) {
+  const input = document.getElementById('edit-title-input-' + sessionId);
+  if (!input) return;
+  const newTitle = input.value.trim();
+  if (!newTitle) return;
+
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  // 서버에 저장
+  try {
+    // 세션 데이터 가져와서 제목만 변경
+    const res = await fetch('/api/chat/' + user.id + '/session/' + sessionId);
+    if (res.ok) {
+      const session = await res.json();
+      session.title = newTitle;
+      await fetch('/api/chat/' + user.id + '/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, title: newTitle, mode: session.mode, messages: session.messages })
+      });
+    }
+  } catch(e) {}
+
+  // 로컬 목록 업데이트
+  const s = _aiSessionList.find(x => x.id === sessionId);
+  if (s) s.title = newTitle;
+  if (_aiCurrentSession && _aiCurrentSession.id === sessionId) _aiCurrentSession.title = newTitle;
+
+  renderAiSessionList();
+}
+
+// 새 대화 시작
+function startNewAiSession() {
+  // 현재 세션 저장
+  saveCurrentSession();
+  // 새 세션
+  _aiCurrentSession = { id: StorageService.generateId(), title: '새 대화', mode: _aiChatMode, messages: [] };
+  restoreAiChat();
+  document.getElementById('ai-sessions-panel').style.display = 'none';
+}
+
+// 이전 세션 로드
+async function loadAiSession(sessionId) {
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  // 현재 세션 먼저 저장
+  saveCurrentSession();
+
+  try {
+    const res = await fetch('/api/chat/' + user.id + '/session/' + sessionId);
+    if (res.ok) {
+      const session = await res.json();
+      _aiCurrentSession = session;
+      _aiChatMode = session.mode || 'training';
+
+      // 탭 상태 업데이트
+      document.getElementById('ai-tab-training').classList.toggle('active', _aiChatMode === 'training');
+      document.getElementById('ai-tab-health').classList.toggle('active', _aiChatMode === 'health');
+      document.getElementById('ai-health-fields').style.display = _aiChatMode === 'health' ? 'block' : 'none';
+      updateAiModeDesc();
+      restoreAiChat();
+      document.getElementById('ai-sessions-panel').style.display = 'none';
+    }
+  } catch(e) { console.warn('세션 로드 실패:', e); }
+}
+
+// 세션 삭제
+async function deleteAiSession(sessionId) {
+  if (!confirm('이 대화를 삭제할까요?')) return;
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  try {
+    await fetch('/api/chat/' + user.id + '/session/' + sessionId, { method: 'DELETE' });
+    _aiSessionList = _aiSessionList.filter(s => s.id !== sessionId);
+    renderAiSessionList();
+    // 현재 세션이 삭제된 경우 새 대화 시작
+    if (_aiCurrentSession && _aiCurrentSession.id === sessionId) {
+      startNewAiSession();
+    }
+  } catch(e) {}
+}
+
+// 현재 세션 서버에 저장
+async function saveCurrentSession() {
+  const user = AuthService.getCurrentUser();
+  if (!user || !_aiCurrentSession || _aiCurrentSession.messages.length === 0) return;
+
+  // 첫 사용자 메시지로 제목 자동 생성
+  if (_aiCurrentSession.title === '새 대화') {
+    const firstMsg = _aiCurrentSession.messages.find(m => m.role === 'user');
+    if (firstMsg) {
+      _aiCurrentSession.title = firstMsg.text.substring(0, 30) + (firstMsg.text.length > 30 ? '...' : '');
+    }
+  }
+
+  try {
+    await fetch('/api/chat/' + user.id + '/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: _aiCurrentSession.id,
+        title: _aiCurrentSession.title,
+        mode: _aiCurrentSession.mode || _aiChatMode,
+        messages: _aiCurrentSession.messages
+      })
+    });
+    // 세션 목록 갱신
+    await loadAiSessionList(user.id);
+  } catch(e) {}
+}
+
+function updateAiModeDesc() {
+  const descEl = document.getElementById('ai-mode-desc');
+  if (!descEl) return;
+  if (_aiChatMode === 'training') {
+    descEl.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:1.5rem;">🐕‍🦺</span><div><div style="font-weight:700;font-size:0.9rem;">훈련/행동 상담 모드</div><div style="font-size:0.82rem;color:var(--color-text-light);">문제 행동 교정, 훈련 방법, 사회화 등에 대해 상담해드려요</div></div></div>';
+  } else {
+    descEl.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:1.5rem;">🩺</span><div><div style="font-weight:700;font-size:0.9rem;">건강/질병 상담 모드</div><div style="font-size:0.82rem;color:var(--color-text-light);">증상 분석, 질병 정보, 응급 대처법 등을 안내해드려요</div></div></div>';
+  }
+}
+
+function restoreAiChat() {
+  const chatEl = document.getElementById('ai-chat');
+  if (!chatEl) return;
+  const messages = (_aiCurrentSession && _aiCurrentSession.messages) || [];
+
+  if (messages.length === 0) {
+    const icon = _aiChatMode === 'training' ? '🐕‍🦺' : '🩺';
+    const desc = _aiChatMode === 'training'
+      ? '반려견 행동 문제나 훈련 방법에 대해 물어봐주세요!'
+      : '반려견의 증상이나 건강 고민을 알려주세요!';
+    chatEl.innerHTML = '<div class="card" style="padding:20px;text-align:center;color:var(--color-text-light);"><div style="font-size:2.5rem;margin-bottom:8px;">' + icon + '</div><p style="font-weight:700;">안녕하세요! ' + getAiName() + '예요~</p><p style="font-size:0.85rem;margin-top:4px;">' + desc + '</p></div>';
+    return;
+  }
+
+  chatEl.innerHTML = '';
+  messages.forEach(msg => {
+    if (msg.role === 'user') {
+      chatEl.innerHTML += '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><div style="background:var(--color-primary);color:#fff;padding:12px 16px;border-radius:16px 16px 4px 16px;max-width:75%;font-size:0.9rem;">' + msg.text + '</div></div>';
+    } else {
+      const formatted = msg.text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      chatEl.innerHTML += '<div style="display:flex;margin-bottom:12px;"><div style="background:var(--color-bg-warm);border:2px solid var(--color-border);padding:12px 16px;border-radius:16px 16px 16px 4px;max-width:85%;font-size:0.9rem;line-height:1.7;">' + formatted + '</div></div>';
+    }
+  });
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function switchAiMode(mode) {
+  _aiChatMode = mode;
+  if (_aiCurrentSession) _aiCurrentSession.mode = mode;
+
+  document.getElementById('ai-tab-training').classList.toggle('active', mode === 'training');
+  document.getElementById('ai-tab-health').classList.toggle('active', mode === 'health');
+  document.getElementById('ai-health-fields').style.display = mode === 'health' ? 'block' : 'none';
+  updateAiModeDesc();
+
+  const input = document.getElementById('ai-input');
+  if (input) input.placeholder = mode === 'training' ? '훈련/행동 관련 질문을 입력해주세요...' : '증상이나 건강 관련 질문을 입력해주세요...';
+}
+
+function clearAiChat() {
+  if (!confirm('현재 대화를 초기화하고 새 대화를 시작할까요?')) return;
+  startNewAiSession();
+}
+
+// AI 비서 이름 관련
+function getAiName() {
+  const user = AuthService.getCurrentUser();
+  return (user && user.aiName) || '포피';
+}
+
+function showAiNameSetting() {
+  const user = AuthService.getCurrentUser();
+  if (!user) { alert('로그인이 필요해요!'); return; }
+  const el = document.getElementById('ai-name-setting');
+  if (!el) return;
+  const current = user.aiName || '포피';
+  el.style.display = 'block';
+  el.innerHTML = '<div class="card" style="padding:16px;"><div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">✏️ AI 비서 이름 설정</div><p style="font-size:0.82rem;color:var(--color-text-light);margin-bottom:10px;">나만의 AI 비서 이름을 지어주세요! AI가 이 이름으로 자기소개해요.</p><div style="display:flex;gap:8px;"><input type="text" id="ai-name-input" class="form-input" value="' + current + '" placeholder="예: 뽀삐, 멍멍이, 코코" maxlength="10" style="flex:1;"><button class="btn btn-primary btn-sm" onclick="saveAiName()">저장</button><button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'ai-name-setting\').style.display=\'none\'">취소</button></div></div>';
+}
+
+function saveAiName() {
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+  const name = document.getElementById('ai-name-input')?.value?.trim();
+  if (!name) { alert('이름을 입력해주세요!'); return; }
+  if (name.length > 10) { alert('10자 이내로 입력해주세요!'); return; }
+
+  // 사용자 데이터에 aiName 저장
+  const users = StorageService.get('users', []);
+  const idx = users.findIndex(u => u.id === user.id);
+  if (idx !== -1) {
+    users[idx].aiName = name;
+    StorageService.set('users', users);
+  }
+  // currentUser도 업데이트
+  user.aiName = name;
+  StorageService.set('currentUser', user);
+
+  document.getElementById('ai-name-setting').style.display = 'none';
+  alert(name + '(으)로 설정되었어요! 🐾');
+  renderAiPage(); // 페이지 새로고침
+}
+
+// AI 클립보드 붙여넣기 (Ctrl+V 스크린샷)
+function handleAiPaste(event) {
+  const items = event.clipboardData?.items;
+  if (!items) return;
+
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      event.preventDefault();
+      const file = item.getAsFile();
+      if (!file) return;
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert('이미지 크기는 10MB 이하만 가능해요.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64Full = e.target.result;
+        const base64Data = base64Full.split(',')[1];
+        _aiAttachedFile = {
+          base64: base64Data,
+          mimeType: file.type,
+          name: '붙여넣기 이미지'
+        };
+
+        const preview = document.getElementById('ai-file-preview');
+        if (preview) {
+          preview.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--color-bg-warm);border-radius:8px;"><img src="' + base64Full + '" style="width:60px;height:60px;object-fit:cover;border-radius:6px;"><div style="flex:1;font-size:0.82rem;font-weight:600;">📋 클립보드 이미지</div><button onclick="removeAiFile()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;">✕</button></div>';
+          preview.style.display = 'block';
+        }
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+  }
+}
+
+// AI 파일 첨부 관련
+let _aiAttachedFile = null; // { base64, mimeType, name }
+
+function handleAiFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // 10MB 제한
+  if (file.size > 10 * 1024 * 1024) {
+    alert('파일 크기는 10MB 이하만 가능해요.');
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const base64Full = e.target.result;
+    const base64Data = base64Full.split(',')[1]; // data:image/jpeg;base64, 부분 제거
+    _aiAttachedFile = {
+      base64: base64Data,
+      mimeType: file.type,
+      name: file.name
+    };
+
+    // 미리보기 표시
+    const preview = document.getElementById('ai-file-preview');
+    if (preview) {
+      if (file.type.startsWith('image/')) {
+        preview.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--color-bg-warm);border-radius:8px;"><img src="' + base64Full + '" style="width:60px;height:60px;object-fit:cover;border-radius:6px;"><div style="flex:1;font-size:0.82rem;font-weight:600;">' + file.name + '</div><button onclick="removeAiFile()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;">✕</button></div>';
+      } else {
+        preview.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--color-bg-warm);border-radius:8px;"><span style="font-size:1.5rem;">🎬</span><div style="flex:1;font-size:0.82rem;font-weight:600;">' + file.name + '</div><button onclick="removeAiFile()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;">✕</button></div>';
+      }
+      preview.style.display = 'block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeAiFile() {
+  _aiAttachedFile = null;
+  const preview = document.getElementById('ai-file-preview');
+  if (preview) { preview.innerHTML = ''; preview.style.display = 'none'; }
+  const fileInput = document.getElementById('ai-file');
+  if (fileInput) fileInput.value = '';
+}
+
+async function handleAiChat() {
+  const input = document.getElementById('ai-input');
+  const chatEl = document.getElementById('ai-chat');
+  const btn = document.getElementById('ai-send-btn');
+  const message = input?.value?.trim();
+  if (!message) return;
+  input.value = '';
+
+  // 첫 메시지면 환영 카드 제거
+  if (_aiCurrentSession.messages.length === 0) chatEl.innerHTML = '';
+
+  // 사용자 메시지 표시 (이미지 포함)
+  let userMsgHtml = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><div style="background:var(--color-primary);color:#fff;padding:12px 16px;border-radius:16px 16px 4px 16px;max-width:75%;font-size:0.9rem;">';
+  if (_aiAttachedFile && _aiAttachedFile.mimeType.startsWith('image/')) {
+    userMsgHtml += '<img src="data:' + _aiAttachedFile.mimeType + ';base64,' + _aiAttachedFile.base64 + '" style="max-width:200px;max-height:150px;border-radius:8px;margin-bottom:8px;display:block;">';
+  } else if (_aiAttachedFile) {
+    userMsgHtml += '<div style="margin-bottom:6px;">📎 ' + _aiAttachedFile.name + '</div>';
+  }
+  userMsgHtml += message + '</div></div>';
+  chatEl.innerHTML += userMsgHtml;
+
+  // 로딩
+  chatEl.innerHTML += '<div id="ai-loading" style="display:flex;margin-bottom:12px;"><div style="background:var(--color-bg-warm);padding:12px 16px;border-radius:16px 16px 16px 4px;max-width:75%;"><div class="spinner" style="width:20px;height:20px;"></div></div></div>';
+  chatEl.scrollTop = chatEl.scrollHeight;
+  if (btn) btn.disabled = true;
+
+  _aiCurrentSession.messages.push({ role: 'user', text: message });
+
+  try {
+    let apiUrl, body;
+    const hasFile = !!_aiAttachedFile;
+
+    if (hasFile) {
+      // 이미지 첨부 → 멀티모달 API
+      apiUrl = '/api/ai/consult-with-image';
+      body = JSON.stringify({
+        message,
+        imageBase64: _aiAttachedFile.base64,
+        mimeType: _aiAttachedFile.mimeType,
+        history: _aiCurrentSession.messages,
+        mode: _aiChatMode,
+        aiName: getAiName()
+      });
+      // 파일 첨부 초기화
+      removeAiFile();
+    } else if (_aiChatMode === 'health') {
+      const breed = document.getElementById('ai-breed')?.value || '';
+      const age = document.getElementById('ai-age')?.value || '';
+      apiUrl = '/api/ai/consult';
+      const healthPrefix = '[건강/질병 상담 모드] ';
+      const breedInfo = breed ? '품종: ' + breed + '. ' : '';
+      const ageInfo = age ? '나이: ' + age + '. ' : '';
+      body = JSON.stringify({
+        message: healthPrefix + breedInfo + ageInfo + message,
+        history: _aiCurrentSession.messages,
+        mode: 'health',
+        aiName: getAiName()
+      });
+    } else {
+      apiUrl = '/api/ai/consult';
+      body = JSON.stringify({
+        message,
+        history: _aiCurrentSession.messages,
+        mode: 'training',
+        aiName: getAiName()
+      });
+    }
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body
+    });
+    const data = await res.json();
+
+    const loading = document.getElementById('ai-loading');
+    if (loading) loading.remove();
+
+    const reply = data.reply || data.analysis || data.error || '응답을 받지 못했어요.';
+    const isSuccess = data.success !== false;
+
+    if (isSuccess) {
+      const formatted = reply.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      chatEl.innerHTML += '<div style="display:flex;margin-bottom:12px;"><div style="background:var(--color-bg-warm);border:2px solid var(--color-border);padding:12px 16px;border-radius:16px 16px 16px 4px;max-width:85%;font-size:0.9rem;line-height:1.7;">' + formatted + '</div></div>';
+      _aiCurrentSession.messages.push({ role: 'ai', text: reply });
+    } else {
+      chatEl.innerHTML += '<div class="alert alert-error" style="margin-bottom:12px;">' + reply + '</div>';
+    }
+
+    // 메모리 저장
+    const user = AuthService.getCurrentUser();
+    if (user) saveCurrentSession();
+
+  } catch (e) {
+    const loading = document.getElementById('ai-loading');
+    if (loading) loading.remove();
+    chatEl.innerHTML += '<div class="alert alert-error" style="margin-bottom:12px;">서버 연결에 실패했습니다.</div>';
+  }
+
+  if (btn) btn.disabled = false;
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+
+// --- AI 증상 분석 페이지 (레거시 - /ai-symptom 직접 접근 시) ---
 function renderAiSymptomPage() {
   const user = AuthService.getCurrentUser();
 
@@ -3658,8 +4173,9 @@ function initApp() {
   Router.register('/breeds/:id', renderBreedDetailPage);
   Router.register('/education', renderEducationPage);
   Router.register('/education/:id', renderEducationDetailPage);
-  Router.register('/ai-symptom', renderAiSymptomPage);
-  Router.register('/ai-consult', renderAiConsultPage);
+  Router.register('/ai-symptom', renderAiPage);
+  Router.register('/ai-consult', renderAiPage);
+  Router.register('/ai', renderAiPage);
   Router.register('/community', renderCommunityPage);
   Router.register('/wallet', renderWalletPage);
   Router.register('/matching', renderMatchingPage);
