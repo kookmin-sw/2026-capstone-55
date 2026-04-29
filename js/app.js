@@ -432,7 +432,6 @@ function refreshDrawer() {
     ${walkSection}
     <div class="nav-drawer__divider"></div>
     <div class="nav-drawer__section-label">AI 서비스</div>
-    ${item('🩺', 'AI 건강 진단', '/ai-symptom')}
     ${item('💭', 'AI 반려견 상담', '/ai-consult')}
     <div class="nav-drawer__divider"></div>
     <div class="nav-drawer__section-label">정보</div>
