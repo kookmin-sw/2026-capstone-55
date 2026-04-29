@@ -1587,6 +1587,8 @@ async function handleAiSymptom() {
 
 // --- AI 상담 페이지 ---
 function renderAiConsultPage() {
+  const user = AuthService.getCurrentUser();
+  if (!user) { Router.navigate('/login'); return; }
   renderPage(`
     <div class="page-header">
       <h1>💭 AI 훈련사 상담</h1>
