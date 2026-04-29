@@ -58,7 +58,7 @@ const BreedImageService = (() => {
     const img = new Image();
     img.onload = () => {
       el.style.background = `url('${urls[urlIdx]}') center/cover no-repeat`;
-      el.innerHTML = '<span class="img-credit">📷 Wikimedia Commons</span>';
+      el.innerHTML = '';
     };
     img.onerror = () => tryLoad(el, breed, urls, urlIdx + 1, attempt);
     img.src = urls[urlIdx];
