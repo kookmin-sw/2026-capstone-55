@@ -404,17 +404,20 @@ function refreshDrawer() {
     walkSection = `
       <div class="nav-drawer__section-label">산책 서비스</div>
       ${item('🤝', '산책 관리', '/matching')}
-      ${item('🗺', '도그워커 지도', '/dog-walker')}`;
+      ${item('🗺', '도그워커 지도', '/dog-walker')}
+      ${item('🗺️', 'GPS 산책 트래킹', '/walk-tracking')}`;
   } else if (role === 'requester') {
     walkSection = `
       <div class="nav-drawer__section-label">산책 서비스</div>
       ${item('🔍', '도우미 찾기', '/dog-walker')}
-      ${item('🤝', '나의 산책', '/matching')}`;
+      ${item('🤝', '나의 산책', '/matching')}
+      ${item('🗺️', 'GPS 산책 트래킹', '/walk-tracking')}`;
   } else {
     walkSection = `
       <div class="nav-drawer__section-label">산책 서비스</div>
       ${item('🦮', '도그워커 찾기', '/dog-walker')}
-      ${item('🤝', '산책 매칭', '/matching')}`;
+      ${item('🤝', '산책 매칭', '/matching')}
+      ${item('🗺️', 'GPS 산책 트래킹', '/walk-tracking')}`;
   }
 
   drawer.innerHTML = `
@@ -433,6 +436,7 @@ function refreshDrawer() {
     <div class="nav-drawer__divider"></div>
     <div class="nav-drawer__section-label">AI 서비스</div>
     ${item('💭', 'AI 반려견 상담', '/ai-consult')}
+    ${item('❤️', '건강 분석', '/health')}
     <div class="nav-drawer__divider"></div>
     <div class="nav-drawer__section-label">정보</div>
     ${item('🐕', '품종 정보', '/breeds')}
@@ -5288,43 +5292,9 @@ function initApp() {
   StorageService.syncFromServer().then(() => {
     ensureAdminAccount();
     renderNavbar();
-<<<<<<< HEAD
-
-  // 라우트 등록
-  Router.register('/', renderHomePage);
-  Router.register('/breeds', renderBreedListPage);
-  Router.register('/breeds/:id', renderBreedDetailPage);
-  Router.register('/education', renderEducationPage);
-  Router.register('/education/:id', renderEducationDetailPage);
-  Router.register('/ai-symptom', renderAiPage);
-  Router.register('/ai-consult', renderAiPage);
-  Router.register('/ai', renderAiPage);
-  Router.register('/community', renderCommunityPage);
-  Router.register('/wallet', renderWalletPage);
-  Router.register('/matching', renderMatchingPage);
-  Router.register('/dog-walker', renderDogWalkerPage);
-  Router.register('/walk-session', () => renderWalkSessionPage(null));
-  Router.register('/ai-consult-claude', renderAIConsultPage);
-  Router.register('/profile', renderProfilePage);
-  Router.register('/admin', renderAdminPage);
-  Router.register('/login', renderLoginPage);
-  Router.register('/register', renderRegisterPage);
-  Router.register('/auth-callback', handleSocialAuthCallback);
-  Router.register('/social-agree', renderSocialAgreePage);
-  Router.register('/welcome-setup', renderWelcomeSetupPage);
-
-  // 404 핸들러
-  Router.setNotFound(renderNotFoundPage);
-
-  // 라우터 시작
-  Router.init();
-
-  console.log('[Pawsitive] 앱이 초기화되었습니다. 🐾');
-=======
     registerRoutes();
     Router.init();
     console.log('[Pawsitive] 앱이 초기화되었습니다. 🐾');
->>>>>>> origin/juneseo
   }).catch(e => {
     console.error('[Pawsitive] 서버 동기화 실패, 로컬 모드로 시작:', e);
     ensureAdminAccount();
