@@ -20,19 +20,157 @@ try {
 }
 
 /**
- * 간단한 키워드 기반 관련 지식 검색
+ * 동의어 사전 - 일상 표현 ↔ 전문 용어 매핑
  */
-function searchKnowledge(query, maxResults = 3) {
+const SYNONYM_MAP = {
+  // 증상 관련
+  '밥': ['식욕', '사료', '급여', '식이', '음식', '먹이'],
+  '안먹': ['식욕부진', '식욕감소', '거식', '식욕'],
+  '먹어': ['식욕', '급여', '사료'],
+  '토하': ['구토', '역류', '위장염'],
+  '토해': ['구토', '역류', '위장염'],
+  '설사': ['연변', '묽은변', '소화불량', '위장염', '장염'],
+  '변비': ['배변곤란', '변이안나'],
+  '기침': ['켄넬코프', '기관허탈', '호흡기', '기관지'],
+  '콧물': ['비염', '호흡기', '감기'],
+  '재채기': ['역재채기', '비염', '알레르기'],
+  '절뚝': ['파행', '슬개골', '관절', '골절', '인대'],
+  '절어': ['파행', '슬개골', '관절', '골절'],
+  '다리를들': ['슬개골', '관절', '인대파열'],
+  '긁어': ['가려움', '알레르기', '피부염', '아토피', '벼룩'],
+  '긁기': ['가려움', '알레르기', '피부염', '아토피'],
+  '가려': ['가려움', '알레르기', '피부염', '아토피', '진드기'],
+  '빠져': ['탈모', '털빠짐', '알로페시아', '피부'],
+  '털이': ['탈모', '털빠짐', '미용', '브러싱', '그루밍'],
+  '피가': ['출혈', '혈변', '혈뇨', '잇몸출혈'],
+  '피나': ['출혈', '혈변', '혈뇨'],
+  '부어': ['부종', '염증', '알레르기', '종양'],
+  '덩어리': ['종양', '혹', '낭종', '지방종', '비만세포종'],
+  '혹이': ['종양', '덩어리', '낭종', '지방종'],
+  '냄새': ['구취', '치주질환', '귀감염', '피부감염', '항문낭'],
+  '입냄새': ['구취', '치주질환', '치석', '잇몸'],
+  '눈곱': ['결막염', '눈질환', '안구건조', '눈물'],
+  '눈물': ['눈물착색', '유루증', '눈질환', '안구건조'],
+  '귀냄새': ['외이염', '귀감염', '귀청소'],
+  '머리흔': ['외이염', '귀감염', '귀가려움'],
+  '살쪘': ['비만', '과체중', '다이어트', '체중관리'],
+  '뚱뚱': ['비만', '과체중', '다이어트'],
+  '말랐': ['저체중', '영양부족', '기생충'],
+  '떨어': ['무기력', '기력저하', '질병'],
+  '기운이없': ['무기력', '기력저하', '질병', '통증'],
+  '축처': ['무기력', '기력저하', '우울', '통증'],
+  '물많이': ['다음', '다뇨', '당뇨', '신부전', '쿠싱'],
+  '오줌많': ['다뇨', '당뇨', '신부전', '방광염'],
+  '소변자주': ['빈뇨', '방광염', '요로감염'],
+  '피오줌': ['혈뇨', '방광염', '요로결석'],
+  '경련': ['발작', '간질', '경기', '중독'],
+  '발작': ['간질', '경련', '경기', '뇌질환'],
+  '떨림': ['떨림', '저혈당', '공포', '추위', '통증'],
+  '코골': ['단두종', '기도', '호흡기', '비만'],
+  '숨소리': ['호흡곤란', '기도', '단두종', '심장'],
+  // 행동 관련
+  '물어': ['입질', '물기', '공격성', '이갈이'],
+  '짖어': ['짖음', '경계', '분리불안', '요구성'],
+  '짖는': ['짖음', '경계', '분리불안', '요구성'],
+  '으르렁': ['공격성', '자원보호', '경고', '공포'],
+  '무서워': ['공포', '불안', '사회화', '둔감화'],
+  '겁이많': ['공포', '불안', '사회화부족', '둔감화'],
+  '도망': ['공포', '탈출', '불안'],
+  '안와': ['리콜', '이리와', '복종', '독립적'],
+  '말안들': ['복종', '훈련', '고집', '독립적'],
+  '뛰어올': ['점프', '뛰어오르기', '흥분', '인사'],
+  '올라타': ['마운팅', '흥분', '지배', '스트레스'],
+  '파괴': ['파괴행동', '분리불안', '지루함', '에너지과잉'],
+  '씹어': ['파괴', '이갈이', '지루함', '분리불안'],
+  '부셔': ['파괴행동', '분리불안', '지루함'],
+  '실수': ['배변실수', '배변훈련', '마킹', '분리불안'],
+  '오줌싸': ['배변실수', '마킹', '배변훈련', '방광염'],
+  '대소변': ['배변', '배변훈련', '배변실수'],
+  '혼자못': ['분리불안', '독립심', '켄넬훈련'],
+  '따라다': ['분리불안', '애착', '독립심'],
+  '안자': ['수면문제', '불안', '에너지과잉', '치매'],
+  '밤에깨': ['수면문제', '노견', '치매', '인지기능'],
+  '산책안': ['산책거부', '공포', '사회화', '통증'],
+  '끌어': ['리드줄당김', '산책훈련', '리드줄'],
+  '당겨': ['리드줄당김', '산책훈련', '리드줄'],
+  '주워먹': ['줍기', '이물질', '안돼훈련', '산책'],
+  '먹으려': ['줍기', '이물질', '안돼훈련'],
+  // 관리 관련
+  '목욕': ['목욕', '샴푸', '그루밍', '미용'],
+  '미용': ['미용', '그루밍', '브러싱', '털관리'],
+  '발톱': ['발톱깎기', '네일', '그루밍'],
+  '양치': ['치아관리', '양치', '치석', '치주질환'],
+  '예방접종': ['백신', '접종', '예방접종스케줄'],
+  '중성화': ['중성화', '수술', '불임', '거세'],
+  '보험': ['반려동물보험', '의료비', '보장'],
+};
+
+/**
+ * 동의어 확장 검색 - 일상 표현을 전문 용어로 확장
+ * 한국어 조사(을/를/이/가/에/도 등) 처리 포함
+ */
+function expandWithSynonyms(words) {
+  const expanded = new Set(words);
+
+  // 한국어 조사/어미 제거 버전도 추가
+  const stripped = words.map(w => {
+    let s = w;
+    // 어미 제거: ~해요, ~어요, ~아요, ~세요, ~네요, ~나요, ~ㄹ까요
+    s = s.replace(/(해요|어요|아요|세요|네요|나요|ㄹ까요|할까요|인가요|은가요|던가요)$/g, '');
+    // 조사 제거: 을/를/이/가/은/는/에/에서/도/로/의/와/과/만/까지/부터
+    s = s.replace(/(을|를|이|가|은|는|에서|에|도|로|의|와|과|만|까지|부터|마저|조차|한테|에게|께서)$/g, '');
+    return s;
+  });
+  stripped.forEach(s => { if (s.length >= 1) expanded.add(s); });
+
+  // 동의어 확장
+  const allWords = [...expanded];
+  allWords.forEach(word => {
+    // 정확한 매칭
+    if (SYNONYM_MAP[word]) {
+      SYNONYM_MAP[word].forEach(syn => expanded.add(syn));
+    }
+    // 키가 단어에 포함 (밥을 → 밥 키 매칭)
+    Object.entries(SYNONYM_MAP).forEach(([key, syns]) => {
+      if (key.length >= 2 && word.length >= 2) {
+        if (word.includes(key) || key.includes(word)) {
+          syns.forEach(syn => expanded.add(syn));
+        }
+      }
+    });
+  });
+  return [...expanded];
+}
+
+/**
+ * 개선된 RAG 검색 - 동의어 확장 + 카테고리 가중치
+ */
+function searchKnowledge(query, maxResults = 5) {
   if (knowledgeBase.length === 0) return [];
 
-  const queryWords = query.toLowerCase().replace(/[?!.,]/g, '').split(/\s+/);
+  const rawWords = query.toLowerCase().replace(/[?!.,~\-()]/g, '').split(/\s+/).filter(w => w.length >= 2);
+  const expandedWords = expandWithSynonyms(rawWords);
 
   const scored = knowledgeBase.map(item => {
     const text = (item.title + ' ' + item.content + ' ' + item.category).toLowerCase();
     let score = 0;
-    queryWords.forEach(word => {
-      if (word.length >= 2 && text.includes(word)) score++;
+
+    // 원본 키워드 매칭 (가중치 2)
+    rawWords.forEach(word => {
+      if (text.includes(word)) score += 2;
     });
+
+    // 동의어 매칭 (가중치 1)
+    expandedWords.forEach(word => {
+      if (!rawWords.includes(word) && text.includes(word)) score += 1;
+    });
+
+    // 제목 매칭 보너스 (가중치 3)
+    const titleText = item.title.toLowerCase();
+    rawWords.forEach(word => {
+      if (titleText.includes(word)) score += 3;
+    });
+
     return { ...item, score };
   });
 
@@ -169,7 +307,7 @@ router.post('/symptom', async (req, res) => {
 });
 
 // ===== Claude 폴백 상담 함수 =====
-async function consultWithClaude(message, history) {
+async function consultWithClaude(message, history, systemPrompt) {
   const client = getClaudeClient();
   if (!client) return null;
 
@@ -186,25 +324,32 @@ async function consultWithClaude(message, history) {
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
-    system: SYSTEM_PROMPTS.consult,
+    system: systemPrompt || SYSTEM_PROMPTS.consult,
     messages: [{ role: 'user', content: userContent }]
   });
   return response.content[0].text;
 }
 
-// ===== Gemini: AI 상담 (Gemini 실패 시 Claude 폴백) =====
+// ===== Gemini: 통합 AI 상담 (모드별 프롬프트 + RAG) =====
 router.post('/consult', async (req, res) => {
-  const { message, history } = req.body;
+  const { message, history, mode, aiName } = req.body;
   if (!message) {
     return res.status(400).json({ success: false, error: '메시지를 입력해주세요.' });
+  }
+
+  // 모드에 따라 시스템 프롬프트 선택 + AI 이름 반영
+  let systemPrompt = (mode === 'health') ? SYSTEM_PROMPTS.symptom : SYSTEM_PROMPTS.consult;
+  if (aiName) {
+    systemPrompt = `당신의 이름은 "${aiName}"입니다. 사용자가 설정한 이름이니 자연스럽게 사용하세요.\n\n` + systemPrompt;
   }
 
   // 1차: Gemini 시도
   const model = getGeminiModel();
   if (model) {
     try {
-      let prompt = SYSTEM_PROMPTS.consult + '\n\n';
+      let prompt = systemPrompt + '\n\n';
 
+      // RAG: 모드에 따라 검색 범위 조정
       const ragResults = searchKnowledge(message);
       if (ragResults.length > 0) {
         prompt += '[참고 자료 - 이 내용을 바탕으로 답변해주세요]\n';
@@ -226,18 +371,16 @@ router.post('/consult', async (req, res) => {
       return res.json({ success: true, reply: response });
     } catch (e) {
       console.error('[AI 상담] Gemini 실패:', e.message?.substring(0, 100));
-      // Gemini 실패 → Claude 폴백으로 진행
     }
   }
 
   // 2차: Claude 폴백
   try {
     console.log('[AI 상담] Claude 폴백 시도...');
-    const reply = await consultWithClaude(message, history);
+    const reply = await consultWithClaude(message, history, systemPrompt);
     if (reply) {
       return res.json({ success: true, reply });
     }
-    // Claude도 없으면 에러
     return res.status(503).json({ success: false, error: 'AI 서비스가 일시적으로 불안정해요. 잠시 후 다시 시도해주세요~' });
   } catch (e2) {
     console.error('[AI 상담] Claude 폴백도 실패:', e2.message?.substring(0, 100));
@@ -245,6 +388,95 @@ router.post('/consult', async (req, res) => {
       return res.status(503).json({ success: false, error: 'AI 크레딧이 부족해요. 관리자에게 문의해주세요.' });
     }
     return res.status(500).json({ success: false, error: 'AI 응답 중 오류가 발생했어요. 잠시 후 다시 시도해주세요~' });
+  }
+});
+
+// ===== 이미지 포함 AI 상담 =====
+router.post('/consult-with-image', async (req, res) => {
+  const { message, imageBase64, mimeType, history, mode, aiName } = req.body;
+  if (!message && !imageBase64) {
+    return res.status(400).json({ success: false, error: '메시지 또는 이미지를 입력해주세요.' });
+  }
+
+  let systemPrompt = (mode === 'health') ? SYSTEM_PROMPTS.symptom : SYSTEM_PROMPTS.consult;
+  if (aiName) {
+    systemPrompt = `당신의 이름은 "${aiName}"입니다. 사용자가 설정한 이름이니 자연스럽게 사용하세요.\n\n` + systemPrompt;
+  }
+
+  // Gemini 멀티모달 시도
+  if (process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.includes('여기에')) {
+    try {
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      // 프롬프트 구성
+      let textPrompt = systemPrompt + '\n\n';
+
+      const ragResults = searchKnowledge(message || '');
+      if (ragResults.length > 0) {
+        textPrompt += '[참고 자료]\n';
+        ragResults.forEach(r => { textPrompt += `- ${r.title}: ${r.content}\n`; });
+        textPrompt += '\n';
+      }
+
+      if (history && history.length > 0) {
+        textPrompt += '[이전 대화]\n';
+        history.slice(-6).forEach(h => {
+          textPrompt += `${h.role === 'user' ? '사용자' : 'AI'}: ${h.text}\n`;
+        });
+        textPrompt += '\n';
+      }
+
+      textPrompt += `사용자: ${message || '이 이미지를 분석해주세요.'}`;
+      if (imageBase64) {
+        textPrompt += '\n\n[사용자가 첨부한 이미지를 함께 분석해주세요. 이미지에 보이는 반려견의 상태, 증상, 행동 등을 관찰하여 답변에 반영해주세요.]';
+      }
+
+      // 멀티모달 요청 구성
+      const parts = [{ text: textPrompt }];
+      if (imageBase64) {
+        parts.push({
+          inlineData: {
+            mimeType: mimeType || 'image/jpeg',
+            data: imageBase64
+          }
+        });
+      }
+
+      const result = await model.generateContent(parts);
+      const response = result.response.text();
+      return res.json({ success: true, reply: response });
+    } catch (e) {
+      console.error('[AI 이미지] Gemini 실패:', e.message?.substring(0, 100));
+    }
+  }
+
+  // Claude 폴백 (이미지 포함)
+  try {
+    const client = getClaudeClient();
+    if (!client) {
+      return res.status(503).json({ success: false, error: 'AI 서비스를 사용할 수 없습니다.' });
+    }
+
+    const content = [];
+    if (imageBase64) {
+      content.push({
+        type: 'image',
+        source: { type: 'base64', media_type: mimeType || 'image/jpeg', data: imageBase64 }
+      });
+    }
+    content.push({ type: 'text', text: message || '이 이미지를 분석해주세요.' });
+
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages: [{ role: 'user', content }]
+    });
+    return res.json({ success: true, reply: response.content[0].text });
+  } catch (e2) {
+    console.error('[AI 이미지] Claude 폴백도 실패:', e2.message?.substring(0, 100));
+    return res.status(500).json({ success: false, error: 'AI 이미지 분석에 실패했어요. 잠시 후 다시 시도해주세요.' });
   }
 });
 
