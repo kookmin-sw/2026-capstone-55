@@ -38,39 +38,21 @@
     "nicknameChangedAt": "2026-04-17T10:46:32.708Z"
   },
   {
-    "id": "id-moccn983-mt66r36",
+    "id": "id-mok5uf8l-0badxjq",
     "email": "50dongja5295@naver.com",
     "name": "하준서",
-    "nickname": "준서하",
-    "referralCode": "PAW-VXEF4D",
+    "nickname": "",
+    "referralCode": "PAW-8RSZYS",
     "dogs": [
       {
-        "id": "id-mocd3tyd-e9u50ta",
+        "id": "id-mok5w4we-r808t5j",
         "name": "초코",
         "breed": "포메라니안",
         "age": 3,
-        "size": "small",
-        "gender": "female",
-        "weight": 4,
-        "neutered": false,
-        "personality": "활발함",
-        "healthNote": "슬개골 탈구가 3일에 한번 꼴로 일어납니다."
-      },
-      {
-        "id": "id-mocdx9pv-91uxotj",
-        "name": "딸기",
-        "breed": "래브라도 리트리버",
-        "age": 2,
-        "size": "large",
-        "gender": "male",
-        "weight": 8,
-        "neutered": true,
-        "personality": "활발함",
-        "healthNote": "꽃가루 알레르기가 있습니다."
+        "size": "small"
       }
     ],
     "pawCoins": 3000,
-    "createdAt": "2026-04-24T03:27:00.723Z",
-    "nicknameChangedAt": "2026-04-24T03:27:12.847Z"
+    "createdAt": "2026-04-29T14:38:47.205Z"
   }
 ]

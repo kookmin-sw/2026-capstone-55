@@ -3860,6 +3860,8 @@ function handleSelectWalkingDog() {
 let _trackingMap = null;
 let _trackingPolyline = null;
 let _trackingTimer = null;
+let _trackingMarker = null;
+let _trackingStartMarker = null;
 
 function handleStartTracking() {
   const result = GPSTrackingService.startTracking((data) => {
@@ -3869,7 +3871,37 @@ function handleStartTracking() {
     document.getElementById('track-calories').textContent = data.calories + ' kcal';
 
     if (data.lastPosition && _trackingMap) {
-      _trackingMap.setView([data.lastPosition.lat, data.lastPosition.lng], 16);
+      const pos = [data.lastPosition.lat, data.lastPosition.lng];
+      _trackingMap.setView(pos, _trackingMap.getZoom());
+
+      // 현재 위치 마커 업데이트
+      if (_trackingMarker) {
+        _trackingMarker.setLatLng(pos);
+      } else {
+        const myIcon = L.divIcon({
+          className: '',
+          html: '<div style="width:20px;height:20px;background:#F59E0B;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+        _trackingMarker = L.marker(pos, { icon: myIcon }).addTo(_trackingMap);
+        _trackingMarker.bindPopup('🐾 현재 위치').openPopup();
+      }
+
+      // 출발 지점 마커
+      if (!_trackingStartMarker && data.coordinates.length >= 1) {
+        const start = data.coordinates[0];
+        const startIcon = L.divIcon({
+          className: '',
+          html: '<div style="width:14px;height:14px;background:#22C55E;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        });
+        _trackingStartMarker = L.marker([start.lat, start.lng], { icon: startIcon }).addTo(_trackingMap);
+        _trackingStartMarker.bindPopup('🟢 출발');
+      }
+
+      // 경로 업데이트
       if (_trackingPolyline && data.coordinates.length > 1) {
         _trackingPolyline.setLatLngs(data.coordinates.map(c => [c.lat, c.lng]));
       }
@@ -3895,14 +3927,26 @@ function handleStartTracking() {
   // 지도 초기화
   const mapEl = document.getElementById('tracking-map');
   if (mapEl && typeof L !== 'undefined') {
-    _trackingMap = L.map(mapEl).setView([37.5665, 126.978], 15);
+    _trackingMap = L.map(mapEl).setView([37.5665, 126.978], 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
     }).addTo(_trackingMap);
-    _trackingPolyline = L.polyline([], { color: '#F59E0B', weight: 4 }).addTo(_trackingMap);
+    _trackingPolyline = L.polyline([], { color: '#F59E0B', weight: 5, opacity: 0.8 }).addTo(_trackingMap);
+    _trackingMarker = null;
+    _trackingStartMarker = null;
 
+    // 즉시 현재 위치로 이동 + 마커 표시
     navigator.geolocation.getCurrentPosition((pos) => {
-      _trackingMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
+      const latlng = [pos.coords.latitude, pos.coords.longitude];
+      _trackingMap.setView(latlng, 16);
+      const myIcon = L.divIcon({
+        className: '',
+        html: '<div style="width:20px;height:20px;background:#F59E0B;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);animation:pulse 2s infinite;"></div>',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+      _trackingMarker = L.marker(latlng, { icon: myIcon }).addTo(_trackingMap);
+      _trackingMarker.bindPopup('🐾 현재 위치').openPopup();
     });
   }
 
@@ -3951,6 +3995,9 @@ async function handleStopTracking() {
   `;
 
   if (_trackingMap) { try { _trackingMap.remove(); } catch(e) {} _trackingMap = null; }
+  _trackingMarker = null;
+  _trackingStartMarker = null;
+  _trackingPolyline = null;
 }
 
 async function loadWalkHistory(userId, dogId) {
