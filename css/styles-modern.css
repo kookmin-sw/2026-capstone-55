@@ -1073,3 +1073,34 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   from { opacity: 0; transform: translateX(24px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+
+/* ===== 품종 추천 탭 스타일 ===== */
+.breed-tab {
+  background: var(--color-bg, #fff);
+  color: var(--color-text-muted, #888);
+  transition: all 0.2s ease;
+}
+.breed-tab:hover {
+  background: rgba(124, 77, 255, 0.08);
+}
+.breed-tab--active {
+  background: var(--color-primary, #7C4DFF) !important;
+  color: #fff !important;
+}
+
+/* 추천 결과 카드 반응형 */
+@media (max-width: 600px) {
+  .breed-tabs {
+    font-size: 0.85rem;
+  }
+}
+
+/* ===== 로그인 유도 모달 애니메이션 ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

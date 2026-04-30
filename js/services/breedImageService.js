@@ -57,8 +57,19 @@ const BreedImageService = (() => {
 
     const img = new Image();
     img.onload = () => {
-      el.style.background = `url('${urls[urlIdx]}') center/cover no-repeat`;
+      // contain 모드: 이미지 전체가 보이도록 (추천 카드 등)
+      const fitMode = el.hasAttribute('data-fit-contain') ? 'contain' : 'cover';
+      const bgColor = fitMode === 'contain' ? '#f5f0eb' : 'transparent';
+      el.style.background = `url('${urls[urlIdx]}') center/${fitMode} no-repeat ${bgColor}`;
       el.innerHTML = '';
+      // Wikimedia Commons 출처 표시
+      if (urls[urlIdx] && urls[urlIdx].includes('wikimedia.org')) {
+        el.style.position = 'relative';
+        const credit = document.createElement('span');
+        credit.textContent = '© Wikimedia Commons';
+        credit.style.cssText = 'position:absolute;bottom:4px;right:6px;font-size:0.6rem;color:rgba(255,255,255,0.85);background:rgba(0,0,0,0.45);padding:1px 5px;border-radius:4px;pointer-events:none;line-height:1.4;';
+        el.appendChild(credit);
+      }
     };
     img.onerror = () => tryLoad(el, breed, urls, urlIdx + 1, attempt);
     img.src = urls[urlIdx];

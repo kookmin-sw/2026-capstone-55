@@ -521,6 +521,35 @@ function _cleanupMaps() {
 // 페이지 렌더러
 // ============================================================
 
+/**
+ * 로그인 유도 모달 — 비로그인 사용자가 기능 사용 시 표시
+ */
+function showLoginModal(message) {
+  // 이미 모달이 있으면 제거
+  const existing = document.getElementById('login-modal-overlay');
+  if (existing) existing.remove();
+
+  const msg = message || '이 기능을 사용하려면 로그인이 필요해요!';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'login-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s ease;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:32px 28px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:modalSlideUp 0.3s ease;">
+      <div style="font-size:3rem;margin-bottom:12px;">🐾</div>
+      <h3 style="margin:0 0 8px;font-size:1.15rem;">로그인이 필요해요!</h3>
+      <p style="color:#666;font-size:0.9rem;line-height:1.6;margin-bottom:20px;">${msg}</p>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('login-modal-overlay').remove();Router.navigate('/login')" style="flex:1;padding:12px;border:none;border-radius:12px;background:var(--color-primary,#7C4DFF);color:#fff;font-weight:700;font-size:0.95rem;cursor:pointer;">로그인</button>
+        <button onclick="document.getElementById('login-modal-overlay').remove();Router.navigate('/register')" style="flex:1;padding:12px;border:none;border-radius:12px;background:#f0f0f0;color:#333;font-weight:700;font-size:0.95rem;cursor:pointer;">회원가입</button>
+      </div>
+      <button onclick="document.getElementById('login-modal-overlay').remove()" style="margin-top:14px;background:none;border:none;color:#999;font-size:0.82rem;cursor:pointer;">나중에 할게요</button>
+    </div>
+  `;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
 function renderPage(html) {
   _cleanupMaps();
   const app = document.getElementById('app');
@@ -672,23 +701,249 @@ function renderHomePage() {
 }
 
 
-// --- 품종 목록 페이지 ---
+// --- 품종 목록 페이지 (탭: 백과사전 / AI 추천) ---
+let breedPageTab = 'recommend'; // 'encyclopedia' | 'recommend'
+
 function renderBreedListPage() {
   renderPage(`
     <div class="page-header">
       <h1>🐕 품종 정보</h1>
       <p>우리 아이 품종의 특성과 주의사항을 알아봐요~</p>
     </div>
-    <div class="search-bar">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="breed-search" placeholder="품종 이름으로 검색..." oninput="handleBreedSearch(this.value)">
+    <div class="breed-tabs" style="display:flex; gap:0; margin-bottom:20px; border-radius:12px; overflow:hidden; border:2px solid var(--color-primary, #7C4DFF);">
+      <button id="tab-recommend" class="breed-tab ${breedPageTab === 'recommend' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('recommend')" style="flex:1; padding:12px 16px; border:none; cursor:pointer; font-weight:700; font-size:0.95rem; transition:all 0.2s;">
+        🤖 AI 맞춤 추천
+      </button>
+      <button id="tab-encyclopedia" class="breed-tab ${breedPageTab === 'encyclopedia' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('encyclopedia')" style="flex:1; padding:12px 16px; border:none; cursor:pointer; font-weight:700; font-size:0.95rem; transition:all 0.2s;">
+        📖 품종 백과사전
+      </button>
     </div>
-    <div class="grid-2" id="breed-list">
-      ${renderBreedCards(BreedService.getAll())}
-    </div>
+    <div id="breed-tab-content"></div>
   `);
-  // 견종 이미지 로드
-  setTimeout(() => BreedImageService.loadAll(), 100);
+  renderBreedTabContent();
+}
+
+function switchBreedTab(tab) {
+  breedPageTab = tab;
+  // 탭 버튼 스타일 업데이트
+  document.getElementById('tab-encyclopedia')?.classList.toggle('breed-tab--active', tab === 'encyclopedia');
+  document.getElementById('tab-recommend')?.classList.toggle('breed-tab--active', tab === 'recommend');
+  renderBreedTabContent();
+}
+
+function renderBreedTabContent() {
+  const container = document.getElementById('breed-tab-content');
+  if (!container) return;
+
+  if (breedPageTab === 'encyclopedia') {
+    container.innerHTML = `
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="breed-search" placeholder="품종 이름으로 검색..." oninput="handleBreedSearch(this.value)">
+      </div>
+      <div class="grid-2" id="breed-list">
+        ${renderBreedCards(BreedService.getAll())}
+      </div>
+    `;
+    setTimeout(() => BreedImageService.loadAll(), 100);
+  } else {
+    container.innerHTML = renderBreedRecommendUI();
+  }
+}
+
+// --- AI 맞춤 품종 추천 UI ---
+function renderBreedRecommendUI() {
+  return `
+    <div class="card" style="padding:24px; margin-bottom:20px;">
+      <h2 style="margin-bottom:4px;">🐾 나에게 맞는 반려견 찾기</h2>
+      <p style="color:var(--color-text-muted); margin-bottom:20px; font-size:0.9rem;">생활 환경과 선호도를 선택하면 AI가 딱 맞는 품종을 추천해드려요!</p>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px;">
+        <!-- 크기 -->
+        <div class="recommend-field">
+          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🐕 선호 크기</label>
+          <select id="rec-size" class="form-input" style="width:100%;">
+            <option value="any">상관없음</option>
+            <option value="small">🐕 소형 (10kg 이하)</option>
+            <option value="medium">🐕 중형 (10~25kg)</option>
+            <option value="large">🐕 대형 (25kg 이상)</option>
+          </select>
+        </div>
+
+        <!-- 운동량 -->
+        <div class="recommend-field">
+          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🏃 운동량</label>
+          <select id="rec-exercise" class="form-input" style="width:100%;">
+            <option value="any">상관없음</option>
+            <option value="low">적음 (하루 30분 이하)</option>
+            <option value="medium">보통 (하루 30분~1시간)</option>
+            <option value="high">많음 (하루 1시간 이상)</option>
+          </select>
+        </div>
+
+        <!-- 미용 관리 -->
+        <div class="recommend-field">
+          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">✂️ 미용 관리</label>
+          <select id="rec-grooming" class="form-input" style="width:100%;">
+            <option value="any">상관없음</option>
+            <option value="low">적음 (관리 편한 견종)</option>
+            <option value="medium">보통</option>
+            <option value="high">많음 (미용 즐기는 편)</option>
+          </select>
+        </div>
+
+        <!-- 훈련 용이성 -->
+        <div class="recommend-field">
+          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🎓 훈련 용이성</label>
+          <select id="rec-trainability" class="form-input" style="width:100%;">
+            <option value="any">상관없음</option>
+            <option value="high">높음 (초보자도 쉽게)</option>
+            <option value="medium">보통</option>
+            <option value="low">낮음 (경험자 추천)</option>
+          </select>
+        </div>
+
+        <!-- 짖음 -->
+        <div class="recommend-field">
+          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🔊 짖음 정도</label>
+          <select id="rec-barking" class="form-input" style="width:100%;">
+            <option value="any">상관없음</option>
+            <option value="low">적음 (조용한 견종)</option>
+            <option value="medium">보통</option>
+            <option value="high">많음</option>
+          </select>
+        </div>
+
+        <!-- 추천 마릿수 -->
+        <div class="recommend-field">
+          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">📋 추천 마릿수</label>
+          <input type="number" id="rec-count" class="form-input" style="width:100%;" value="3" min="1" placeholder="원하는 마릿수 입력">
+        </div>
+      </div>
+
+      <!-- 체크박스 옵션 -->
+      <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:16px;">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.9rem;">
+          <input type="checkbox" id="rec-child"> 👶 아이가 있는 가정
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.9rem;">
+          <input type="checkbox" id="rec-apartment"> 🏢 아파트 거주
+        </label>
+      </div>
+
+      <!-- 자유 입력 -->
+      <div style="margin-top:16px;">
+        <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">💬 추가로 원하는 조건 (선택)</label>
+        <textarea id="rec-freetext" class="form-input" rows="2" placeholder="예: 털이 잘 안 빠지는 견종이 좋아요, 혼자 있는 시간이 많아요, 처음 키우는 초보예요..." style="width:100%; resize:vertical;"></textarea>
+      </div>
+
+      <!-- 추천 버튼 -->
+      <button id="rec-submit-btn" class="btn btn-primary" onclick="handleBreedRecommend()" style="width:100%; margin-top:20px; padding:14px; font-size:1rem; font-weight:800;">
+        🤖 AI 맞춤 추천 받기
+      </button>
+    </div>
+
+    <!-- 추천 결과 영역 -->
+    <div id="breed-recommend-result"></div>
+  `;
+}
+
+// --- AI 품종 추천 요청 핸들러 ---
+async function handleBreedRecommend() {
+  const btn = document.getElementById('rec-submit-btn');
+  const resultEl = document.getElementById('breed-recommend-result');
+
+  const preferences = {
+    size: document.getElementById('rec-size')?.value || 'any',
+    exerciseLevel: document.getElementById('rec-exercise')?.value || 'any',
+    groomingLevel: document.getElementById('rec-grooming')?.value || 'any',
+    trainability: document.getElementById('rec-trainability')?.value || 'any',
+    barkingLevel: document.getElementById('rec-barking')?.value || 'any',
+    childFriendly: document.getElementById('rec-child')?.checked || false,
+    apartmentFriendly: document.getElementById('rec-apartment')?.checked || false,
+    freeText: document.getElementById('rec-freetext')?.value?.trim() || ''
+  };
+  const count = parseInt(document.getElementById('rec-count')?.value) || 3;
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></div> AI가 분석 중...'; }
+  if (resultEl) resultEl.innerHTML = `
+    <div class="card" style="padding:40px; text-align:center;">
+      <div class="spinner" style="margin:0 auto 16px;"></div>
+      <p style="color:var(--color-text-muted);">383종의 품종 데이터를 분석하고 있어요...</p>
+      <p style="color:var(--color-text-muted); font-size:0.85rem;">잠시만 기다려주세요 🐾</p>
+    </div>
+  `;
+
+  try {
+    const res = await fetch('/api/ai/recommend-breed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preferences, count })
+    });
+    const data = await res.json();
+
+    if (data.success && data.recommendations) {
+      resultEl.innerHTML = renderBreedRecommendResult(data);
+      // 추천 결과 견종 이미지 로드
+      setTimeout(() => BreedImageService.loadAll(), 100);
+    } else if (data.success && data.rawReply) {
+      // JSON 파싱 실패 시 원본 텍스트 표시
+      const formatted = data.rawReply.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      resultEl.innerHTML = `<div class="card" style="padding:24px; line-height:1.8;">${formatted}</div>`;
+    } else {
+      resultEl.innerHTML = `<div class="alert alert-error">${data.error || '추천에 실패했어요. 다시 시도해주세요.'}</div>`;
+    }
+  } catch (e) {
+    resultEl.innerHTML = `<div class="alert alert-error">서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.</div>`;
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI 맞춤 추천 받기'; }
+}
+
+// --- 추천 결과 렌더링 ---
+function renderBreedRecommendResult(data) {
+  const { recommendations, summary, totalCandidates } = data;
+
+  let html = '';
+
+  if (summary) {
+    html += `<div class="card" style="padding:16px 20px; margin-bottom:16px; background:var(--color-bg-warm);">
+      <p style="font-size:0.95rem; margin:0;"><strong>📊 AI 분석 결과</strong> — ${summary}</p>
+      <p style="font-size:0.8rem; color:var(--color-text-muted); margin:4px 0 0;">총 ${totalCandidates || '?'}종 후보 중 ${recommendations.length}종 추천</p>
+    </div>`;
+  }
+
+  recommendations.forEach((rec, idx) => {
+    const breed = BreedService.getById(rec.id);
+    const sizeMap = { small: '소형', medium: '중형', large: '대형' };
+
+    html += `
+    <div class="card" style="padding:0; margin-bottom:16px; overflow:hidden;">
+      <!-- 이미지 상단 배치 -->
+      <div style="position:relative;">
+        <div class="breed-img" data-breed-id="${rec.id}" data-fit-contain style="width:100%; height:220px; background:linear-gradient(135deg, #FFB3C6, #C9A9E9); display:flex; align-items:center; justify-content:center; font-size:4rem;">🐕</div>
+        <div style="position:absolute; top:10px; left:10px; background:var(--color-primary, #7C4DFF); color:white; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.2);">${idx + 1}</div>
+        ${rec.matchScore ? `<div style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.7); color:#FFD700; padding:4px 10px; border-radius:10px; font-size:0.85rem; font-weight:700;">⭐ ${rec.matchScore}점</div>` : ''}
+      </div>
+      <!-- 정보 -->
+      <div style="padding:16px 20px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+          <h3 style="margin:0; font-size:1.15rem;">${rec.name}</h3>
+          <span style="font-size:0.8rem; color:var(--color-text-muted);">${rec.nameEn || ''}</span>
+          ${breed ? `<span class="badge badge-primary" style="font-size:0.7rem;">${sizeMap[breed.size] || ''}</span>` : ''}
+        </div>
+        <p style="font-size:0.9rem; line-height:1.7; margin-bottom:12px; color:var(--color-text);">${rec.reason}</p>
+        <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:12px;">
+          ${rec.pros ? `<div style="flex:1; min-width:140px;"><div style="font-size:0.8rem; font-weight:700; color:#4CAF50; margin-bottom:6px;">👍 장점</div>${rec.pros.map(p => `<div style="font-size:0.85rem; padding:2px 0;">• ${p}</div>`).join('')}</div>` : ''}
+          ${rec.cons ? `<div style="flex:1; min-width:140px;"><div style="font-size:0.8rem; font-weight:700; color:#FF9800; margin-bottom:6px;">⚠️ 주의점</div>${rec.cons.map(c => `<div style="font-size:0.85rem; padding:2px 0;">• ${c}</div>`).join('')}</div>` : ''}
+        </div>
+        ${rec.tip ? `<div style="background:var(--color-bg-warm); padding:10px 14px; border-radius:10px; font-size:0.85rem; margin-bottom:12px;">💡 <strong>꿀팁:</strong> ${rec.tip}</div>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds/${rec.id}')" style="margin-top:2px;">상세 정보 보기 →</button>
+      </div>
+    </div>`;
+  });
+
+  return html;
 }
 
 function renderBreedCards(breeds) {
@@ -748,7 +1003,7 @@ function renderBreedDetailPage(params) {
   renderPage(`
     <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds')" style="margin-bottom:16px;">← 목록으로</button>
     <div class="detail-header">
-      <div id="breed-detail-img" data-breed-id="${breed.id}" style="width:100%; height:260px; background: linear-gradient(135deg, #FFB3C6, #C9A9E9); border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:5rem; margin-bottom:16px; position:relative;">🐕</div>
+      <div id="breed-detail-img" data-breed-id="${breed.id}" data-fit-contain style="width:100%; height:300px; background: linear-gradient(135deg, #FFB3C6, #C9A9E9); border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:5rem; margin-bottom:16px; position:relative;">🐕</div>
       <h1>${breed.name} ${breed.nameEn ? '<span style="font-size:0.9rem; color:var(--color-text-light); font-weight:600;">' + breed.nameEn + '</span>' : ''}</h1>
       <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
         <span class="badge badge-primary">${sizeMap[breed.size]}</span>
@@ -854,10 +1109,24 @@ function renderEducationPage() {
   const progress = user ? EducationService.getProgress(user.id) : { total: EDUCATION_DATA.length, completed: 0, ratio: 0, completedIds: [] };
   const pct = Math.round(progress.ratio * 100);
 
+  const categories = [
+    { key: 'all', icon: '📚', label: '전체' },
+    { key: 'basics', icon: '🐾', label: '기본상식' },
+    { key: 'body-language', icon: '🐕', label: '바디랭귀지' },
+    { key: 'training', icon: '🎓', label: '훈련' },
+    { key: 'health', icon: '🏥', label: '건강관리' },
+    { key: 'nutrition', icon: '🥗', label: '영양/식이' },
+    { key: 'grooming', icon: '✂️', label: '미용/관리' },
+    { key: 'safety', icon: '🛡️', label: '안전' },
+    { key: 'puppy', icon: '🍼', label: '퍼피케어' },
+    { key: 'senior', icon: '🐕‍🦺', label: '노견케어' },
+    { key: 'law', icon: '⚖️', label: '법률/에티켓' }
+  ];
+
   renderPage(`
     <div class="page-header">
-      <h1>📚 산책 교육</h1>
-      <p>올바른 산책 방법을 함께 배워봐요~ 🐾</p>
+      <h1>📚 반려견 교육 센터</h1>
+      <p>반려견과 행복하게 살기 위한 모든 지식을 배워봐요~ 🐾</p>
     </div>
     <div class="progress-section" style="margin-bottom:20px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -868,11 +1137,8 @@ function renderEducationPage() {
         <div style="width:${pct}%; height:100%; background:linear-gradient(90deg, var(--color-primary-light), var(--color-primary)); border-radius:6px; transition:width 0.3s;"></div>
       </div>
     </div>
-    <div class="tabs">
-      <button class="tab active" onclick="filterEducation('all', this)">전체</button>
-      <button class="tab" onclick="filterEducation('posture', this)">🧍 자세</button>
-      <button class="tab" onclick="filterEducation('leash', this)">🦮 리드줄</button>
-      <button class="tab" onclick="filterEducation('safety', this)">🛡️ 안전</button>
+    <div class="tabs" style="flex-wrap:wrap; gap:4px;">
+      ${categories.map(c => `<button class="tab${c.key === 'all' ? ' active' : ''}" onclick="filterEducation('${c.key}', this)" style="font-size:0.82rem; padding:8px 12px;">${c.icon} ${c.label}</button>`).join('')}
     </div>
     <div class="grid-2" id="education-list">
       ${renderEducationCards(EducationService.getByCategory('all'), progress.completedIds)}
@@ -888,7 +1154,12 @@ function renderEducationCards(items, completedIds) {
     </div>`;
   }
   completedIds = completedIds || [];
-  const catMap = { posture: '🧍 자세', leash: '🦮 리드줄', safety: '🛡️ 안전' };
+  const catMap = {
+    basics: '🐾 기본상식', 'body-language': '🐕 바디랭귀지', training: '🎓 훈련',
+    health: '🏥 건강관리', nutrition: '🥗 영양/식이', grooming: '✂️ 미용/관리',
+    safety: '🛡️ 안전', puppy: '🍼 퍼피케어', senior: '🐕‍🦺 노견케어', law: '⚖️ 법률/에티켓',
+    posture: '🧍 자세', leash: '🦮 리드줄'
+  };
   return items.map(item => {
     const isCompleted = completedIds.includes(item.id);
     return `
@@ -933,32 +1204,64 @@ function renderEducationDetailPage(params) {
     return;
   }
 
-  const catMap = { posture: '🧍 자세', leash: '🦮 리드줄', safety: '🛡️ 안전' };
+  const catMap = {
+    basics: '🐾 기본상식', 'body-language': '🐕 바디랭귀지', training: '🎓 훈련',
+    health: '🏥 건강관리', nutrition: '🥗 영양/식이', grooming: '✂️ 미용/관리',
+    safety: '🛡️ 안전', puppy: '🍼 퍼피케어', senior: '🐕‍🦺 노견케어', law: '⚖️ 법률/에티켓',
+    posture: '🧍 자세', leash: '🦮 리드줄'
+  };
   const user = AuthService.getCurrentUser();
   const progress = user ? EducationService.getProgress(user.id) : { completedIds: [] };
   const isCompleted = progress.completedIds.includes(content.id);
 
   let completeButtonHtml = '';
-  if (user) {
-    if (isCompleted) {
+  const hasQuiz = content.quiz && content.quiz.length > 0;
+
+  if (isCompleted) {
+    completeButtonHtml = `
+      <div style="margin-top:24px; padding:16px; background:#d1fae5; border-radius:var(--radius-md, 8px); text-align:center;">
+        <span style="font-size:1.2rem;">✅</span>
+        <span style="font-weight:600; color:#065f46; margin-left:8px;">이미 완료한 콘텐츠입니다</span>
+      </div>`;
+  } else if (hasQuiz) {
+    completeButtonHtml = `
+      <div id="edu-quiz-section" style="margin-top:24px;">
+        <div class="card" style="padding:24px;">
+          <h3 style="margin-bottom:4px;">📝 학습 확인 퀴즈</h3>
+          <p style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:20px;">3문제 중 2문제 이상 맞추면 통과!</p>
+          ${content.quiz.map((q, qi) => `
+            <div class="quiz-question" style="margin-bottom:20px; padding:16px; background:var(--color-bg-warm); border-radius:12px;">
+              <p style="font-weight:700; margin-bottom:10px;">Q${qi + 1}. ${q.question}</p>
+              <div style="display:grid; gap:8px;">
+                ${q.options.map((opt, oi) => `
+                  <label class="quiz-option" id="quiz-opt-${qi}-${oi}" style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fff; border:2px solid var(--color-border, #e5e5e5); border-radius:10px; cursor:pointer; transition:all 0.2s; font-size:0.9rem;" onclick="selectQuizOption(${qi}, ${oi})">
+                    <input type="radio" name="quiz-${qi}" value="${oi}" style="display:none;">
+                    <span class="quiz-radio" style="width:20px; height:20px; border:2px solid #ccc; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;"></span>
+                    <span>${opt}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+          <div id="quiz-result" style="display:none; margin-bottom:16px;"></div>
+          <button class="btn btn-primary" id="quiz-submit-btn" onclick="submitEducationQuiz('${content.id}')" style="width:100%; padding:14px; font-size:1rem;">
+            🎯 정답 확인하기
+          </button>
+        </div>
+      </div>`;
+  } else {
+    // 퀴즈 없는 콘텐츠 (기존 완료 버튼)
+    if (user) {
       completeButtonHtml = `
-        <div style="margin-top:24px; padding:16px; background:#d1fae5; border-radius:var(--radius-md, 8px); text-align:center;">
-          <span style="font-size:1.2rem;">✅</span>
-          <span style="font-weight:600; color:#065f46; margin-left:8px;">이미 완료한 콘텐츠입니다</span>
+        <div style="margin-top:24px; text-align:center;">
+          <button class="btn btn-primary" id="complete-btn" onclick="handleCompleteEducation('${content.id}')" style="padding:12px 32px; font-size:1rem;">✅ 완료</button>
         </div>`;
     } else {
       completeButtonHtml = `
         <div style="margin-top:24px; text-align:center;">
-          <button class="btn btn-primary" id="complete-btn" onclick="handleCompleteEducation('${content.id}')" style="padding:12px 32px; font-size:1rem;">
-            ✅ 완료
-          </button>
+          <button class="btn btn-primary" onclick="showLoginModal('학습 완료를 기록하려면 로그인이 필요해요!')" style="padding:12px 32px; font-size:1rem;">✅ 완료</button>
         </div>`;
     }
-  } else {
-    completeButtonHtml = `
-      <div style="margin-top:24px; padding:16px; background:var(--color-bg-secondary, #f9fafb); border-radius:var(--radius-md, 8px); text-align:center;">
-        <p style="color:var(--color-text-light); margin:0;">학습 완료를 기록하려면 <a href="#/login" style="color:var(--color-primary, #FF8FAB); font-weight:700;">로그인</a>하세요.</p>
-      </div>`;
   }
 
   renderPage(`
@@ -975,13 +1278,120 @@ function renderEducationDetailPage(params) {
 }
 
 /**
- * 교육 콘텐츠 완료 핸들러
+ * 퀴즈 옵션 선택
+ */
+function selectQuizOption(questionIdx, optionIdx) {
+  // 해당 문제의 모든 옵션 초기화
+  document.querySelectorAll(`[id^="quiz-opt-${questionIdx}-"]`).forEach(el => {
+    el.style.borderColor = 'var(--color-border, #e5e5e5)';
+    el.style.background = '#fff';
+    const radio = el.querySelector('.quiz-radio');
+    if (radio) { radio.style.borderColor = '#ccc'; radio.innerHTML = ''; }
+  });
+  // 선택된 옵션 하이라이트
+  const selected = document.getElementById(`quiz-opt-${questionIdx}-${optionIdx}`);
+  if (selected) {
+    selected.style.borderColor = 'var(--color-primary, #7C4DFF)';
+    selected.style.background = 'rgba(124, 77, 255, 0.05)';
+    const radio = selected.querySelector('.quiz-radio');
+    if (radio) {
+      radio.style.borderColor = 'var(--color-primary, #7C4DFF)';
+      radio.style.background = 'var(--color-primary, #7C4DFF)';
+      radio.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="white"/></svg>';
+    }
+    const input = selected.querySelector('input');
+    if (input) input.checked = true;
+  }
+}
+
+/**
+ * 퀴즈 제출 및 채점
+ */
+function submitEducationQuiz(contentId) {
+  const content = EducationService.getById(contentId);
+  if (!content || !content.quiz) return;
+
+  const user = AuthService.getCurrentUser();
+  if (!user) {
+    showLoginModal('퀴즈 결과를 저장하려면 로그인이 필요해요!\n학습 진행률을 추적할 수 있어요.');
+    return;
+  }
+
+  const quiz = content.quiz;
+  let correct = 0;
+  let allAnswered = true;
+
+  quiz.forEach((q, qi) => {
+    const selected = document.querySelector(`input[name="quiz-${qi}"]:checked`);
+    if (!selected) { allAnswered = false; return; }
+    const userAnswer = parseInt(selected.value);
+    const isCorrect = userAnswer === q.answer;
+    if (isCorrect) correct++;
+
+    // 정답/오답 표시
+    q.options.forEach((_, oi) => {
+      const optEl = document.getElementById(`quiz-opt-${qi}-${oi}`);
+      if (!optEl) return;
+      optEl.style.cursor = 'default';
+      optEl.onclick = null;
+      if (oi === q.answer) {
+        optEl.style.borderColor = '#4CAF50';
+        optEl.style.background = '#e8f5e9';
+      } else if (oi === userAnswer && !isCorrect) {
+        optEl.style.borderColor = '#f44336';
+        optEl.style.background = '#ffebee';
+      }
+    });
+  });
+
+  if (!allAnswered) {
+    const resultEl = document.getElementById('quiz-result');
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<div class="alert alert-error" style="text-align:center;">모든 문제에 답해주세요!</div>';
+    }
+    return;
+  }
+
+  const passed = correct >= 2;
+  const resultEl = document.getElementById('quiz-result');
+  const btn = document.getElementById('quiz-submit-btn');
+
+  if (resultEl) {
+    resultEl.style.display = 'block';
+    if (passed) {
+      resultEl.innerHTML = `
+        <div style="text-align:center; padding:20px; background:#d1fae5; border-radius:12px;">
+          <div style="font-size:2rem; margin-bottom:8px;">🎉</div>
+          <div style="font-weight:800; color:#065f46; font-size:1.1rem;">${correct}/${quiz.length} 정답 — 통과!</div>
+          <p style="color:#065f46; font-size:0.85rem; margin-top:4px;">학습 완료로 기록되었습니다.</p>
+        </div>`;
+      // 학습 완료 처리
+      EducationService.markComplete(user.id, contentId);
+      if (btn) btn.style.display = 'none';
+    } else {
+      resultEl.innerHTML = `
+        <div style="text-align:center; padding:20px; background:#fff3e0; border-radius:12px;">
+          <div style="font-size:2rem; margin-bottom:8px;">😅</div>
+          <div style="font-weight:800; color:#e65100; font-size:1.1rem;">${correct}/${quiz.length} 정답 — 아쉬워요!</div>
+          <p style="color:#e65100; font-size:0.85rem; margin-top:4px;">2문제 이상 맞춰야 통과예요. 내용을 다시 읽고 도전해보세요!</p>
+        </div>`;
+      if (btn) {
+        btn.textContent = '🔄 다시 도전하기';
+        btn.onclick = () => Router.navigate('/education/' + contentId);
+      }
+    }
+  }
+}
+
+/**
+ * 교육 콘텐츠 완료 핸들러 (퀴즈 없는 콘텐츠용)
  * @param {string} contentId - 콘텐츠 ID
  */
 function handleCompleteEducation(contentId) {
   const user = AuthService.getCurrentUser();
   if (!user) {
-    Router.navigate('/login');
+    showLoginModal('학습 완료를 기록하려면 로그인이 필요해요!');
     return;
   }
 
@@ -1293,7 +1703,7 @@ function getAiName() {
 
 function showAiNameSetting() {
   const user = AuthService.getCurrentUser();
-  if (!user) { alert('로그인이 필요해요!'); return; }
+  if (!user) { showLoginModal('AI 비서 이름을 설정하려면 로그인이 필요해요!'); return; }
   const el = document.getElementById('ai-name-setting');
   if (!el) return;
   const current = user.aiName || '포피';
@@ -1414,6 +1824,17 @@ async function handleAiChat() {
   const btn = document.getElementById('ai-send-btn');
   const message = input?.value?.trim();
   if (!message) return;
+
+  // 비로그인 시 로그인 유도
+  const user = AuthService.getCurrentUser();
+  if (!user) {
+    chatEl.innerHTML += `<div style="display:flex;margin-bottom:12px;"><div style="background:var(--color-bg-warm);padding:14px 18px;border-radius:16px 16px 16px 4px;max-width:85%;font-size:0.9rem;">
+      🔒 AI 상담을 이용하려면 <a href="#/login" style="color:var(--color-primary, #7C4DFF); font-weight:700;">로그인</a> 또는 <a href="#/register" style="color:var(--color-primary, #7C4DFF); font-weight:700;">회원가입</a>이 필요해요!
+    </div></div>`;
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return;
+  }
+
   input.value = '';
 
   // 첫 메시지면 환영 카드 제거
@@ -1515,7 +1936,6 @@ async function handleAiChat() {
 // --- AI 증상 분석 페이지 (레거시 - /ai-symptom 직접 접근 시) ---
 function renderAiSymptomPage() {
   const user = AuthService.getCurrentUser();
-  if (!user) { Router.navigate('/login'); return; }
 
   renderPage(`
     <div class="page-header">
@@ -1552,6 +1972,11 @@ async function handleAiSymptom() {
   const age = document.getElementById('symptom-age')?.value;
   const resultEl = document.getElementById('symptom-result');
   const btn = document.getElementById('symptom-btn');
+
+  if (!AuthService.getCurrentUser()) {
+    if (resultEl) resultEl.innerHTML = `<div class="card" style="padding:20px; text-align:center; background:var(--color-bg-warm);">🔒 AI 분석을 이용하려면 <a href="#/login" style="color:var(--color-primary, #7C4DFF); font-weight:700;">로그인</a>이 필요해요!</div>`;
+    return;
+  }
 
   if (!symptoms || !symptoms.trim()) {
     if (resultEl) resultEl.innerHTML = '<div class="alert alert-error">증상을 입력해주세요.</div>';
@@ -1590,7 +2015,7 @@ async function handleAiSymptom() {
 // --- AI 상담 페이지 ---
 function renderAiConsultPage() {
   const user = AuthService.getCurrentUser();
-  if (!user) { Router.navigate('/login'); return; }
+
   renderPage(`
     <div class="page-header">
       <h1>💭 AI 훈련사 상담</h1>
@@ -1622,6 +2047,15 @@ async function handleAiConsult() {
   const message = input?.value?.trim();
 
   if (!message) return;
+
+  if (!AuthService.getCurrentUser()) {
+    chatEl.innerHTML += `<div style="display:flex;margin-bottom:12px;"><div style="background:var(--color-bg-warm);padding:14px 18px;border-radius:16px 16px 16px 4px;max-width:85%;font-size:0.9rem;">
+      🔒 AI 상담을 이용하려면 <a href="#/login" style="color:var(--color-primary, #7C4DFF); font-weight:700;">로그인</a> 또는 <a href="#/register" style="color:var(--color-primary, #7C4DFF); font-weight:700;">회원가입</a>이 필요해요!
+    </div></div>`;
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return;
+  }
+
   input.value = '';
 
   // 사용자 메시지 표시
@@ -1678,7 +2112,7 @@ async function handleAiConsult() {
 // --- 커뮤니티 페이지 ---
 function renderCommunityPage() {
   const user = AuthService.getCurrentUser();
-  if (!user) { Router.navigate('/login'); return; }
+
   const posts = CommunityService.getFeed(1);
 
   let createFormHtml = '';
@@ -1699,8 +2133,8 @@ function renderCommunityPage() {
     `;
   } else {
     createFormHtml = `
-      <div class="alert alert-error" style="margin-bottom:20px; text-align:center;">
-        로그인이 필요합니다. <a href="#/login" style="font-weight:600;">로그인하기</a>
+      <div class="card" style="padding:20px; margin-bottom:20px; text-align:center; background:var(--color-bg-warm);">
+        <p style="margin:0; font-size:0.95rem;">✏️ 게시물을 작성하려면 <a href="#/login" style="color:var(--color-primary, #7C4DFF); font-weight:700;">로그인</a>이 필요해요!</p>
       </div>
     `;
   }
@@ -1811,7 +2245,7 @@ function formatTimeAgo(dateStr) {
 function handleCreatePost() {
   const user = AuthService.getCurrentUser();
   if (!user) {
-    Router.navigate('/login');
+    showLoginModal('게시물을 작성하려면 로그인이 필요해요!');
     return;
   }
 
@@ -1838,7 +2272,7 @@ function handleCreatePost() {
 function handleToggleLike(postId) {
   const user = AuthService.getCurrentUser();
   if (!user) {
-    Router.navigate('/login');
+    showLoginModal('좋아요를 누르려면 로그인이 필요해요!');
     return;
   }
 
@@ -1857,7 +2291,7 @@ function handleToggleLike(postId) {
 function handleAddComment(postId) {
   const user = AuthService.getCurrentUser();
   if (!user) {
-    Router.navigate('/login');
+    showLoginModal('댓글을 작성하려면 로그인이 필요해요!');
     return;
   }
 
@@ -1880,7 +2314,32 @@ function handleAddComment(postId) {
 function renderWalletPage() {
   const user = AuthService.getCurrentUser();
 
-  if (!user) { Router.navigate('/login'); return; }
+  if (!user) {
+    renderPage(`
+      <div class="page-header">
+        <h1>🪙 Paw 지갑</h1>
+        <p>활동으로 코인을 모으고 사용해봐요~ 💕</p>
+      </div>
+      <div class="wallet-balance">
+        <div class="balance-label">보유 Paw 코인</div>
+        <div class="balance-amount">0</div>
+        <div class="balance-unit">🐾 PAW (0원)</div>
+      </div>
+      <div class="page-header" style="margin-top:8px;">
+        <h1 style="font-size:1.1rem;">📋 거래 내역</h1>
+      </div>
+      <div class="card" style="padding:20px;">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <p>거래 내역이 없습니다</p>
+        </div>
+      </div>
+      <div style="margin-top:16px; text-align:center;">
+        <button class="btn btn-primary" onclick="showLoginModal('Paw 코인을 적립하고 사용하려면 로그인이 필요해요!\\n산책, 커뮤니티 활동으로 코인을 모을 수 있어요.')">💰 코인 적립 시작하기</button>
+      </div>
+    `);
+    return;
+  }
 
   const balance = WalletService.getBalance(user.id);
   const transactions = WalletService.getTransactions(user.id);
@@ -1942,7 +2401,35 @@ function renderWalletPage() {
 function renderMatchingPage() {
   const user = AuthService.getCurrentUser();
 
-  if (!user) { Router.navigate('/login'); return; }
+  if (!user) {
+    renderPage(`
+      <div class="page-header">
+        <h1>🤝 산책 매칭</h1>
+        <p>산책 도우미와 요청자를 연결해드려요~ 🐕</p>
+      </div>
+      <div class="match-role-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+        <div class="card" style="padding:24px; text-align:center; cursor:pointer;" onclick="showLoginModal('산책 도우미로 등록하려면 로그인이 필요해요!')">
+          <div style="font-size:2.5rem; margin-bottom:8px;">🚶‍♂️</div>
+          <h3 style="margin-bottom:4px;">산책 도우미</h3>
+          <p style="font-size:0.82rem; color:var(--color-text-muted);">다른 반려견의 산책을 도와주세요</p>
+        </div>
+        <div class="card" style="padding:24px; text-align:center; cursor:pointer;" onclick="showLoginModal('산책 요청을 하려면 로그인이 필요해요!')">
+          <div style="font-size:2.5rem; margin-bottom:8px;">🙋</div>
+          <h3 style="margin-bottom:4px;">산책 요청자</h3>
+          <p style="font-size:0.82rem; color:var(--color-text-muted);">우리 아이 산책을 부탁해보세요</p>
+        </div>
+      </div>
+      <div class="card" style="padding:20px;">
+        <h3 style="margin-bottom:12px;">📋 매칭 시스템 안내</h3>
+        <div style="font-size:0.9rem; line-height:1.8; color:var(--color-text);">
+          <p>🔹 <strong>산책 도우미</strong>: 활동 지역, 가능 시간, 수용 가능 견종 크기를 등록하면 요청을 받을 수 있어요.</p>
+          <p>🔹 <strong>산책 요청자</strong>: 근처 도우미에게 산책을 요청하고 실시간으로 매칭 상태를 확인할 수 있어요.</p>
+          <p>🔹 매칭 완료 후 <strong>GPS 산책 트래킹</strong>으로 경로를 기록할 수 있어요.</p>
+        </div>
+      </div>
+    `);
+    return;
+  }
 
   const myProfile = MatchingService.getMyProfile(user.id);
 
@@ -2595,7 +3082,41 @@ function handleSubmitReview(scheduleId, targetId) {
 // --- 프로필 페이지 (플레이스홀더) ---
 function renderProfilePage() {
   const user = AuthService.getCurrentUser();
-  if (!user) { Router.navigate('/login'); return; }
+  if (!user) {
+    renderPage(`
+      <div class="page-header">
+        <h1>👤 내 프로필</h1>
+      </div>
+      <div class="card" style="padding:24px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
+          <div style="width:60px;height:60px;border-radius:50%;background:var(--color-primary,#7C4DFF);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;">?</div>
+          <div>
+            <h3 style="margin:0;">게스트</h3>
+            <p style="color:var(--color-text-muted); font-size:0.85rem; margin:4px 0 0;">로그인하면 프로필을 설정할 수 있어요</p>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div style="padding:12px; background:var(--color-bg-warm); border-radius:10px; text-align:center;">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">보유 코인</div>
+            <div style="font-weight:800;">0 PAW</div>
+          </div>
+          <div style="padding:12px; background:var(--color-bg-warm); border-radius:10px; text-align:center;">
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">등록 반려견</div>
+            <div style="font-weight:800;">0마리</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="padding:20px; margin-bottom:16px;">
+        <h3 style="margin-bottom:12px;">🐕 내 반려견</h3>
+        <div style="text-align:center; padding:20px; color:var(--color-text-muted);">
+          <div style="font-size:2rem; margin-bottom:8px;">🐾</div>
+          <p>반려견을 등록하면 맞춤 서비스를 받을 수 있어요</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('프로필 설정, 반려견 등록, 닉네임 변경 등을 하려면 로그인이 필요해요!')">🐾 로그인하고 프로필 설정하기</button>
+    `);
+    return;
+  }
 
   const sizeMap = { small: '소형', medium: '중형', large: '대형' };
 
@@ -3845,7 +4366,47 @@ function _dwWalkerCard(w, user) {
 
 async function renderDogWalkerPage() {
   const user = AuthService.getCurrentUser();
-  if (!user) { Router.navigate('/login'); return; }
+  if (!user) {
+    // 비로그인: 실제 UI를 보여주되 데이터는 서버에서 가져옴
+    let walkers = [];
+    try {
+      const res = await fetch('/api/walkers');
+      if (res.ok) walkers = await res.json();
+    } catch(e) {}
+    const availCount = Array.isArray(walkers) ? walkers.filter(w => w.isAvailable).length : 0;
+    renderPage(`
+      <div class="page-header">
+        <h1>🦮 도그워커 찾기</h1>
+        <p>내 주변의 도그워커를 찾아보세요~ 🐕</p>
+      </div>
+      <div class="card" style="padding:20px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-weight:700;">현재 활동 중인 도그워커</span>
+            <span class="badge badge-success" style="margin-left:8px;">${availCount}명</span>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showLoginModal('도그워커 등록은 로그인 후 이용할 수 있어요!')">🐕 도그워커 등록</button>
+        </div>
+      </div>
+      <div id="dw-disc-map" style="height:300px; border-radius:12px; margin-bottom:16px; background:#e8e8e8; display:flex; align-items:center; justify-content:center; color:#999;">
+        🗺️ 지도를 보려면 로그인해주세요
+      </div>
+      <div class="card" style="padding:20px;">
+        <h3 style="margin-bottom:12px;">📋 도그워커 목록</h3>
+        ${Array.isArray(walkers) && walkers.length > 0 ? walkers.slice(0, 5).map(w => `
+          <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--color-border);">
+            <div class="dw-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--color-primary,#7C4DFF);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">${(w.name || '?').charAt(0)}</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;">${w.name || '도그워커'}</div>
+              <div style="font-size:0.82rem; color:var(--color-text-muted);">📍 ${w.location || '위치 미등록'}</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="showLoginModal('산책 요청은 로그인 후 이용할 수 있어요!')">요청하기</button>
+          </div>
+        `).join('') : '<p style="text-align:center; color:var(--color-text-muted); padding:20px;">등록된 도그워커가 없습니다.</p>'}
+      </div>
+    `);
+    return;
+  }
   await MatchingService.refreshFromServer();
   const walkers   = MatchingService.getAllWalkers();
   const myProfile = user ? (walkers.find(w => w.userId === user.id) || MatchingService.getMyProfile(user.id)) : null;
@@ -4325,7 +4886,10 @@ async function handleAIRecommend() {
   const user    = AuthService.getCurrentUser();
   const resultEl = document.getElementById('dw-ai-result');
 
-  if (!user) { Router.navigate('/login'); return; }
+  if (!user) {
+    if (resultEl) resultEl.innerHTML = `<div class="card" style="padding:20px; text-align:center; background:var(--color-bg-warm);">🔒 AI 추천을 이용하려면 <a href="#/login" style="color:var(--color-primary, #7C4DFF); font-weight:700;">로그인</a>이 필요해요!</div>`;
+    return;
+  }
 
   const dogs = user.dogs || [];
   if (dogs.length === 0) {
@@ -4405,9 +4969,28 @@ async function handleAIRecommend() {
 let _aiHistory = [];  // 대화 히스토리 (페이지 이탈 전까지 유지)
 
 function renderAIConsultPage() {
-  _aiHistory = [];  // 페이지 진입 시 초기화
+  _aiHistory = [];
   const user    = AuthService.getCurrentUser();
-  if (!user) { Router.navigate('/login'); return; }
+  if (!user) {
+    renderPage(`
+      <div class="page-header">
+        <h1>🐕 AI 행동 상담</h1>
+        <p>반려견 행동 전문 AI와 실시간 상담</p>
+      </div>
+      <div id="ai-chat" style="min-height:300px; max-height:500px; overflow-y:auto; margin-bottom:16px;">
+        <div class="card" style="padding:20px; text-align:center; color:var(--color-text-light);">
+          <div style="font-size:2.5rem; margin-bottom:8px;">🐕‍🦺</div>
+          <p style="font-weight:700;">안녕하세요! AI 행동 상담사예요~</p>
+          <p style="font-size:0.85rem; margin-top:4px;">반려견 행동 문제나 훈련 방법에 대해 물어봐주세요!</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" class="form-input" placeholder="고민을 입력해주세요..." style="flex:1;" onclick="showLoginModal('AI 행동 상담을 이용하려면 로그인이 필요해요!\\n반려견의 행동 문제를 AI가 분석하고 솔루션을 제안해드려요.')">
+        <button class="btn btn-primary" onclick="showLoginModal('AI 행동 상담을 이용하려면 로그인이 필요해요!')">전송</button>
+      </div>
+    `);
+    return;
+  }
   const dog     = user?.dogs?.[0] || null;
 
   const dogBadge = dog
@@ -4777,7 +5360,38 @@ function adminSendNotice() {
 // --- GPS 산책 트래킹 페이지 ---
 function renderWalkTrackingPage() {
   const user = AuthService.getCurrentUser();
-  if (!user) { Router.navigate('/login'); return; }
+  if (!user) {
+    renderPage(`
+      <div class="page-header">
+        <h1>🏃 산책 트래킹</h1>
+        <p>GPS로 산책을 기록하고 건강 데이터를 수집해요</p>
+      </div>
+      <div class="card" style="padding:24px; margin-bottom:16px; text-align:center;">
+        <div style="font-size:3rem; margin-bottom:8px;">🐾</div>
+        <div style="font-size:1.5rem; font-weight:800; margin-bottom:4px;">00:00:00</div>
+        <div style="font-size:0.85rem; color:var(--color-text-muted);">산책 시간</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:16px;">
+        <div class="card" style="padding:16px; text-align:center;">
+          <div style="font-size:0.75rem; color:var(--color-text-muted);">거리</div>
+          <div style="font-size:1.2rem; font-weight:800;">0.00 km</div>
+        </div>
+        <div class="card" style="padding:16px; text-align:center;">
+          <div style="font-size:0.75rem; color:var(--color-text-muted);">속도</div>
+          <div style="font-size:1.2rem; font-weight:800;">0.0 km/h</div>
+        </div>
+        <div class="card" style="padding:16px; text-align:center;">
+          <div style="font-size:0.75rem; color:var(--color-text-muted);">칼로리</div>
+          <div style="font-size:1.2rem; font-weight:800;">0 kcal</div>
+        </div>
+      </div>
+      <div style="height:250px; border-radius:12px; background:#e8e8e8; display:flex; align-items:center; justify-content:center; color:#999; margin-bottom:16px;">
+        🗺️ 산책 경로가 여기에 표시돼요
+      </div>
+      <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('GPS 산책 트래킹을 시작하려면 로그인이 필요해요!\\n산책 경로, 거리, 시간, 칼로리를 기록할 수 있어요.')">🏃 산책 시작하기</button>
+    `);
+    return;
+  }
 
   const dogs = user.dogs || [];
   const selectedIdx = StorageService.get('walkingDogIdx', 0);
@@ -4993,7 +5607,45 @@ async function loadWalkHistory(userId, dogId) {
 // --- 건강 분석 대시보드 페이지 ---
 async function renderHealthDashboardPage() {
   const user = AuthService.getCurrentUser();
-  if (!user) { Router.navigate('/login'); return; }
+  if (!user) {
+    renderPage(`
+      <div class="page-header">
+        <h1>❤️ 건강 분석 대시보드</h1>
+        <p>AI 건강 분석 리포트를 확인해보세요</p>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+        <div class="card" style="padding:20px; text-align:center;">
+          <div style="font-size:2rem;">🏃</div>
+          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-top:4px;">총 산책</div>
+          <div style="font-size:1.3rem; font-weight:800;">- 회</div>
+        </div>
+        <div class="card" style="padding:20px; text-align:center;">
+          <div style="font-size:2rem;">📏</div>
+          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-top:4px;">총 거리</div>
+          <div style="font-size:1.3rem; font-weight:800;">- km</div>
+        </div>
+        <div class="card" style="padding:20px; text-align:center;">
+          <div style="font-size:2rem;">⏱️</div>
+          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-top:4px;">총 시간</div>
+          <div style="font-size:1.3rem; font-weight:800;">- 분</div>
+        </div>
+        <div class="card" style="padding:20px; text-align:center;">
+          <div style="font-size:2rem;">🔥</div>
+          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-top:4px;">총 칼로리</div>
+          <div style="font-size:1.3rem; font-weight:800;">- kcal</div>
+        </div>
+      </div>
+      <div class="card" style="padding:20px; margin-bottom:16px;">
+        <h3 style="margin-bottom:12px;">🤖 AI 건강 분석</h3>
+        <p style="color:var(--color-text-muted); font-size:0.9rem;">산책 데이터를 기반으로 AI가 반려견의 건강 상태를 분석하고 맞춤 조언을 제공해요.</p>
+        <div style="margin-top:16px; padding:20px; background:var(--color-bg-warm); border-radius:12px; text-align:center;">
+          <p style="color:var(--color-text-muted);">아직 분석할 데이터가 없어요</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('건강 분석을 이용하려면 로그인이 필요해요!\\n반려견의 산책 데이터를 기반으로 AI가 건강을 분석해드려요.')">🏃 산책 시작하고 데이터 모으기</button>
+    `);
+    return;
+  }
 
   const dogs = user.dogs || [];
   const selectedDogId = StorageService.get('selectedDogId', '_all');
