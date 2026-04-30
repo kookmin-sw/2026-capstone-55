@@ -435,7 +435,7 @@ function refreshDrawer() {
     ${walkSection}
     <div class="nav-drawer__divider"></div>
     <div class="nav-drawer__section-label">AI 서비스</div>
-    ${item('💭', 'AI 반려견 상담', '/ai-consult')}
+    ${item('🤖', 'AI 반려견 상담', '/ai')}
     ${item('❤️', '건강 분석', '/health')}
     <div class="nav-drawer__divider"></div>
     <div class="nav-drawer__section-label">정보</div>
@@ -443,7 +443,6 @@ function refreshDrawer() {
     ${item('📚', '교육 센터', '/education')}
     <div class="nav-drawer__divider"></div>
     ${item('💬', '커뮤니티', '/community')}
-    ${user ? item('🪙', '지갑', '/wallet') : ''}
   `;
 }
 
@@ -5269,8 +5268,9 @@ function initApp() {
     Router.register('/breeds/:id', renderBreedDetailPage);
     Router.register('/education', renderEducationPage);
     Router.register('/education/:id', renderEducationDetailPage);
+    Router.register('/ai', renderAiPage);
     Router.register('/ai-symptom', renderAiSymptomPage);
-    Router.register('/ai-consult', renderAiConsultPage);
+    Router.register('/ai-consult', renderAiPage);
     Router.register('/community', renderCommunityPage);
     Router.register('/wallet', renderWalletPage);
     Router.register('/matching', renderMatchingPage);
