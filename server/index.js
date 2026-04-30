@@ -26,6 +26,12 @@ const chatRoutes         = require('./routes/chat');
 const walkRequestRoutes  = require('./routes/walk-requests');
 const walkSessionRoutes  = require('./routes/walk-sessions');
 
+const app    = express();
+const server = http.createServer(app);
+const io     = new Server(server, {
+  cors: { origin: true, credentials: true }
+});
+
 const PORT = process.env.PORT || 3000;
 
 // io를 라우터에서 사용할 수 있도록 app에 주입
