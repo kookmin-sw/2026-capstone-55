@@ -28,6 +28,10 @@ const walkSessionRoutes  = require('./routes/walk-sessions');
 
 const PORT = process.env.PORT || 3000;
 
+const app    = express();
+const server = http.createServer(app);
+const io     = new Server(server, { cors: { origin: '*' } });
+
 // io를 라우터에서 사용할 수 있도록 app에 주입
 app.set('io', io);
 
