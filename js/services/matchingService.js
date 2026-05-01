@@ -263,12 +263,28 @@ const MatchingService = (() => {
 
   async function refreshFromServer() {
     try {
+      // walkers.json 동기화
       const res = await fetch('/api/walkers');
-      _serverWalkersCache = await res.json();
+      const data = await res.json();
+      _serverWalkersCache = data.map(w => ({
+        ...w,
+        userName: w.userName || w.name || '도우미',
+        preferredTime: w.preferredTime || '',
+        acceptedSizes: w.acceptedSizes || ['small', 'medium', 'large'],
+      }));
     } catch(e) {
       console.error('[MatchingService] 서버 동기화 실패:', e);
       _serverWalkersCache = null;
     }
+
+    try {
+      // matchProfiles 동기화 (다른 탭/사용자가 업데이트한 내용 반영)
+      const res2 = await fetch('/api/data/matchProfiles');
+      if (res2.ok) {
+        const profiles = await res2.json();
+        if (Array.isArray(profiles)) StorageService.setCache('matchProfiles', profiles);
+      }
+    } catch(e) {}
   }
 
   function getAllWalkers() {
@@ -324,6 +340,34 @@ const MatchingService = (() => {
     profiles[idx].isAvailable = !profiles[idx].isAvailable;
     saveProfiles(profiles);
     return profiles[idx];
+  }
+
+  /**
+   * matchProfiles에 GPS 좌표 저장
+   */
+  function updateProfileLocation(userId, lat, lng) {
+    const profiles = getAllProfiles();
+    const idx = profiles.findIndex(p => p.userId === userId);
+    if (idx === -1) return;
+    profiles[idx].lat = lat;
+    profiles[idx].lng = lng;
+    saveProfiles(profiles);
+  }
+
+  function setAvailability(userId, isAvailable, lat, lng) {
+    const profiles = getAllProfiles();
+    const idx = profiles.findIndex(p => p.userId === userId);
+    if (idx === -1) return;
+    profiles[idx].isAvailable = isAvailable;
+    if (isAvailable && lat && lng) {
+      profiles[idx].lat = lat;
+      profiles[idx].lng = lng;
+    }
+    if (!isAvailable) {
+      profiles[idx].lat = null;
+      profiles[idx].lng = null;
+    }
+    saveProfiles(profiles);
   }
 
   /**
@@ -457,6 +501,8 @@ const MatchingService = (() => {
     getAvailableWalkers,
     refreshFromServer,
     toggleAvailability,
+    updateProfileLocation,
+    setAvailability,
     toggleAvailabilityRemote,
     getNearbyWalkers,
     getRecommendations,

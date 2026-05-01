@@ -1,1 +1,44 @@
-[]
+[
+  {
+    "userId": "test-walker-001",
+    "name": "김민준",
+    "nickname": "민준워커",
+    "intro": "강아지를 정말 사랑하는 산책 도우미입니다 🐶",
+    "location": "서울 강남구",
+    "experience": "3년",
+    "price": 15000,
+    "rating": 4.8,
+    "reviewCount": 24,
+    "isAvailable": true,
+    "registeredAt": "2026-04-01T00:00:00.000Z",
+    "lat": 37.60992661806679,
+    "lng": 126.99773276632945,
+    "lastLocationUpdatedAt": "2026-05-01T02:38:32.587Z"
+  },
+  {
+    "userId": "test-walker-002",
+    "name": "박지수",
+    "nickname": "지수워커",
+    "intro": "대형견 전문 산책 도우미입니다 💪",
+    "location": "서울 마포구",
+    "experience": "2년",
+    "price": 12000,
+    "rating": 4.6,
+    "reviewCount": 15,
+    "isAvailable": true,
+    "registeredAt": "2026-04-01T00:00:00.000Z"
+  },
+  {
+    "userId": "test-walker-003",
+    "name": "이서연",
+    "nickname": "서연워커",
+    "intro": "소형견 전문, 안전한 산책 보장해요 🌸",
+    "location": "서울 서초구",
+    "experience": "1년",
+    "price": 10000,
+    "rating": 4.9,
+    "reviewCount": 8,
+    "isAvailable": true,
+    "registeredAt": "2026-04-01T00:00:00.000Z"
+  }
+]

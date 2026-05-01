@@ -19,11 +19,15 @@ router.post('/broadcast', (req, res) => {
 
   const walkers = db.get('walkers', []).filter(w => w.isAvailable && w.userId !== fromUserId);
 
-  const targets = walkers.filter(w => {
-    if (!requestData?.location || !w.location) return true;
-    const city = requestData.location.trim().split(' ')[0];
-    return w.location.includes(city);
-  });
+  // 위치 필터: GPS 좌표 기반 우선, 없으면 텍스트 매칭, 텍스트도 짧거나 없으면 전체 대상
+  let targets = walkers;
+  const loc = requestData?.location?.trim() || '';
+  if (loc.length >= 3) {
+    const city = loc.split(' ')[0];
+    const filtered = walkers.filter(w => !w.location || w.location.includes(city));
+    // 필터 결과 있으면 사용, 없으면 전체 대상으로 폴백
+    if (filtered.length > 0) targets = filtered;
+  }
 
   if (targets.length === 0) {
     return res.json({ success: false, error: '현재 주변에 산책 가능한 도우미가 없습니다.' });

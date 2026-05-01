@@ -58,7 +58,36 @@ router.post('/', (req, res) => {
   res.json({ success: true, walker: entry });
 });
 
-// 가용 상태 토글 (ON 시 GPS 좌표 필수)
+// 가용 상태 직접 설정 (ON/OFF + 선택적 GPS)
+router.patch('/availability', (req, res) => {
+  const { userId, isAvailable, lat, lng } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId가 필요합니다.' });
+
+  const walkers = readWalkers();
+  const idx = walkers.findIndex(w => w.userId === userId);
+  if (idx < 0) {
+    // walkers.json에 없으면 신규 추가
+    walkers.push({ userId, isAvailable: !!isAvailable, lat: lat || null, lng: lng || null });
+  } else {
+    walkers[idx].isAvailable = !!isAvailable;
+    if (isAvailable && lat && lng) {
+      walkers[idx].lat = lat;
+      walkers[idx].lng = lng;
+      walkers[idx].lastLocationUpdatedAt = new Date().toISOString();
+    }
+    if (!isAvailable) {
+      walkers[idx].lat = null;
+      walkers[idx].lng = null;
+    }
+  }
+
+  writeWalkers(walkers);
+  const io = req.app.get('io');
+  if (io) io.emit('walker-status-changed', { userId, isAvailable: !!isAvailable });
+  res.json({ success: true, isAvailable: !!isAvailable });
+});
+
+// 가용 상태 토글 (하위 호환)
 router.patch('/toggle', (req, res) => {
   const { userId, lat, lng } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId가 필요합니다.' });
@@ -69,11 +98,6 @@ router.patch('/toggle', (req, res) => {
 
   const newState = !walkers[idx].isAvailable;
 
-  // ON으로 전환하는데 GPS 좌표가 없으면 거부
-  if (newState && !lat && !walkers[idx].lat) {
-    return res.status(400).json({ error: 'GPS 위치가 필요합니다. 위치 권한을 허용해주세요.' });
-  }
-
   walkers[idx].isAvailable = newState;
 
   if (newState && lat && lng) {
@@ -82,7 +106,6 @@ router.patch('/toggle', (req, res) => {
     walkers[idx].lastLocationUpdatedAt = new Date().toISOString();
   }
 
-  // OFF 상태로 전환 시 위치 정보 숨김 (null 처리)
   if (!newState) {
     walkers[idx].lat = null;
     walkers[idx].lng = null;

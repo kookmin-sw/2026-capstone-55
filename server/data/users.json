@@ -72,5 +72,61 @@
     "pawCoins": 3000,
     "createdAt": "2026-04-24T03:27:00.723Z",
     "nicknameChangedAt": "2026-04-24T03:27:12.847Z"
+  },
+  {
+    "id": "test-walker-001",
+    "email": "walker1@test.com",
+    "name": "김민준",
+    "nickname": "민준워커",
+    "passwordHash": "hash_izf3u4",
+    "referralCode": "PAW-WALK01",
+    "dogs": [],
+    "pawCoins": 500,
+    "createdAt": "2026-04-01T00:00:00.000Z"
+  },
+  {
+    "id": "test-walker-002",
+    "email": "walker2@test.com",
+    "name": "박지수",
+    "nickname": "지수워커",
+    "passwordHash": "hash_izf3u4",
+    "referralCode": "PAW-WALK02",
+    "dogs": [],
+    "pawCoins": 500,
+    "createdAt": "2026-04-01T00:00:00.000Z"
+  },
+  {
+    "id": "test-walker-003",
+    "email": "walker3@test.com",
+    "name": "이서연",
+    "nickname": "서연워커",
+    "passwordHash": "hash_izf3u4",
+    "referralCode": "PAW-WALK03",
+    "dogs": [],
+    "pawCoins": 500,
+    "createdAt": "2026-04-01T00:00:00.000Z"
+  },
+  {
+    "id": "id-mol2g5lb-rvnvuvi",
+    "email": "cndqja5853@gmail.com",
+    "name": "Peter Lee",
+    "nickname": "Peter Lee",
+    "passwordHash": "",
+    "socialKey": "google_117318945525600160426",
+    "provider": "google",
+    "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocKBRQuFrTAGFUpPuWf07hd29x5mRV5oU_8sUvKI4mWAO3C9Mw=s96-c",
+    "referralCode": "PAW-R49XVD",
+    "dogs": [
+      {
+        "id": "id-mol2jyay-78rppym",
+        "name": "댕댕이",
+        "breed": "골든 리트리버",
+        "age": 3,
+        "size": "medium"
+      }
+    ],
+    "pawCoins": 3000,
+    "createdAt": "2026-04-30T05:51:28.847Z",
+    "nicknameChangedAt": "2026-04-30T05:51:49.675Z"
   }
 ]

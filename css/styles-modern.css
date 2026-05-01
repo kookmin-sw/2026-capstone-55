@@ -723,6 +723,30 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .dw-map-walker:hover { transform: scale(1.15); }
 .dw-map-walker--on  { background: #00AA76; }
 .dw-map-walker--off { background: #A0AEC0; }
+
+/* 워커 핀 마커 */
+.dw-map-walker-pin {
+  display: flex; flex-direction: column; align-items: center; cursor: pointer;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));
+  transition: transform 0.15s;
+}
+.dw-map-walker-pin:hover { transform: scale(1.1) translateY(-2px); }
+.dw-map-walker-pin__avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: #FF8FAB;
+  border: 3px solid #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 800; color: #fff;
+  box-shadow: 0 2px 8px rgba(255,143,171,0.5);
+}
+.dw-map-walker-pin__tail {
+  width: 0; height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 10px solid #FF8FAB;
+  margin-top: -1px;
+}
 #dw-reg-map-wrap .dw-map { height: 280px; }
 
 .dw-ai-banner {
@@ -785,32 +809,57 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   background: var(--color-bg-card);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 28px 20px;
+  padding: 0;
   text-align: center;
   cursor: pointer;
-  transition: all 0.15s ease;
+  overflow: hidden;
+  transition: all 0.2s ease;
 }
-.match-role-card:hover { border-color: var(--color-text-muted); background: var(--color-bg-section); }
+.match-role-card:hover {
+  border-color: var(--color-text-muted);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
 .match-role-card--selected {
   border-color: var(--color-text);
   border-width: 2px;
-  background: var(--color-bg-section);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
 }
 .match-role-card__badge {
   position: absolute;
-  top: -10px; left: 50%;
+  top: 12px; left: 50%;
   transform: translateX(-50%);
   background: var(--color-text);
   color: #fff;
   font-size: 0.7rem;
   font-weight: 700;
-  padding: 3px 12px;
+  padding: 4px 14px;
   border-radius: var(--radius-full);
   white-space: nowrap;
+  z-index: 1;
+}
+.match-role-card__img-wrap {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: #fff;
+  line-height: 0;
+}
+.match-role-card__img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center top;
+  transition: transform 0.25s ease;
+}
+.match-role-card:hover .match-role-card__img { transform: scale(1.04); }
+.match-role-card__body {
+  padding: 16px 16px 20px;
 }
 .match-role-card__icon { font-size: 2.4rem; margin-bottom: 10px; }
-.match-role-card__title { font-size: 1rem; font-weight: 800; margin-bottom: 6px; }
-.match-role-card__desc { font-size: 0.8rem; color: var(--color-text-light); line-height: 1.5; }
+.match-role-card__title { font-size: 1.05rem; font-weight: 800; margin-bottom: 6px; }
+.match-role-card__desc { font-size: 0.82rem; color: var(--color-text-light); line-height: 1.6; }
 
 .match-role-hint {
   text-align: center;
@@ -907,6 +956,47 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 }
 .match-broadcast-banner__title { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
 .match-broadcast-banner__sub { font-size: 0.8rem; opacity: 0.75; }
+/* 매칭 대기 배너 */
+.match-pending-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #fff8e1, #fff3cd);
+  border: 1.5px solid #f0c040;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.match-pending-banner--success {
+  background: linear-gradient(135deg, #f0fff4, #c6f6d5);
+  border-color: #38a169;
+}
+.match-pending-banner__icon { font-size: 1.6rem; flex-shrink: 0; }
+.match-pending-banner__text { flex: 1; }
+.match-pending-banner__title { font-weight: 700; font-size: 0.95rem; margin-bottom: 3px; }
+.match-pending-banner__sub { font-size: 0.82rem; color: var(--color-text-light); }
+/* 반려견 미등록 빈 상태 */
+.match-empty-dog-card {
+  text-align: center;
+  padding: 36px 24px;
+  background: var(--color-bg-warm);
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+}
+.match-empty-dog-card__emoji { font-size: 2.8rem; margin-bottom: 12px; }
+.match-empty-dog-card__title { font-weight: 800; font-size: 1rem; margin-bottom: 6px; }
+.match-empty-dog-card__desc { font-size: 0.85rem; color: var(--color-text-light); margin-bottom: 16px; line-height: 1.6; }
+
+.match-pending-spinner {
+  width: 24px; height: 24px;
+  border: 3px solid #f0c040;
+  border-top-color: #d69e2e;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .match-broadcast-banner .btn-primary {
   background: #fff;
   color: var(--color-text);
@@ -972,6 +1062,12 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   margin-bottom: 10px;
 }
 .match-walk-card--completed { opacity: 0.8; }
+.match-walk-card--scheduled {
+  border-color: var(--color-primary, #FF8FAB);
+  background: linear-gradient(to right, #fff, #fff8fb);
+  justify-content: space-between;
+}
+.match-walk-card__left { display: flex; align-items: center; gap: 14px; }
 .match-walk-card__avatar {
   width: 40px; height: 40px;
   border-radius: 50%;
