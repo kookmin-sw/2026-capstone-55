@@ -1,0 +1,93 @@
+[
+  {
+    "userId": "id-moccj45g-ygwkk8x",
+    "userName": "하준서",
+    "role": "walker",
+    "location": "서울 마포구 합정동",
+    "lat": null,
+    "lng": null,
+    "dogSize": "medium",
+    "preferredTime": "오전 (9-11시)",
+    "message": "ㅁㄴㅇㄹ",
+    "price": 0,
+    "experience": "ㅇ",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "specialty": "",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 0,
+    "createdAt": "2026-04-24T04:07:35.016Z"
+  },
+  {
+    "userId": "id-mocevjqt-nenoxxi",
+    "userName": "이충범",
+    "role": "walker",
+    "location": "fdfd",
+    "lat": null,
+    "lng": null,
+    "dogSize": "small",
+    "preferredTime": "오전 (9-11시)",
+    "message": "fdfd",
+    "price": 1555,
+    "experience": "없음",
+    "acceptedSizes": [
+      "small",
+      "medium"
+    ],
+    "specialty": "",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 0,
+    "createdAt": "2026-04-24T04:56:13.791Z"
+  },
+  {
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "userName": "Peter Lee",
+    "role": "requester",
+    "location": "ㅇㅇㅇ",
+    "lat": null,
+    "lng": null,
+    "dogSize": "medium",
+    "preferredTime": "오전 (9-11시)",
+    "message": "",
+    "price": 0,
+    "experience": "없음",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "specialty": "",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 0,
+    "createdAt": "2026-04-30T06:48:29.313Z"
+  },
+  {
+    "userId": "id-mo2r9f31-nmcx76f",
+    "userName": "‍하준서(학부생-인공지능전공)",
+    "role": "walker",
+    "location": "서울 마포구 합정동",
+    "lat": null,
+    "lng": null,
+    "dogSize": "medium",
+    "preferredTime": "오전 (7-9시)",
+    "message": "tfhfg",
+    "price": 0,
+    "experience": "응급철치",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "specialty": "",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 0,
+    "createdAt": "2026-05-01T02:46:50.443Z"
+  }
+]
