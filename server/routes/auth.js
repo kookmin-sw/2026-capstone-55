@@ -8,6 +8,13 @@ const express = require('express');
 const passport = require('passport');
 const router = express.Router();
 
+// 요청 호스트 기반으로 BASE_URL 동적 생성 (로컬이면 localhost, ngrok이면 ngrok)
+function getBaseUrl(req) {
+  const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  return `${proto}://${host}`;
+}
+
 // 공통 콜백 생성 함수
 function makeCallback(action) {
   return (req, res) => {
@@ -58,7 +65,7 @@ router.get('/kakao', (req, res) => {
   if (!process.env.KAKAO_CLIENT_ID || process.env.KAKAO_CLIENT_ID.includes('여기에')) {
     return res.status(503).json({ error: '카카오 로그인이 아직 설정되지 않았습니다.' });
   }
-  const base = process.env.BASE_URL || 'http://localhost:3000';
+  const base = getBaseUrl(req);
   const kakaoAuthUrl = 'https://kauth.kakao.com/oauth/authorize'
     + '?client_id=' + process.env.KAKAO_CLIENT_ID
     + '&redirect_uri=' + encodeURIComponent(`${base}/auth/kakao/callback`)
@@ -76,7 +83,7 @@ router.get('/kakao/register', async (req, res) => {
   if (!process.env.KAKAO_CLIENT_ID || process.env.KAKAO_CLIENT_ID.includes('여기에')) {
     return res.status(503).json({ error: '카카오 로그인이 아직 설정되지 않았습니다.' });
   }
-  const base = process.env.BASE_URL || 'http://localhost:3000';
+  const base = getBaseUrl(req);
   const kakaoAuthUrl = 'https://kauth.kakao.com/oauth/authorize'
     + '?client_id=' + process.env.KAKAO_CLIENT_ID
     + '&redirect_uri=' + encodeURIComponent(`${base}/auth/kakao/register/callback`)
@@ -96,7 +103,7 @@ router.get('/naver', (req, res) => {
   if (!process.env.NAVER_CLIENT_ID || process.env.NAVER_CLIENT_ID.includes('여기에')) {
     return res.status(503).json({ error: '네이버 로그인이 아직 설정되지 않았습니다.' });
   }
-  const base = process.env.BASE_URL || 'http://localhost:3000';
+  const base = getBaseUrl(req);
   const state = Math.random().toString(36).substring(2);
   req.session.naverState = state;
   const naverAuthUrl = 'https://nid.naver.com/oauth2.0/authorize'
@@ -117,7 +124,7 @@ router.get('/naver/register', (req, res) => {
   if (!process.env.NAVER_CLIENT_ID || process.env.NAVER_CLIENT_ID.includes('여기에')) {
     return res.status(503).json({ error: '네이버 로그인이 아직 설정되지 않았습니다.' });
   }
-  const base = process.env.BASE_URL || 'http://localhost:3000';
+  const base = getBaseUrl(req);
   const state = Math.random().toString(36).substring(2);
   req.session.naverRegState = state;
   const naverAuthUrl = 'https://nid.naver.com/oauth2.0/authorize'

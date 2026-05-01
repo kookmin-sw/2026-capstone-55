@@ -5899,6 +5899,11 @@ let _trackingMarker = null;
 let _trackingStartMarker = null;
 
 function handleStartTracking() {
+  const user = AuthService.getCurrentUser();
+  const dogs = user ? (user.dogs || []) : [];
+  const selectedIdx = StorageService.get('walkingDogIdx', 0);
+  const dog = dogs.length > 0 ? dogs[Math.min(selectedIdx, dogs.length - 1)] : null;
+
   const result = GPSTrackingService.startTracking((data) => {
     document.getElementById('track-distance').textContent = data.distance.toFixed(2);
     const mins = data.duration;
@@ -5942,7 +5947,7 @@ function handleStartTracking() {
         _trackingPolyline.setLatLngs(data.coordinates.map(c => [c.lat, c.lng]));
       }
     }
-  });
+  }, { userId: user?.id, dogId: dog?.name, dogName: dog?.name });
 
   if (!result.success) {
     const alertEl = document.getElementById('tracking-alert');

@@ -23,6 +23,36 @@ function saveWalks(walks) {
   fs.writeFileSync(WALKS_FILE, JSON.stringify(walks, null, 2), 'utf8');
 }
 
+// 산책 중 실시간 동기화 (백그라운드 데이터 유실 방지)
+const _activeSyncs = {}; // userId별 진행 중인 산책 데이터 임시 저장
+router.post('/sync', (req, res) => {
+  try {
+    const { userId, dogId, dogName, partialData } = req.body;
+    if (!userId || !partialData) {
+      return res.status(400).json({ error: '필수 데이터 누락' });
+    }
+    _activeSyncs[userId] = {
+      dogId: dogId || 'default',
+      dogName: dogName || '우리 강아지',
+      ...partialData,
+      lastSyncAt: new Date().toISOString()
+    };
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: '동기화 실패' });
+  }
+});
+
+// 동기화된 데이터 조회 (클라이언트 복구용)
+router.get('/sync/:userId', (req, res) => {
+  const data = _activeSyncs[req.params.userId];
+  if (data) {
+    res.json({ success: true, data });
+  } else {
+    res.json({ success: false, error: '진행 중인 산책 없음' });
+  }
+});
+
 // 산책 기록 저장
 router.post('/save', (req, res) => {
   try {
