@@ -614,4 +614,237 @@ router.post('/pet-consult', async (req, res) => {
   }
 });
 
+// ===== AI 맞춤 품종 추천 =====
+router.post('/recommend-breed', async (req, res) => {
+  try {
+    const { preferences, count } = req.body;
+    if (!preferences) {
+      return res.status(400).json({ success: false, error: '선호 조건을 입력해주세요.' });
+    }
+
+    const recommendCount = Math.max(parseInt(count) || 3, 1);
+
+    // breeds.js 데이터 로드
+    let breedsData = [];
+    try {
+      const breedsPath = path.join(__dirname, '..', '..', 'js', 'data', 'breeds.js');
+      const breedsContent = fs.readFileSync(breedsPath, 'utf8');
+      // BREEDS_DATA 배열 추출
+      const match = breedsContent.match(/const\s+BREEDS_DATA\s*=\s*(\[[\s\S]*\]);?\s*$/m);
+      if (match) {
+        breedsData = JSON.parse(match[1]);
+      }
+    } catch (e) {
+      console.error('[품종추천] breeds.js 로드 실패:', e.message);
+    }
+
+    if (breedsData.length === 0) {
+      return res.status(500).json({ success: false, error: '품종 데이터를 불러올 수 없습니다.' });
+    }
+
+    // 1단계: 사용자 조건으로 후보 필터링
+    let candidates = [...breedsData];
+    const p = preferences;
+
+    if (p.size && p.size !== 'any') {
+      candidates = candidates.filter(b => b.size === p.size);
+    }
+    if (p.exerciseLevel && p.exerciseLevel !== 'any') {
+      candidates = candidates.filter(b => b.exerciseLevel === p.exerciseLevel);
+    }
+    if (p.groomingLevel && p.groomingLevel !== 'any') {
+      candidates = candidates.filter(b => b.groomingLevel === p.groomingLevel);
+    }
+    if (p.childFriendly === true) {
+      candidates = candidates.filter(b => b.childFriendly === true);
+    }
+    if (p.apartmentFriendly === true) {
+      candidates = candidates.filter(b => b.apartmentFriendly === true);
+    }
+    if (p.trainability && p.trainability !== 'any') {
+      candidates = candidates.filter(b => b.trainability === p.trainability);
+    }
+    if (p.barkingLevel && p.barkingLevel !== 'any') {
+      candidates = candidates.filter(b => b.barkingLevel === p.barkingLevel);
+    }
+
+    // 필터 결과가 너무 적으면 조건 완화 (크기만 유지)
+    if (candidates.length < recommendCount) {
+      candidates = [...breedsData];
+      if (p.size && p.size !== 'any') {
+        candidates = candidates.filter(b => b.size === p.size);
+      }
+    }
+
+    // === 데이터 기반 매칭 점수 계산 ===
+    function calcMatchScore(breed) {
+      let score = 0;
+      let maxScore = 0;
+
+      // 크기 매칭 (25점)
+      if (p.size && p.size !== 'any') {
+        maxScore += 25;
+        if (breed.size === p.size) score += 25;
+      }
+      // 운동량 매칭 (20점)
+      if (p.exerciseLevel && p.exerciseLevel !== 'any') {
+        maxScore += 20;
+        if (breed.exerciseLevel === p.exerciseLevel) score += 20;
+        else if (Math.abs(['low','medium','high'].indexOf(breed.exerciseLevel) - ['low','medium','high'].indexOf(p.exerciseLevel)) === 1) score += 10;
+      }
+      // 미용 관리 매칭 (10점)
+      if (p.groomingLevel && p.groomingLevel !== 'any') {
+        maxScore += 10;
+        const bg = breed.groomingLevel || 'medium';
+        if (bg === p.groomingLevel) score += 10;
+        else if (Math.abs(['low','medium','high'].indexOf(bg) - ['low','medium','high'].indexOf(p.groomingLevel)) === 1) score += 5;
+      }
+      // 훈련 용이성 매칭 (15점)
+      if (p.trainability && p.trainability !== 'any') {
+        maxScore += 15;
+        const bt = breed.trainability || 'medium';
+        if (bt === p.trainability) score += 15;
+        else if (Math.abs(['low','medium','high'].indexOf(bt) - ['low','medium','high'].indexOf(p.trainability)) === 1) score += 7;
+      }
+      // 짖음 매칭 (10점)
+      if (p.barkingLevel && p.barkingLevel !== 'any') {
+        maxScore += 10;
+        const bb = breed.barkingLevel || 'medium';
+        if (bb === p.barkingLevel) score += 10;
+        else if (Math.abs(['low','medium','high'].indexOf(bb) - ['low','medium','high'].indexOf(p.barkingLevel)) === 1) score += 5;
+      }
+      // 아이 친화 (10점)
+      if (p.childFriendly) {
+        maxScore += 10;
+        if (breed.childFriendly) score += 10;
+      }
+      // 아파트 적합 (10점)
+      if (p.apartmentFriendly) {
+        maxScore += 10;
+        if (breed.apartmentFriendly) score += 10;
+      }
+
+      // 조건을 아무것도 선택 안 했으면 기본 50점
+      if (maxScore === 0) return 50;
+      return Math.round((score / maxScore) * 100);
+    }
+
+    // 점수 계산 후 정렬
+    candidates = candidates.map(b => ({ ...b, _matchScore: calcMatchScore(b) }));
+    candidates.sort((a, b) => b._matchScore - a._matchScore);
+
+    // 점수 순으로 정렬 후 상위 후보를 AI에게 전달 (추천 수의 3배, 최소 30)
+    const candidateLimit = Math.max(recommendCount * 3, 30);
+    const candidateSummaries = candidates.slice(0, candidateLimit).map(b => ({
+      id: b.id,
+      name: b.name,
+      nameEn: b.nameEn,
+      size: b.size,
+      group: b.group || '',
+      personality: b.personality,
+      exerciseLevel: b.exerciseLevel,
+      groomingLevel: b.groomingLevel || 'medium',
+      trainability: b.trainability || 'medium',
+      barkingLevel: b.barkingLevel || 'medium',
+      childFriendly: b.childFriendly,
+      apartmentFriendly: b.apartmentFriendly,
+      lifespan: b.lifespan || '',
+      weight: b.weight || '',
+      dataMatchScore: b._matchScore
+    }));
+
+    // 사용자 자유 입력 텍스트
+    const freeText = p.freeText || '';
+
+    const prompt = `당신은 반려견 품종 전문 상담사입니다.
+사용자의 생활 환경과 선호도를 분석하여 가장 적합한 반려견 품종을 추천해주세요.
+
+[사용자 조건]
+- 선호 크기: ${p.size === 'any' ? '상관없음' : p.size === 'small' ? '소형' : p.size === 'medium' ? '중형' : '대형'}
+- 운동량: ${p.exerciseLevel === 'any' ? '상관없음' : p.exerciseLevel === 'low' ? '적음' : p.exerciseLevel === 'medium' ? '보통' : '많음'}
+- 미용 관리: ${p.groomingLevel === 'any' ? '상관없음' : p.groomingLevel === 'low' ? '적음' : p.groomingLevel === 'medium' ? '보통' : '많음'}
+- 훈련 용이성: ${p.trainability === 'any' ? '상관없음' : p.trainability === 'low' ? '낮음' : p.trainability === 'medium' ? '보통' : '높음'}
+- 짖음 정도: ${p.barkingLevel === 'any' ? '상관없음' : p.barkingLevel === 'low' ? '적음' : p.barkingLevel === 'medium' ? '보통' : '많음'}
+- 아이 친화: ${p.childFriendly ? '필요' : '상관없음'}
+- 아파트 적합: ${p.apartmentFriendly ? '필요' : '상관없음'}
+${freeText ? `- 추가 요청: ${freeText}` : ''}
+
+[추천 마릿수]: ${recommendCount}마리
+
+[후보 품종 목록]
+${JSON.stringify(candidateSummaries, null, 0)}
+
+위 후보 중에서 사용자 조건에 가장 적합한 ${recommendCount}마리를 선택하여 추천해주세요.
+각 품종의 dataMatchScore는 사용자 조건과의 데이터 기반 매칭 점수(100점 만점)입니다.
+이 점수를 참고하되, 성격/생활패턴 적합성도 종합적으로 고려하여 matchScore를 산출해주세요.
+matchScore는 dataMatchScore를 기반으로 하되, 성격 적합성을 반영하여 ±10점 범위에서 조정 가능합니다.
+
+반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+{
+  "recommendations": [
+    {
+      "id": "품종 ID",
+      "name": "품종 한글명",
+      "nameEn": "품종 영문명",
+      "matchScore": 95,
+      "reason": "이 품종을 추천하는 이유 (2~3문장, 사용자 조건과 연결하여 설명)",
+      "pros": ["장점1", "장점2", "장점3"],
+      "cons": ["주의점1", "주의점2"],
+      "tip": "이 품종을 키울 때 한 가지 꿀팁"
+    }
+  ],
+  "summary": "전체 추천 요약 (1~2문장)"
+}`;
+
+    // Gemini로 추천 생성
+    const model = getGeminiModel();
+    let aiReply = null;
+
+    if (model) {
+      try {
+        const result = await model.generateContent(prompt);
+        aiReply = result.response?.text?.() || result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+      } catch (e) {
+        console.log('[품종추천] Gemini 실패:', e.message);
+      }
+    }
+
+    // Gemini 실패 시 Claude 폴백
+    if (!aiReply) {
+      const client = getClaudeClient();
+      if (client) {
+        try {
+          const claudeRes = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 2000,
+            messages: [{ role: 'user', content: prompt }]
+          });
+          aiReply = claudeRes.content?.[0]?.text;
+        } catch (e) {
+          console.log('[품종추천] Claude 폴백도 실패:', e.message);
+        }
+      }
+    }
+
+    if (!aiReply) {
+      return res.status(500).json({ success: false, error: 'AI 서비스에 일시적으로 연결할 수 없습니다.' });
+    }
+
+    // JSON 파싱
+    try {
+      // ```json ... ``` 블록 제거
+      let cleaned = aiReply.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+      return res.json({ success: true, ...parsed, totalCandidates: candidates.length });
+    } catch (e) {
+      console.log('[품종추천] JSON 파싱 실패, 원본 반환');
+      return res.json({ success: true, rawReply: aiReply, totalCandidates: candidates.length });
+    }
+
+  } catch (err) {
+    console.error('[품종추천] 오류:', err);
+    res.status(500).json({ success: false, error: '품종 추천 중 오류가 발생했습니다.' });
+  }
+});
+
 module.exports = router;

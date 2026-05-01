@@ -1169,3 +1169,77 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   from { opacity: 0; transform: translateX(24px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+
+/* ===== 품종 추천 탭 스타일 ===== */
+.breed-tab {
+  background: var(--color-bg, #fff);
+  color: var(--color-text-muted, #888);
+  transition: all 0.2s ease;
+}
+.breed-tab:hover {
+  background: rgba(124, 77, 255, 0.08);
+}
+.breed-tab--active {
+  background: var(--color-primary, #7C4DFF) !important;
+  color: #fff !important;
+}
+
+/* 추천 결과 카드 반응형 */
+@media (max-width: 600px) {
+  .breed-tabs {
+    font-size: 0.85rem;
+  }
+}
+
+/* ===== 로그인 유도 모달 애니메이션 ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ===== Auth Pages (로그인/회원가입) ===== */
+.auth-container {
+  max-width: 420px;
+  margin: 48px auto;
+}
+
+.auth-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 36px 32px;
+}
+
+.auth-card h2 {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  letter-spacing: -0.3px;
+}
+
+.auth-card .auth-logo {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.auth-footer a {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .auth-card { padding: 28px 20px; }
+}
