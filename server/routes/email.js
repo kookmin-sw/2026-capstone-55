@@ -4,7 +4,16 @@
 
 const express = require('express');
 const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
+
+// 로고 이미지 base64 (이메일용)
+let _logoBase64 = '';
+try {
+  const logoPath = path.join(__dirname, '..', '..', 'pawsitive_logo_transparent.png');
+  _logoBase64 = fs.readFileSync(logoPath).toString('base64');
+} catch(e) { console.warn('로고 이미지 로드 실패:', e.message); }
 
 // 인증코드 임시 저장소 (메모리)
 // 실제 서비스에서는 Redis나 DB 사용 권장
@@ -73,21 +82,20 @@ router.post('/send-code', async (req, res) => {
     await transporter.sendMail({
       from: `"Pawsitive 🐾" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: '🐾 Pawsitive 이메일 인증코드',
+      subject: 'Pawsitive 이메일 인증코드',
       html: `
-        <div style="font-family:'Nunito',sans-serif; max-width:480px; margin:0 auto; padding:32px; background:#FFF5F7; border-radius:24px;">
-          <div style="text-align:center; margin-bottom:24px;">
-            <span style="font-size:3rem;">🐾</span>
-            <h1 style="color:#E56B8A; font-size:1.5rem; margin:8px 0;">Pawsitive</h1>
+        <div style="font-family:-apple-system,'Helvetica Neue',sans-serif; max-width:440px; margin:0 auto; padding:40px 32px; background:#FAFAF8;">
+          <div style="text-align:center; margin-bottom:32px;">
+            <img src="data:image/png;base64,${_logoBase64}" width="200" alt="pawsitive" style="display:block; margin:0 auto;">
           </div>
-          <div style="background:#fff; border-radius:16px; padding:24px; border:2px solid #FFD6E0; text-align:center;">
-            <p style="color:#4A3728; font-size:1rem; margin-bottom:16px;">이메일 인증코드입니다</p>
-            <div style="background:linear-gradient(135deg,#FFB3C6,#C9A9E9); color:#fff; font-size:2rem; font-weight:900; letter-spacing:8px; padding:16px 24px; border-radius:12px; display:inline-block;">
+          <div style="background:#fff; border-radius:12px; padding:32px; border:1px solid #E5E3E0; text-align:center;">
+            <p style="color:#1A1A1A; font-size:0.95rem; margin:0 0 20px; font-weight:500;">이메일 인증코드</p>
+            <div style="background:#1A1A1A; color:#fff; font-size:1.8rem; font-weight:700; letter-spacing:8px; padding:16px 28px; border-radius:8px; display:inline-block;">
               ${code}
             </div>
-            <p style="color:#8B7B6B; font-size:0.85rem; margin-top:16px;">5분 이내에 입력해주세요~</p>
+            <p style="color:#A0A0A0; font-size:0.82rem; margin-top:20px;">5분 이내에 입력해주세요.</p>
           </div>
-          <p style="text-align:center; color:#BBA99A; font-size:0.8rem; margin-top:16px;">본인이 요청하지 않았다면 이 메일을 무시해주세요.</p>
+          <p style="text-align:center; color:#A0A0A0; font-size:0.75rem; margin-top:20px;">본인이 요청하지 않았다면 이 메일을 무시해주세요.</p>
         </div>
       `
     });

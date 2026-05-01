@@ -107,4 +107,31 @@ router.get('/stats/:userId', (req, res) => {
   }
 });
 
+// 산책 기록 삭제
+router.delete('/:walkId', (req, res) => {
+  try {
+    let walks = loadWalks();
+    walks = walks.filter(w => w.id !== req.params.walkId);
+    saveWalks(walks);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: '삭제 실패' });
+  }
+});
+
+// 산책 기록 이름 수정
+router.put('/:walkId', (req, res) => {
+  try {
+    const walks = loadWalks();
+    const walk = walks.find(w => w.id === req.params.walkId);
+    if (!walk) return res.status(404).json({ error: '기록을 찾을 수 없습니다.' });
+    if (req.body.dogName) walk.dogName = req.body.dogName;
+    if (req.body.title) walk.title = req.body.title;
+    saveWalks(walks);
+    res.json({ success: true, walk });
+  } catch (e) {
+    res.status(500).json({ error: '수정 실패' });
+  }
+});
+
 module.exports = router;

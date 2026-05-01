@@ -1,0 +1,25 @@
+[
+  {
+    "userId": "test-user",
+    "userName": "알 수 없음",
+    "role": "requester",
+    "location": "마포구 합정동",
+    "lat": null,
+    "lng": null,
+    "dogSize": "medium",
+    "preferredTime": "오전 (9-11시)",
+    "message": "",
+    "price": 0,
+    "experience": "없음",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "specialty": "",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 0,
+    "createdAt": "2026-04-30T14:26:13.605Z"
+  }
+]

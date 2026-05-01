@@ -236,5 +236,101 @@
     "calories": 0,
     "coordinates": [],
     "createdAt": "2026-04-24T04:53:19.186Z"
+  },
+  {
+    "id": "walk_1777513451460_v3kbjy",
+    "userId": "test-user",
+    "dogId": "멍멍이",
+    "dogName": "멍멍이",
+    "startTime": "2026-04-30T01:44:04.857Z",
+    "endTime": "2026-04-30T01:44:11.417Z",
+    "duration": 0,
+    "distance": 0.005,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [
+      {
+        "lat": 37.61195724929635,
+        "lng": 126.9966858685105,
+        "accuracy": 45.75199890136719,
+        "timestamp": 1777513444963
+      },
+      {
+        "lat": 37.611963256387156,
+        "lng": 126.99662873591045,
+        "accuracy": 45.09706237957762,
+        "timestamp": 1777513447294
+      }
+    ],
+    "createdAt": "2026-04-30T01:44:11.460Z"
+  },
+  {
+    "id": "walk_1777513463667_c8u02y",
+    "userId": "test-user",
+    "dogId": "멍멍이",
+    "dogName": "멍멍이",
+    "startTime": "2026-04-30T01:44:20.879Z",
+    "endTime": "2026-04-30T01:44:23.662Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [
+      {
+        "lat": 37.611963256387156,
+        "lng": 126.99662873591045,
+        "accuracy": 45.09706237957762,
+        "timestamp": 1777513460910
+      }
+    ],
+    "createdAt": "2026-04-30T01:44:23.667Z"
+  },
+  {
+    "id": "walk_1777520638066_i31n8l",
+    "userId": "test-user",
+    "dogId": "멍멍이",
+    "dogName": "멍멍이",
+    "startTime": "2026-04-30T03:43:50.778Z",
+    "endTime": "2026-04-30T03:43:58.025Z",
+    "duration": 0,
+    "distance": 0.004,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [
+      {
+        "lat": 37.66136755942747,
+        "lng": 126.773131604059,
+        "accuracy": 40,
+        "timestamp": 1777520630945
+      },
+      {
+        "lat": 37.66138673856343,
+        "lng": 126.7731718700273,
+        "accuracy": 40,
+        "timestamp": 1777520631113
+      }
+    ],
+    "createdAt": "2026-04-30T03:43:58.066Z"
+  },
+  {
+    "id": "walk_1777554869770_a1v6uq",
+    "userId": "test-user",
+    "dogId": "멍멍이",
+    "dogName": "멍멍이",
+    "startTime": "2026-04-30T13:14:25.298Z",
+    "endTime": "2026-04-30T13:14:29.736Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [
+      {
+        "lat": 37.67125404677941,
+        "lng": 126.73075315002352,
+        "accuracy": 45,
+        "timestamp": 1777554865320
+      }
+    ],
+    "createdAt": "2026-04-30T13:14:29.770Z"
   }
 ]

@@ -1418,61 +1418,117 @@ function renderAiPage() {
 
   const aiName = (user && user.aiName) || '포피';
 
-  renderPage(`
-    <div class="page-header">
-      <h1>🤖 ${aiName} - AI 반려견 상담</h1>
-      <p>훈련/행동 상담부터 건강/질병 분석까지, ${aiName}가 도와드려요~ 🐾</p>
-    </div>
+  // 풀스크린 ChatGPT 스타일 레이아웃 (page-content 패딩 오버라이드)
+  const app = document.getElementById('app');
+  if (app) {
+    app.innerHTML = `
+    <style>
+      .ai-layout { display:flex; height:calc(100vh - 64px); overflow:hidden; }
+      .ai-sidebar { width:260px; background:#f9f9f7; border-right:1px solid #e5e3e0; display:flex; flex-direction:column; flex-shrink:0; }
+      .ai-sidebar__header { padding:16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e3e0; }
+      .ai-sidebar__new { padding:8px 16px; border:1px solid #e5e3e0; border-radius:8px; font-size:0.82rem; font-weight:600; background:#fff; color:#1a1a1a; width:100%; text-align:left; transition:background 0.15s; }
+      .ai-sidebar__new:hover { background:#f0eeeb; }
+      .ai-sidebar__list { flex:1; overflow-y:auto; padding:8px; }
+      .ai-sidebar__list::-webkit-scrollbar { width:3px; }
+      .ai-sidebar__list::-webkit-scrollbar-thumb { background:#ddd; border-radius:2px; }
+      .ai-sidebar__item { padding:10px 12px; border-radius:8px; font-size:0.82rem; color:#666; cursor:pointer; transition:background 0.15s; margin-bottom:2px; display:flex; justify-content:space-between; align-items:center; }
+      .ai-sidebar__item:hover { background:#f0eeeb; }
+      .ai-sidebar__item.active { background:#e8e6e3; color:#1a1a1a; font-weight:600; }
+      .ai-sidebar__item-title { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .ai-sidebar__item-del { opacity:0; font-size:0.75rem; color:#999; background:none; border:none; padding:2px 4px; transition:opacity 0.15s; }
+      .ai-sidebar__item:hover .ai-sidebar__item-del { opacity:1; }
+      .ai-sidebar__item-del:hover { color:#e53e3e; }
+      .ai-sidebar__footer { padding:12px 16px; border-top:1px solid #e5e3e0; }
+      .ai-main { flex:1; display:flex; flex-direction:column; min-width:0; }
+      .ai-main__header { padding:12px 24px; border-bottom:1px solid #e5e3e0; display:flex; align-items:center; gap:12px; flex-shrink:0; }
+      .ai-main__tabs { display:inline-flex; background:#f0eeeb; border-radius:10px; padding:3px; }
+      .ai-main__tab { padding:7px 18px; border-radius:8px; font-size:0.8rem; font-weight:600; color:#888; background:none; border:none; transition:all 0.2s; cursor:pointer; }
+      .ai-main__tab:hover { color:#555; }
+      .ai-main__tab.active { color:#fff; background:#1a1a1a; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+      .ai-chat-area { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+      .ai-chat-area::-webkit-scrollbar { width:4px; }
+      .ai-chat-area::-webkit-scrollbar-thumb { background:#ddd; border-radius:2px; }
+      .ai-chat-center { max-width:720px; width:100%; margin:0 auto; padding:24px; flex:1; display:flex; flex-direction:column; }
+      .ai-welcome-center { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+      .ai-welcome-center h2 { font-size:1.4rem; font-weight:700; color:#1a1a1a; letter-spacing:-0.5px; margin-bottom:8px; }
+      .ai-welcome-center p { font-size:0.88rem; color:#999; }
+      .ai-input-area { padding:16px 24px 24px; flex-shrink:0; }
+      .ai-input-box { max-width:720px; margin:0 auto; display:flex; gap:8px; align-items:flex-end; border:1.5px solid #e5e3e0; border-radius:24px; padding:10px 16px; background:#fff; transition:border-color 0.15s; box-shadow:0 2px 12px rgba(0,0,0,0.04); }
+      .ai-input-box:focus-within { border-color:#1a1a1a; box-shadow:0 2px 16px rgba(0,0,0,0.08); }
+      .ai-input-box input { flex:1; border:none; background:transparent; font-size:0.9rem; outline:none; padding:4px 0; font-family:inherit; color:#1a1a1a; }
+      .ai-input-box input::placeholder { color:#bbb; }
+      .ai-send-circle { width:32px; height:32px; border-radius:50%; background:#1a1a1a; color:#fff; border:none; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:opacity 0.15s; }
+      .ai-send-circle:hover { opacity:0.8; }
+      .ai-send-circle:disabled { opacity:0.2; }
+      .ai-attach-btn { background:none; border:none; font-size:1.1rem; padding:4px; color:#999; flex-shrink:0; transition:color 0.15s; }
+      .ai-attach-btn:hover { color:#1a1a1a; }
+      .ai-msg-row { max-width:720px; width:100%; margin:0 auto; padding:16px 24px; }
+      .ai-msg-row--user { }
+      .ai-msg-row--ai { background:#f9f9f7; border-radius:12px; margin-bottom:8px; }
+      .ai-msg-label { font-size:0.75rem; font-weight:700; color:#1a1a1a; margin-bottom:6px; }
+      .ai-msg-text { font-size:0.9rem; line-height:1.7; color:#333; }
+      .ai-msg-text img { max-width:100%; max-height:240px; border-radius:8px; margin:8px 0; }
+      .ai-health-bar { max-width:720px; margin:0 auto; padding:0 24px 12px; }
+      .ai-health-bar__inner { display:flex; gap:8px; }
+      @media (max-width:768px) {
+        .ai-sidebar { display:none; }
+        .ai-chat-center, .ai-msg-row, .ai-health-bar { padding-left:16px; padding-right:16px; }
+        .ai-input-area { padding:12px 16px 16px; }
+      }
+    </style>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-      <button class="btn btn-secondary btn-sm" onclick="toggleAiSessions()" id="ai-sessions-toggle">📋 이전 대화 목록</button>
-      <div style="display:flex; gap:6px;">
-        <button class="btn btn-primary btn-sm" onclick="startNewAiSession()">➕ 새 대화</button>
-        <button class="btn btn-secondary btn-sm" onclick="showAiNameSetting()">✏️ AI 비서 이름</button>
+    <div class="ai-layout">
+      <!-- 사이드바 -->
+      <div class="ai-sidebar">
+        <div class="ai-sidebar__header">
+          <button class="ai-sidebar__new" onclick="startNewAiSession()">+ 새 대화</button>
+        </div>
+        <div class="ai-sidebar__list" id="ai-sidebar-list"></div>
+        <div class="ai-sidebar__footer">
+          <button onclick="showAiNameSetting()" style="background:none;border:none;font-size:0.78rem;color:#999;cursor:pointer;">AI 비서 이름 설정</button>
+          <div id="ai-name-setting" style="display:none; margin-top:8px;"></div>
+        </div>
       </div>
-    </div>
 
-    <div id="ai-sessions-panel" style="display:none; margin-bottom:12px;"></div>
-    <div id="ai-name-setting" style="display:none; margin-bottom:12px;"></div>
+      <!-- 메인 채팅 -->
+      <div class="ai-main">
+        <div class="ai-main__header">
+        </div>
 
-    <div class="tabs" style="margin-bottom:16px;">
-      <button class="tab active" id="ai-tab-training" onclick="switchAiMode('training')">🐾 훈련/행동 상담</button>
-      <button class="tab" id="ai-tab-health" onclick="switchAiMode('health')">🩺 건강/질병 상담</button>
-    </div>
-
-    <div id="ai-mode-desc" class="card" style="padding:16px; margin-bottom:16px; background:var(--color-bg-warm);"></div>
-
-    <div id="ai-health-fields" style="display:none; margin-bottom:16px;">
-      <div class="card" style="padding:16px;">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-          <div>
-            <label style="font-size:0.82rem; font-weight:600;">품종 (선택)</label>
-            <select id="ai-breed" class="form-select" style="margin-top:4px;">
-              <option value="">선택해주세요</option>
-              ${typeof BREEDS_DATA !== 'undefined' ? BREEDS_DATA.map(b => '<option value="' + b.name + '">' + b.name + '</option>').join('') : ''}
-            </select>
+        <div id="ai-health-fields" style="display:none;">
+          <div class="ai-health-bar">
+            <div class="ai-health-bar__inner" style="padding-top:12px;">
+              <div style="position:relative; flex:1;">
+                <input type="text" id="ai-breed" class="form-input" placeholder="품종 검색..." autocomplete="off" style="font-size:0.82rem; padding:6px 10px; border-radius:8px; width:100%;" oninput="filterBreedDropdown(this.value)" onfocus="showBreedDropdown()" onblur="setTimeout(()=>hideBreedDropdown(),200)">
+                <div id="ai-breed-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; max-height:180px; overflow-y:auto; background:#fff; border:1px solid #e5e3e0; border-radius:8px; margin-top:4px; z-index:10; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                </div>
+              </div>
+              <input type="text" id="ai-age" class="form-input" placeholder="나이" style="font-size:0.82rem; padding:6px 10px; border-radius:8px; width:80px;">
+            </div>
           </div>
-          <div>
-            <label style="font-size:0.82rem; font-weight:600;">나이 (선택)</label>
-            <input type="text" id="ai-age" class="form-input" placeholder="예: 3살" style="margin-top:4px;">
+        </div>
+
+        <div class="ai-chat-area" id="ai-chat"></div>
+
+        <div class="ai-input-area">
+          <div class="ai-input-box" id="ai-input-wrap" ondragover="event.preventDefault();this.style.borderColor='#1a1a1a'" ondragleave="this.style.borderColor='#e5e3e0'" ondrop="event.preventDefault();this.style.borderColor='#e5e3e0';handleAiDrop(event)">
+            <button class="ai-attach-btn" onclick="document.getElementById('ai-file').click()" title="사진 첨부">+</button>
+            <input type="file" id="ai-file" accept="image/*,video/*" style="display:none;" onchange="handleAiFileSelect(this)">
+            <div style="flex:1; min-width:0;">
+              <div id="ai-file-preview" style="display:none; margin-bottom:6px;"></div>
+              <input type="text" id="ai-input" placeholder="무엇이든 물어보세요" onkeydown="if(event.key==='Enter')handleAiChat()" onpaste="handleAiPaste(event)">
+            </div>
+            <button class="ai-send-circle" onclick="handleAiChat()" id="ai-send-btn">&#x2191;</button>
           </div>
         </div>
       </div>
     </div>
-
-    <div id="ai-chat" style="margin-bottom:16px; min-height:200px; max-height:500px; overflow-y:auto;"></div>
-
-    <div style="display:flex; gap:8px; position:sticky; bottom:16px; background:var(--color-bg); padding:8px 0;">
-      <label for="ai-file" class="btn btn-secondary btn-sm" title="사진/영상 첨부" style="padding:8px 12px; cursor:pointer; margin:0;">📎</label>
-      <input type="file" id="ai-file" accept="image/*,video/*" style="display:none;" onchange="handleAiFileSelect(this)">
-      <input type="text" id="ai-input" class="form-input" placeholder="질문을 입력해주세요..." style="flex:1;" onkeydown="if(event.key==='Enter')handleAiChat()" onpaste="handleAiPaste(event)">
-      <button class="btn btn-primary" onclick="handleAiChat()" id="ai-send-btn">전송</button>
-    </div>
-    <div id="ai-file-preview" style="display:none; padding:8px 0;"></div>
-  `);
+    `;
+  }
 
   updateAiModeDesc();
   restoreAiChat();
+  _renderAiSidebar();
 
   // 세션 목록 로드
   if (user) loadAiSessionList(user.id);
@@ -1484,18 +1540,30 @@ async function loadAiSessionList(userId) {
     const res = await fetch('/api/chat/' + userId + '/sessions');
     if (res.ok) _aiSessionList = await res.json();
   } catch(e) { _aiSessionList = []; }
+  _renderAiSidebar();
 }
 
 // 세션 목록 패널 토글
 function toggleAiSessions() {
-  const panel = document.getElementById('ai-sessions-panel');
-  if (!panel) return;
-  if (panel.style.display === 'none') {
-    panel.style.display = 'block';
-    renderAiSessionList();
-  } else {
-    panel.style.display = 'none';
+  _renderAiSidebar();
+}
+
+function _renderAiSidebar() {
+  const list = document.getElementById('ai-sidebar-list');
+  if (!list) return;
+
+  if (_aiSessionList.length === 0) {
+    list.innerHTML = '<div style="padding:16px; text-align:center; font-size:0.78rem; color:#999;">이전 대화가 없어요</div>';
+    return;
   }
+
+  list.innerHTML = _aiSessionList.map(s => {
+    const isActive = _aiCurrentSession && _aiCurrentSession.id === s.id;
+    return '<div class="ai-sidebar__item' + (isActive ? ' active' : '') + '" onclick="loadAiSession(\'' + s.id + '\')">' +
+      '<span class="ai-sidebar__item-title">' + s.title + '</span>' +
+      '<button class="ai-sidebar__item-del" onclick="event.stopPropagation();deleteAiSession(\'' + s.id + '\')" title="삭제">✕</button>' +
+    '</div>';
+  }).join('');
 }
 
 function renderAiSessionList() {
@@ -1642,13 +1710,7 @@ async function saveCurrentSession() {
 }
 
 function updateAiModeDesc() {
-  const descEl = document.getElementById('ai-mode-desc');
-  if (!descEl) return;
-  if (_aiChatMode === 'training') {
-    descEl.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:1.5rem;">🐕‍🦺</span><div><div style="font-weight:700;font-size:0.9rem;">훈련/행동 상담 모드</div><div style="font-size:0.82rem;color:var(--color-text-light);">문제 행동 교정, 훈련 방법, 사회화 등에 대해 상담해드려요</div></div></div>';
-  } else {
-    descEl.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:1.5rem;">🩺</span><div><div style="font-weight:700;font-size:0.9rem;">건강/질병 상담 모드</div><div style="font-size:0.82rem;color:var(--color-text-light);">증상 분석, 질병 정보, 응급 대처법 등을 안내해드려요</div></div></div>';
-  }
+  // ChatGPT 스타일에서는 모드 설명을 별도로 표시하지 않음
 }
 
 function restoreAiChat() {
@@ -1657,23 +1719,40 @@ function restoreAiChat() {
   const messages = (_aiCurrentSession && _aiCurrentSession.messages) || [];
 
   if (messages.length === 0) {
-    const icon = _aiChatMode === 'training' ? '🐕‍🦺' : '🩺';
-    const desc = _aiChatMode === 'training'
-      ? '반려견 행동 문제나 훈련 방법에 대해 물어봐주세요!'
-      : '반려견의 증상이나 건강 고민을 알려주세요!';
-    chatEl.innerHTML = '<div class="card" style="padding:20px;text-align:center;color:var(--color-text-light);"><div style="font-size:2.5rem;margin-bottom:8px;">' + icon + '</div><p style="font-weight:700;">안녕하세요! ' + getAiName() + '예요~</p><p style="font-size:0.85rem;margin-top:4px;">' + desc + '</p></div>';
+    chatEl.innerHTML = `
+    <div class="ai-chat-center">
+      <div class="ai-welcome-center">
+        <h2>무엇이 궁금하세요?</h2>
+        <p>상담 유형을 선택해주세요</p>
+        <div style="display:flex; gap:16px; margin-top:32px; max-width:480px; width:100%;">
+          <div onclick="selectAiModeCard('training')" class="ai-mode-card" id="ai-mode-card-training" style="flex:1; padding:24px 20px; border:1.5px solid #e5e3e0; border-radius:14px; cursor:pointer; transition:all 0.2s; text-align:left;" onmouseover="this.style.borderColor='#1a1a1a';this.style.background='#f9f9f7'" onmouseout="if(!this.classList.contains('selected')){this.style.borderColor='#e5e3e0';this.style.background='#fff'}">
+            <div style="font-size:0.95rem; font-weight:700; color:#1a1a1a; margin-bottom:8px;">훈련 / 행동</div>
+            <div style="font-size:0.78rem; color:#888; line-height:1.5;">문제 행동 교정, 훈련 방법,<br>사회화 등에 대해 상담</div>
+          </div>
+          <div onclick="selectAiModeCard('health')" class="ai-mode-card" id="ai-mode-card-health" style="flex:1; padding:24px 20px; border:1.5px solid #e5e3e0; border-radius:14px; cursor:pointer; transition:all 0.2s; text-align:left;" onmouseover="this.style.borderColor='#1a1a1a';this.style.background='#f9f9f7'" onmouseout="if(!this.classList.contains('selected')){this.style.borderColor='#e5e3e0';this.style.background='#fff'}">
+            <div style="font-size:0.95rem; font-weight:700; color:#1a1a1a; margin-bottom:8px;">건강 / 질병</div>
+            <div style="font-size:0.78rem; color:#888; line-height:1.5;">증상 분석, 질병 정보,<br>응급 대처법 안내</div>
+          </div>
+        </div>
+        <div id="ai-mode-detail" style="margin-top:20px; max-width:480px; width:100%; text-align:left; min-height:60px;"></div>
+      </div>
+    </div>`;
     return;
   }
 
-  chatEl.innerHTML = '';
+  let html = '<div class="ai-chat-center">';
   messages.forEach(msg => {
     if (msg.role === 'user') {
-      chatEl.innerHTML += '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><div style="background:var(--color-primary);color:#fff;padding:12px 16px;border-radius:16px 16px 4px 16px;max-width:75%;font-size:0.9rem;">' + msg.text + '</div></div>';
+      let imgHtml = '';
+      if (msg.imageData) imgHtml = '<img src="' + msg.imageData + '">';
+      html += '<div class="ai-msg-row ai-msg-row--user"><div class="ai-msg-label">나</div><div class="ai-msg-text">' + imgHtml + msg.text + '</div></div>';
     } else {
       const formatted = msg.text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      chatEl.innerHTML += '<div style="display:flex;margin-bottom:12px;"><div style="background:var(--color-bg-warm);border:2px solid var(--color-border);padding:12px 16px;border-radius:16px 16px 16px 4px;max-width:85%;font-size:0.9rem;line-height:1.7;">' + formatted + '</div></div>';
+      html += '<div class="ai-msg-row ai-msg-row--ai"><div class="ai-msg-label">' + getAiName() + '</div><div class="ai-msg-text">' + formatted + '</div></div>';
     }
   });
+  html += '</div>';
+  chatEl.innerHTML = html;
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
@@ -1681,13 +1760,96 @@ function switchAiMode(mode) {
   _aiChatMode = mode;
   if (_aiCurrentSession) _aiCurrentSession.mode = mode;
 
-  document.getElementById('ai-tab-training').classList.toggle('active', mode === 'training');
-  document.getElementById('ai-tab-health').classList.toggle('active', mode === 'health');
-  document.getElementById('ai-health-fields').style.display = mode === 'health' ? 'block' : 'none';
+  const tabT = document.getElementById('ai-tab-training');
+  const tabH = document.getElementById('ai-tab-health');
+  if (tabT) tabT.classList.toggle('active', mode === 'training');
+  if (tabH) tabH.classList.toggle('active', mode === 'health');
+
+  const healthFields = document.getElementById('ai-health-fields');
+  if (healthFields) healthFields.style.display = mode === 'health' ? 'block' : 'none';
   updateAiModeDesc();
 
   const input = document.getElementById('ai-input');
   if (input) input.placeholder = mode === 'training' ? '훈련/행동 관련 질문을 입력해주세요...' : '증상이나 건강 관련 질문을 입력해주세요...';
+}
+
+function selectAiModeCard(mode) {
+  _aiChatMode = mode;
+  if (_aiCurrentSession) _aiCurrentSession.mode = mode;
+
+  // 카드 하이라이트
+  const cards = document.querySelectorAll('.ai-mode-card');
+  cards.forEach(c => { c.classList.remove('selected'); c.style.borderColor = '#e5e3e0'; c.style.background = '#fff'; });
+  const selected = document.getElementById('ai-mode-card-' + mode);
+  if (selected) {
+    selected.classList.add('selected');
+    selected.style.borderColor = '#1a1a1a';
+    selected.style.background = '#f5f3f0';
+  }
+
+  // 상단 탭도 동기화
+  const tabT = document.getElementById('ai-tab-training');
+  const tabH = document.getElementById('ai-tab-health');
+  if (tabT) tabT.classList.toggle('active', mode === 'training');
+  if (tabH) tabH.classList.toggle('active', mode === 'health');
+
+  const healthFields = document.getElementById('ai-health-fields');
+  if (healthFields) healthFields.style.display = mode === 'health' ? 'block' : 'none';
+
+  // 설명 표시
+  const detail = document.getElementById('ai-mode-detail');
+  if (detail) {
+    if (mode === 'training') {
+      detail.innerHTML = '<div style="font-size:0.82rem; color:#666; border-left:2px solid #1a1a1a; padding-left:12px;"><div style="font-weight:700; color:#1a1a1a; margin-bottom:4px;">이런 질문에 좋아요</div><div style="line-height:1.6;">• 강아지가 짖는 이유와 교정법<br>• 분리불안 해결 방법<br>• 산책 훈련, 사회화 방법</div></div>';
+    } else {
+      detail.innerHTML = '<div style="font-size:0.82rem; color:#666; border-left:2px solid #1a1a1a; padding-left:12px;"><div style="font-weight:700; color:#1a1a1a; margin-bottom:4px;">이런 질문에 좋아요</div><div style="line-height:1.6;">• 구토, 설사 등 증상 분석<br>• 사진으로 피부/눈 상태 진단<br>• 예방접종, 응급 대처법</div></div>';
+    }
+  }
+
+  // 입력창 포커스
+  const input = document.getElementById('ai-input');
+  if (input) {
+    input.placeholder = mode === 'training' ? '훈련/행동 관련 질문을 입력해주세요...' : '증상이나 건강 관련 질문을 입력해주세요...';
+    input.focus();
+  }
+}
+
+function showBreedDropdown() {
+  filterBreedDropdown(document.getElementById('ai-breed')?.value || '');
+  document.getElementById('ai-breed-dropdown').style.display = 'block';
+}
+
+function hideBreedDropdown() {
+  document.getElementById('ai-breed-dropdown').style.display = 'none';
+}
+
+function filterBreedDropdown(query) {
+  const dropdown = document.getElementById('ai-breed-dropdown');
+  if (!dropdown || typeof BREEDS_DATA === 'undefined') return;
+
+  const q = query.toLowerCase().trim();
+  const filtered = q ? BREEDS_DATA.filter(b => b.name.toLowerCase().includes(q) || (b.nameEn && b.nameEn.toLowerCase().includes(q))).slice(0, 20) : BREEDS_DATA.slice(0, 20);
+
+  if (filtered.length === 0) {
+    dropdown.innerHTML = '<div style="padding:10px 12px; font-size:0.78rem; color:#999;">검색 결과가 없어요</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  const sizeLabel = { small: '소형', medium: '중형', large: '대형' };
+  dropdown.innerHTML = filtered.map(b =>
+    '<div onclick="selectBreed(\'' + b.name.replace(/'/g, "\\'") + '\')" style="padding:8px 12px; font-size:0.82rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:background 0.1s;" onmouseover="this.style.background=\'#f5f3f0\'" onmouseout="this.style.background=\'#fff\'">' +
+      '<span>' + b.name + '</span>' +
+      '<span style="font-size:0.7rem; color:#999;">' + (sizeLabel[b.size] || '') + '</span>' +
+    '</div>'
+  ).join('');
+  dropdown.style.display = 'block';
+}
+
+function selectBreed(name) {
+  const input = document.getElementById('ai-breed');
+  if (input) input.value = name;
+  hideBreedDropdown();
 }
 
 function clearAiChat() {
@@ -1744,29 +1906,11 @@ function handleAiPaste(event) {
       event.preventDefault();
       const file = item.getAsFile();
       if (!file) return;
-
       if (file.size > 10 * 1024 * 1024) {
         alert('이미지 크기는 10MB 이하만 가능해요.');
         return;
       }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64Full = e.target.result;
-        const base64Data = base64Full.split(',')[1];
-        _aiAttachedFile = {
-          base64: base64Data,
-          mimeType: file.type,
-          name: '붙여넣기 이미지'
-        };
-
-        const preview = document.getElementById('ai-file-preview');
-        if (preview) {
-          preview.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--color-bg-warm);border-radius:8px;"><img src="' + base64Full + '" style="width:60px;height:60px;object-fit:cover;border-radius:6px;"><div style="flex:1;font-size:0.82rem;font-weight:600;">📋 클립보드 이미지</div><button onclick="removeAiFile()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;">✕</button></div>';
-          preview.style.display = 'block';
-        }
-      };
-      reader.readAsDataURL(file);
+      _processAiFile(file);
       return;
     }
   }
@@ -1778,36 +1922,13 @@ let _aiAttachedFile = null; // { base64, mimeType, name }
 function handleAiFileSelect(input) {
   const file = input.files[0];
   if (!file) return;
-
-  // 10MB 제한
   if (file.size > 10 * 1024 * 1024) {
     alert('파일 크기는 10MB 이하만 가능해요.');
     input.value = '';
     return;
   }
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const base64Full = e.target.result;
-    const base64Data = base64Full.split(',')[1]; // data:image/jpeg;base64, 부분 제거
-    _aiAttachedFile = {
-      base64: base64Data,
-      mimeType: file.type,
-      name: file.name
-    };
-
-    // 미리보기 표시
-    const preview = document.getElementById('ai-file-preview');
-    if (preview) {
-      if (file.type.startsWith('image/')) {
-        preview.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--color-bg-warm);border-radius:8px;"><img src="' + base64Full + '" style="width:60px;height:60px;object-fit:cover;border-radius:6px;"><div style="flex:1;font-size:0.82rem;font-weight:600;">' + file.name + '</div><button onclick="removeAiFile()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;">✕</button></div>';
-      } else {
-        preview.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--color-bg-warm);border-radius:8px;"><span style="font-size:1.5rem;">🎬</span><div style="flex:1;font-size:0.82rem;font-weight:600;">' + file.name + '</div><button onclick="removeAiFile()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;">✕</button></div>';
-      }
-      preview.style.display = 'block';
-    }
-  };
-  reader.readAsDataURL(file);
+  _processAiFile(file);
+  input.value = '';
 }
 
 function removeAiFile() {
@@ -1816,6 +1937,39 @@ function removeAiFile() {
   if (preview) { preview.innerHTML = ''; preview.style.display = 'none'; }
   const fileInput = document.getElementById('ai-file');
   if (fileInput) fileInput.value = '';
+}
+
+function handleAiDrop(event) {
+  const file = event.dataTransfer.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+    alert('이미지 또는 영상 파일만 첨부할 수 있어요.');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    alert('파일 크기는 10MB 이하만 가능해요.');
+    return;
+  }
+  _processAiFile(file);
+}
+
+function _processAiFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const base64Full = e.target.result;
+    const base64Data = base64Full.split(',')[1];
+    _aiAttachedFile = { base64: base64Data, mimeType: file.type, name: file.name };
+    const preview = document.getElementById('ai-file-preview');
+    if (preview) {
+      if (file.type.startsWith('image/')) {
+        preview.innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--color-bg-warm);border-radius:8px;position:relative;"><img src="' + base64Full + '" style="height:48px;max-width:120px;object-fit:cover;border-radius:6px;"><button onclick="removeAiFile()" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#333;color:#fff;border:none;font-size:0.6rem;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</button></div>';
+      } else {
+        preview.innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--color-bg-warm);border-radius:8px;"><span style="font-size:1rem;">🎬</span><span style="font-size:0.78rem;font-weight:600;">' + file.name + '</span><button onclick="removeAiFile()" style="background:none;border:none;cursor:pointer;font-size:0.9rem;">✕</button></div>';
+      }
+      preview.style.display = 'block';
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 async function handleAiChat() {
@@ -1841,21 +1995,22 @@ async function handleAiChat() {
   if (_aiCurrentSession.messages.length === 0) chatEl.innerHTML = '';
 
   // 사용자 메시지 표시 (이미지 포함)
-  let userMsgHtml = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><div style="background:var(--color-primary);color:#fff;padding:12px 16px;border-radius:16px 16px 4px 16px;max-width:75%;font-size:0.9rem;">';
+  let imgHtml = '';
   if (_aiAttachedFile && _aiAttachedFile.mimeType.startsWith('image/')) {
-    userMsgHtml += '<img src="data:' + _aiAttachedFile.mimeType + ';base64,' + _aiAttachedFile.base64 + '" style="max-width:200px;max-height:150px;border-radius:8px;margin-bottom:8px;display:block;">';
-  } else if (_aiAttachedFile) {
-    userMsgHtml += '<div style="margin-bottom:6px;">📎 ' + _aiAttachedFile.name + '</div>';
+    imgHtml = '<img src="data:' + _aiAttachedFile.mimeType + ';base64,' + _aiAttachedFile.base64 + '">';
   }
-  userMsgHtml += message + '</div></div>';
-  chatEl.innerHTML += userMsgHtml;
+  chatEl.innerHTML += '<div class="ai-msg-row ai-msg-row--user"><div class="ai-msg-label">나</div><div class="ai-msg-text">' + imgHtml + message + '</div></div>';
 
   // 로딩
-  chatEl.innerHTML += '<div id="ai-loading" style="display:flex;margin-bottom:12px;"><div style="background:var(--color-bg-warm);padding:12px 16px;border-radius:16px 16px 16px 4px;max-width:75%;"><div class="spinner" style="width:20px;height:20px;"></div></div></div>';
+  chatEl.innerHTML += '<div class="ai-msg-row ai-msg-row--ai" id="ai-loading"><div class="ai-msg-label">' + getAiName() + '</div><div class="ai-msg-text"><div class="spinner" style="width:20px;height:20px;"></div></div></div>';
   chatEl.scrollTop = chatEl.scrollHeight;
   if (btn) btn.disabled = true;
 
-  _aiCurrentSession.messages.push({ role: 'user', text: message });
+  const msgObj = { role: 'user', text: message };
+  if (_aiAttachedFile && _aiAttachedFile.mimeType.startsWith('image/')) {
+    msgObj.imageData = 'data:' + _aiAttachedFile.mimeType + ';base64,' + _aiAttachedFile.base64;
+  }
+  _aiCurrentSession.messages.push(msgObj);
 
   try {
     let apiUrl, body;
@@ -1912,7 +2067,7 @@ async function handleAiChat() {
 
     if (isSuccess) {
       const formatted = reply.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      chatEl.innerHTML += '<div style="display:flex;margin-bottom:12px;"><div style="background:var(--color-bg-warm);border:2px solid var(--color-border);padding:12px 16px;border-radius:16px 16px 16px 4px;max-width:85%;font-size:0.9rem;line-height:1.7;">' + formatted + '</div></div>';
+      chatEl.innerHTML += '<div class="ai-msg-row ai-msg-row--ai"><div class="ai-msg-label">' + getAiName() + '</div><div class="ai-msg-text">' + formatted + '</div></div>';
       _aiCurrentSession.messages.push({ role: 'ai', text: reply });
     } else {
       chatEl.innerHTML += '<div class="alert alert-error" style="margin-bottom:12px;">' + reply + '</div>';
@@ -2447,162 +2602,254 @@ function renderMatchingPage() {
 
 /** 역할 선택 화면 */
 function renderMatchingRoleSelect(selectedRole) {
-  const walkerSel = selectedRole === 'walker';
-  const reqSel    = selectedRole === 'requester';
-
-  const walkerFormHtml = walkerSel ? `
-    <div class="match-form-card">
-      <h3 class="match-form-title">산책 도우미 등록 및 상태 관리</h3>
-      <div id="match-register-error"></div>
-      <div class="match-form-grid">
-        <div class="form-group">
-          <label for="match-location">활동 지역 <span class="dw-required">*</span></label>
-          <input type="text" id="match-location" class="form-input" placeholder="예: 서울 마포구 합정동">
-        </div>
-        <div class="form-group">
-          <label for="match-time">산책 가능 시간 <span class="dw-required">*</span></label>
-          <select id="match-time" class="form-select">
-            <option value="">선택해주세요</option>
-            <option value="오전 (7-9시)">오전 (7~9시)</option>
-            <option value="오전 (9-11시)">오전 (9~11시)</option>
-            <option value="오후 (2-4시)">오후 (2~4시)</option>
-            <option value="오후 (5-7시)">오후 (5~7시)</option>
-            <option value="저녁 (7-9시)">저녁 (7~9시)</option>
-            <option value="상시 가능">상시 가능</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="match-experience">경력 / 특이사항</label>
-          <input type="text" id="match-experience" class="form-input" placeholder="예: 반려견 2년 경력, 응급처치 자격">
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="match-message">자기소개 <span class="dw-required">*</span></label>
-        <textarea id="match-message" class="form-input" rows="3" placeholder="간단한 자기소개를 적어주세요."></textarea>
-      </div>
-      <div class="form-group">
-        <label>추가 정보</label>
-        <div class="match-check-group">
-          <label class="dw-check-label"><input type="checkbox" id="match-large-dog"> 대형견 산책 가능</label>
-          <label class="dw-check-label"><input type="checkbox" id="match-multi-dog"> 여러 마리 동시 산책 가능</label>
-        </div>
-      </div>
-      <button class="btn btn-primary match-submit-btn" onclick="handleRegisterMatchProfile('walker')">🚶‍♂️ 산책 도우미로 등록하기</button>
-    </div>
-  ` : '';
-
-  const reqFormHtml = reqSel ? `
-    <div class="match-form-card">
-      <h3 class="match-form-title">산책 요청자 등록 및 매칭 요청</h3>
-      <div id="match-register-error"></div>
-      <div class="match-form-grid">
-        <div class="form-group">
-          <label for="match-dog-name">반려견 이름 <span class="dw-required">*</span></label>
-          <input type="text" id="match-dog-name" class="form-input" placeholder="예: 초코">
-        </div>
-        <div class="form-group">
-          <label for="match-dog-size">반려견 크기 <span class="dw-required">*</span></label>
-          <select id="match-dog-size" class="form-select">
-            <option value="">선택해주세요</option>
-            <option value="small">소형견 (~10kg)</option>
-            <option value="medium">중형견 (10~25kg)</option>
-            <option value="large">대형견 (25kg~)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="match-location">산책 희망 장소 <span class="dw-required">*</span></label>
-          <input type="text" id="match-location" class="form-input" placeholder="예: 서울 마포구 합정동">
-        </div>
-        <div class="form-group">
-          <label for="match-time">원하는 산책 시간 <span class="dw-required">*</span></label>
-          <select id="match-time" class="form-select">
-            <option value="">선택해주세요</option>
-            <option value="오전 (7-9시)">오전 (7~9시)</option>
-            <option value="오전 (9-11시)">오전 (9~11시)</option>
-            <option value="오후 (2-4시)">오후 (2~4시)</option>
-            <option value="오후 (5-7시)">오후 (5~7시)</option>
-            <option value="저녁 (7-9시)">저녁 (7~9시)</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="match-notes">요청사항</label>
-        <textarea id="match-notes" class="form-input" rows="2" placeholder="특별한 요청사항이 있으면 적어주세요."></textarea>
-      </div>
-      <button class="btn btn-primary match-submit-btn" onclick="handleRegisterMatchProfile('requester')">🐕 산책 요청자로 등록하기</button>
-    </div>
-  ` : '';
-
   renderPage(`
-    <div class="match-hero">
-      <div class="section-label">산책 매칭</div>
-      <h1 class="match-hero__title">지금 바로 산책 매칭을<br>시작해보세요</h1>
-      <p class="match-hero__sub">산책 도우미와 요청자를 실시간으로 연결해드려요</p>
+    <style>
+      .match-flow-hero { text-align:center; padding:48px 0 32px; }
+      .match-flow-hero h1 { font-size:1.5rem; font-weight:700; letter-spacing:-0.5px; margin-bottom:6px; }
+      .match-flow-hero p { font-size:0.88rem; color:var(--color-text-muted); }
+      .match-flow-cards { display:flex; gap:16px; max-width:480px; margin:0 auto; }
+      .match-flow-card { flex:1; padding:32px 20px; border:1.5px solid var(--color-border); border-radius:16px; text-align:center; cursor:pointer; transition:all 0.2s; background:#fff; }
+      .match-flow-card:hover { border-color:var(--color-text); background:#f9f9f7; }
+      .match-flow-card h3 { font-size:1rem; font-weight:700; margin-bottom:6px; }
+      .match-flow-card p { font-size:0.78rem; color:var(--color-text-muted); line-height:1.5; }
+    </style>
+
+    <div class="match-flow-hero">
+      <h1>어떤 역할로 참여할까요?</h1>
+      <p>산책 매칭을 시작하려면 역할을 선택해주세요</p>
     </div>
 
-    <div class="match-role-grid">
-      <div class="match-role-card ${walkerSel ? 'match-role-card--selected' : ''}" onclick="renderMatchingRoleSelectStatic('walker')">
-        ${walkerSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
-        <div class="match-role-card__icon">🚶‍♂️</div>
-        <h3 class="match-role-card__title">산책 도우미</h3>
-        <p class="match-role-card__desc">다른 분의 반려견을<br>산책시켜 드려요</p>
+    <div class="match-flow-cards">
+      <div class="match-flow-card" onclick="openMatchRegisterFlow('walker')">
+        <h3>산책 도우미</h3>
+        <p>다른 분의 반려견을<br>산책시켜 드려요</p>
       </div>
-      <div class="match-role-card ${reqSel ? 'match-role-card--selected' : ''}" onclick="renderMatchingRoleSelectStatic('requester')">
-        ${reqSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
-        <div class="match-role-card__icon">🐕</div>
-        <h3 class="match-role-card__title">산책 요청자</h3>
-        <p class="match-role-card__desc">우리 아이 산책을<br>부탁하고 싶어요</p>
+      <div class="match-flow-card" onclick="openMatchRegisterFlow('requester')">
+        <h3>산책 요청자</h3>
+        <p>우리 아이 산책을<br>부탁하고 싶어요</p>
       </div>
     </div>
-
-    ${walkerFormHtml}${reqFormHtml}
-    ${!selectedRole ? '<p class="match-role-hint">위 카드를 클릭해서 역할을 선택해주세요</p>' : ''}
   `);
+}
+
+// 토스 스타일 매칭 등록 플로우
+let _matchRegStep = 0;
+let _matchRegData = {};
+let _matchRegRole = '';
+
+const _matchWalkerSteps = [
+  { key: 'location', question: '어디서 활동하세요?', sub: '동네 이름을 알려주세요', type: 'text', placeholder: '예: 서울 마포구 합정동', required: true },
+  { key: 'preferredTime', question: '언제 산책 가능해요?', sub: '가능한 시간대를 골라주세요', type: 'cards', options: [
+    { value: '오전 (7-9시)', label: '이른 아침', desc: '7~9시' },
+    { value: '오전 (9-11시)', label: '오전', desc: '9~11시' },
+    { value: '오후 (2-4시)', label: '오후', desc: '2~4시' },
+    { value: '오후 (5-7시)', label: '늦은 오후', desc: '5~7시' },
+    { value: '저녁 (7-9시)', label: '저녁', desc: '7~9시' },
+    { value: '상시 가능', label: '상시', desc: '언제든' }
+  ]},
+  { key: 'experience', question: '반려견 경험이 있으세요?', sub: '없어도 괜찮아요', type: 'text', placeholder: '예: 반려견 2년 경력, 응급처치 자격', required: false },
+  { key: 'canWalkLarge', question: '대형견도 산책 가능해요?', sub: '25kg 이상의 대형견 기준이에요', type: 'cards', options: [
+    { value: 'yes', label: '가능해요', desc: '대형견 OK' },
+    { value: 'no', label: '어려워요', desc: '소/중형견만' }
+  ]},
+  { key: 'canWalkMultiple', question: '여러 마리 동시 산책도 가능해요?', sub: '', type: 'cards', options: [
+    { value: 'yes', label: '가능해요', desc: '2마리 이상 OK' },
+    { value: 'no', label: '한 마리만', desc: '1마리만 가능' }
+  ]},
+  { key: 'message', question: '간단히 자기소개 해주세요', sub: '요청자가 참고할 수 있어요', type: 'textarea', placeholder: '산책 스타일, 성격 등을 자유롭게 적어주세요', required: true }
+];
+
+const _matchRequesterSteps = [
+  { key: 'dogName', question: '반려견 이름이 뭐예요?', sub: '', type: 'text', placeholder: '예: 초코', required: true },
+  { key: 'dogSize', question: '반려견 크기는요?', sub: '체중 기준으로 선택해주세요', type: 'cards', options: [
+    { value: 'small', label: '소형', desc: '~10kg' },
+    { value: 'medium', label: '중형', desc: '10~25kg' },
+    { value: 'large', label: '대형', desc: '25kg~' }
+  ]},
+  { key: 'location', question: '어디서 산책하고 싶으세요?', sub: '동네 이름을 알려주세요', type: 'text', placeholder: '예: 서울 마포구 합정동', required: true },
+  { key: 'preferredTime', question: '원하는 산책 시간은요?', sub: '', type: 'cards', options: [
+    { value: '오전 (7-9시)', label: '이른 아침', desc: '7~9시' },
+    { value: '오전 (9-11시)', label: '오전', desc: '9~11시' },
+    { value: '오후 (2-4시)', label: '오후', desc: '2~4시' },
+    { value: '오후 (5-7시)', label: '늦은 오후', desc: '5~7시' },
+    { value: '저녁 (7-9시)', label: '저녁', desc: '7~9시' }
+  ]},
+  { key: 'notes', question: '요청사항이 있나요?', sub: '없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '특별한 요청사항을 적어주세요', required: false }
+];
+
+function openMatchRegisterFlow(role) {
+  _matchRegRole = role;
+  _matchRegStep = 0;
+  _matchRegData = {};
+
+  const app = document.getElementById('app');
+  app.innerHTML += `
+    <div id="match-reg-modal" style="position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+          <button onclick="closeMatchRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
+          <div id="match-reg-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
+          <div id="match-reg-content" style="flex:1; display:flex; flex-direction:column;"></div>
+        </div>
+      </div>
+    </div>
+  `;
+  renderMatchRegStep();
+}
+
+function closeMatchRegisterFlow() {
+  const modal = document.getElementById('match-reg-modal');
+  if (modal) modal.remove();
+}
+
+function _getMatchSteps() {
+  return _matchRegRole === 'walker' ? _matchWalkerSteps : _matchRequesterSteps;
+}
+
+function renderMatchRegStep() {
+  const steps = _getMatchSteps();
+  const step = steps[_matchRegStep];
+  const total = steps.length;
+  const content = document.getElementById('match-reg-content');
+  const progress = document.getElementById('match-reg-progress');
+
+  progress.innerHTML = Array.from({length: total}, (_, i) =>
+    `<div style="flex:1; height:3px; border-radius:2px; background:${i <= _matchRegStep ? '#1a1a1a' : '#e5e3e0'}; transition:background 0.3s;"></div>`
+  ).join('');
+
+  let inputHtml = '';
+  if (step.type === 'text') {
+    inputHtml = `<input type="text" id="match-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_matchRegData[step.key] || ''}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; margin-top:24px;" autofocus onkeydown="if(event.key==='Enter')nextMatchRegStep()">`;
+  } else if (step.type === 'textarea') {
+    inputHtml = `<textarea id="match-reg-input" class="form-input" placeholder="${step.placeholder || ''}" rows="3" style="font-size:1rem; padding:14px 16px; border-radius:12px; margin-top:24px; resize:none;">${_matchRegData[step.key] || ''}</textarea>`;
+  } else if (step.type === 'cards') {
+    inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">
+      ${step.options.map(opt => `
+        <button onclick="selectMatchRegCard('${step.key}','${opt.value}')" style="flex:1; min-width:90px; padding:16px 12px; border:1.5px solid ${_matchRegData[step.key] === opt.value ? '#1a1a1a' : '#e5e3e0'}; border-radius:14px; background:${_matchRegData[step.key] === opt.value ? '#f5f3f0' : '#fff'}; text-align:center; cursor:pointer; transition:all 0.15s;">
+          <div style="font-size:0.92rem; font-weight:700; color:#1a1a1a;">${opt.label}</div>
+          <div style="font-size:0.7rem; color:#999; margin-top:3px;">${opt.desc}</div>
+        </button>
+      `).join('')}
+    </div>`;
+  }
+
+  const isLast = _matchRegStep === total - 1;
+  const canSkip = !step.required;
+
+  content.innerHTML = `
+    <div style="flex:1;">
+      <h2 style="font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; line-height:1.3;">${step.question}</h2>
+      ${step.sub ? `<p style="font-size:0.88rem; color:#999; margin-top:6px;">${step.sub}</p>` : ''}
+      ${inputHtml}
+    </div>
+    <div style="display:flex; gap:8px; margin-top:24px;">
+      ${_matchRegStep > 0 ? `<button onclick="prevMatchRegStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; cursor:pointer;">이전</button>` : ''}
+      ${canSkip ? `<button onclick="skipMatchRegStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; color:#999; cursor:pointer;">건너뛰기</button>` : ''}
+      <button onclick="${isLast ? 'finishMatchRegister()' : 'nextMatchRegStep()'}" style="flex:2; padding:14px; border:none; border-radius:12px; background:#1a1a1a; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">${isLast ? '등록 완료' : '다음'}</button>
+    </div>
+  `;
+  setTimeout(() => document.getElementById('match-reg-input')?.focus(), 100);
+}
+
+function selectMatchRegCard(key, value) {
+  _matchRegData[key] = value;
+  renderMatchRegStep();
+  setTimeout(() => nextMatchRegStep(), 300);
+}
+
+function nextMatchRegStep() {
+  const steps = _getMatchSteps();
+  const step = steps[_matchRegStep];
+  const input = document.getElementById('match-reg-input');
+  if (input) _matchRegData[step.key] = input.value.trim();
+  if (step.required && !_matchRegData[step.key]) { if(input) input.style.borderColor='#e53e3e'; return; }
+  if (_matchRegStep < steps.length - 1) { _matchRegStep++; renderMatchRegStep(); }
+}
+
+function prevMatchRegStep() {
+  if (_matchRegStep > 0) { _matchRegStep--; renderMatchRegStep(); }
+}
+
+function skipMatchRegStep() {
+  const steps = _getMatchSteps();
+  _matchRegData[steps[_matchRegStep].key] = '';
+  if (_matchRegStep < steps.length - 1) { _matchRegStep++; renderMatchRegStep(); }
+  else finishMatchRegister();
+}
+
+function finishMatchRegister() {
+  const steps = _getMatchSteps();
+  const input = document.getElementById('match-reg-input');
+  if (input) _matchRegData[steps[_matchRegStep].key] = input.value.trim();
+
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  if (_matchRegRole === 'walker') {
+    handleRegisterMatchProfile('walker', {
+      location: _matchRegData.location,
+      preferredTime: _matchRegData.preferredTime,
+      experience: _matchRegData.experience || '',
+      message: _matchRegData.message || '',
+      canWalkLarge: _matchRegData.canWalkLarge === 'yes',
+      canWalkMultiple: _matchRegData.canWalkMultiple === 'yes'
+    });
+  } else {
+    handleRegisterMatchProfile('requester', {
+      dogName: _matchRegData.dogName,
+      dogSize: _matchRegData.dogSize,
+      location: _matchRegData.location,
+      preferredTime: _matchRegData.preferredTime,
+      notes: _matchRegData.notes || ''
+    });
+  }
+  closeMatchRegisterFlow();
 }
 
 function renderMatchingRoleSelectStatic(role) { renderMatchingRoleSelect(role); }
 
 /** 매칭 프로필 등록 핸들러 */
-function handleRegisterMatchProfile(role) {
+function handleRegisterMatchProfile(role, flowData) {
   const user = AuthService.getCurrentUser();
   if (!user) { Router.navigate('/login'); return; }
 
-  const location     = document.getElementById('match-location')?.value;
-  const preferredTime = document.getElementById('match-time')?.value;
-  const message      = document.getElementById('match-message')?.value || '';
-  const errEl        = document.getElementById('match-register-error');
+  let location, preferredTime, message, extra;
 
-  if (!location || !location.trim()) {
-    if (errEl) errEl.innerHTML = '<div class="alert alert-error">활동 지역을 입력해주세요.</div>'; return;
-  }
-  if (!preferredTime) {
-    if (errEl) errEl.innerHTML = '<div class="alert alert-error">시간대를 선택해주세요.</div>'; return;
-  }
-
-  let extra = {};
-  if (role === 'walker') {
-    if (!message.trim()) {
-      if (errEl) errEl.innerHTML = '<div class="alert alert-error">자기소개를 입력해주세요.</div>'; return;
+  if (flowData) {
+    // 토스 스타일 플로우에서 전달받은 데이터
+    location = flowData.location;
+    preferredTime = flowData.preferredTime;
+    message = flowData.message || '';
+    if (role === 'walker') {
+      extra = { experience: flowData.experience || '', canWalkLarge: flowData.canWalkLarge || false, canWalkMultiple: flowData.canWalkMultiple || false };
+    } else {
+      extra = { dogName: flowData.dogName, dogSize: flowData.dogSize, notes: flowData.notes || '' };
     }
-    extra = {
-      experience:      document.getElementById('match-experience')?.value || '',
-      canWalkLarge:    document.getElementById('match-large-dog')?.checked || false,
-      canWalkMultiple: document.getElementById('match-multi-dog')?.checked || false,
-    };
   } else {
-    const dogName = document.getElementById('match-dog-name')?.value;
-    const dogSize = document.getElementById('match-dog-size')?.value;
-    if (!dogName?.trim()) {
-      if (errEl) errEl.innerHTML = '<div class="alert alert-error">반려견 이름을 입력해주세요.</div>'; return;
+    // 기존 DOM 방식 (폴백)
+    location = document.getElementById('match-location')?.value;
+    preferredTime = document.getElementById('match-time')?.value;
+    message = document.getElementById('match-message')?.value || '';
+    const errEl = document.getElementById('match-register-error');
+
+    if (!location || !location.trim()) {
+      if (errEl) errEl.innerHTML = '<div class="alert alert-error">활동 지역을 입력해주세요.</div>'; return;
     }
-    if (!dogSize) {
-      if (errEl) errEl.innerHTML = '<div class="alert alert-error">반려견 크기를 선택해주세요.</div>'; return;
+    if (!preferredTime) {
+      if (errEl) errEl.innerHTML = '<div class="alert alert-error">시간대를 선택해주세요.</div>'; return;
     }
-    extra = {
-      dogName: dogName.trim(),
-      dogSize,
-      notes: document.getElementById('match-notes')?.value || ''
-    };
+
+    if (role === 'walker') {
+      extra = {
+        experience: document.getElementById('match-experience')?.value || '',
+        canWalkLarge: document.getElementById('match-large-dog')?.checked || false,
+        canWalkMultiple: document.getElementById('match-multi-dog')?.checked || false,
+      };
+    } else {
+      const dogName = document.getElementById('match-dog-name')?.value;
+      const dogSize = document.getElementById('match-dog-size')?.value;
+      extra = { dogName: dogName?.trim(), dogSize, notes: document.getElementById('match-notes')?.value || '' };
+    }
   }
 
   MatchingService.registerProfile(user.id, { role, location: location.trim(), preferredTime, message: message.trim(), isAvailable: true, ...extra });
@@ -3227,75 +3474,183 @@ function renderProfilePage() {
     </div>
 
     <div class="card" style="padding:24px;">
-      <h3 style="margin-bottom:16px;">🐾 반려견 등록</h3>
-      <div id="dog-register-error"></div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-        <div class="form-group">
-          <label for="dog-name">이름</label>
-          <input type="text" id="dog-name" class="form-input" placeholder="반려견 이름">
-        </div>
-        <div class="form-group">
-          <label for="dog-breed">품종</label>
-          <select id="dog-breed" class="form-select">
-            <option value="">품종 선택</option>
-            ${typeof BREEDS_DATA !== 'undefined' ? BREEDS_DATA.map(b => `<option value="${b.name}">${b.name}</option>`).join('') : ''}
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="dog-age">나이 (살)</label>
-          <input type="number" id="dog-age" class="form-input" placeholder="나이" min="0" max="30">
-        </div>
-        <div class="form-group">
-          <label for="dog-size">크기</label>
-          <select id="dog-size" class="form-select">
-            <option value="">크기 선택</option>
-            <option value="small">소형</option>
-            <option value="medium">중형</option>
-            <option value="large">대형</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="dog-gender">성별</label>
-          <select id="dog-gender" class="form-select">
-            <option value="">성별 선택</option>
-            <option value="male">수컷</option>
-            <option value="female">암컷</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="dog-weight">체중 (kg)</label>
-          <input type="number" id="dog-weight" class="form-input" placeholder="체중" min="0" max="100" step="0.1">
-        </div>
-        <div class="form-group">
-          <label for="dog-neutered">중성화 여부</label>
-          <select id="dog-neutered" class="form-select">
-            <option value="">선택</option>
-            <option value="yes">완료</option>
-            <option value="no">미완료</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="dog-personality">성향</label>
-          <select id="dog-personality" class="form-select">
-            <option value="">성향 선택</option>
-            <option value="활발함">활발함</option>
-            <option value="온순함">온순함</option>
-            <option value="겁이 많음">겁이 많음</option>
-            <option value="사교적">사교적</option>
-            <option value="독립적">독립적</option>
-            <option value="공격적 성향">공격적 성향</option>
-          </select>
+      <h3 style="margin-bottom:16px;">반려견 등록</h3>
+      <button class="btn btn-primary" style="width:100%;" onclick="openDogRegisterFlow()">새 반려견 등록하기</button>
+    </div>
+
+    <!-- 토스 스타일 반려견 등록 모달 -->
+    <div id="dog-reg-modal" style="display:none; position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div id="dog-reg-card" style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:400px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+          <button onclick="closeDogRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
+          <div id="dog-reg-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
+          <div id="dog-reg-content" style="flex:1; display:flex; flex-direction:column;"></div>
         </div>
       </div>
-      <div class="form-group">
-        <label for="dog-health-note">건강 관리 정보</label>
-        <textarea id="dog-health-note" class="form-input" placeholder="알레르기, 지병, 복용 중인 약 등 특이사항을 입력하세요" rows="3" style="resize:vertical;"></textarea>
-      </div>
-      <button class="btn btn-primary" style="width:100%;" onclick="handleRegisterDog()">반려견 등록</button>
     </div>
   `);
 
   loadUploadedFiles(user.id);
+}
+
+// 토스 스타일 반려견 등록 플로우
+let _dogRegStep = 0;
+let _dogRegData = {};
+
+const _dogRegSteps = [
+  { key: 'name', question: '반려견 이름이 뭐예요?', sub: '사랑하는 아이의 이름을 알려주세요', type: 'text', placeholder: '예: 초코', required: true },
+  { key: 'breed', question: '품종을 알려주세요', sub: '검색해서 찾을 수 있어요', type: 'breed-search', required: true },
+  { key: 'age', question: '나이가 어떻게 돼요?', sub: '대략적인 나이도 괜찮아요', type: 'number', placeholder: '예: 3', min: 0, max: 30, required: true },
+  { key: 'size', question: '크기는 어느 정도예요?', sub: '체중 기준으로 선택해주세요', type: 'cards', options: [
+    { value: 'small', label: '소형', desc: '~10kg' },
+    { value: 'medium', label: '중형', desc: '10~25kg' },
+    { value: 'large', label: '대형', desc: '25kg~' }
+  ]},
+  { key: 'gender', question: '성별은요?', sub: '', type: 'cards', options: [
+    { value: 'male', label: '남아', desc: '수컷' },
+    { value: 'female', label: '여아', desc: '암컷' }
+  ]},
+  { key: 'neutered', question: '중성화 했나요?', sub: '', type: 'cards', options: [
+    { value: 'yes', label: '했어요', desc: '중성화 완료' },
+    { value: 'no', label: '안 했어요', desc: '미완료' }
+  ]},
+  { key: 'personality', question: '어떤 성격이에요?', sub: '가장 가까운 걸 골라주세요', type: 'cards', options: [
+    { value: '활발함', label: '활발함', desc: '에너지 넘치는' },
+    { value: '온순함', label: '온순함', desc: '차분하고 얌전한' },
+    { value: '사교적', label: '사교적', desc: '사람을 좋아하는' },
+    { value: '겁이 많음', label: '겁쟁이', desc: '낯선 것에 예민한' },
+    { value: '독립적', label: '독립적', desc: '혼자도 잘 지내는' }
+  ]},
+  { key: 'healthNote', question: '특이사항이 있나요?', sub: '알레르기, 지병 등 없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '예: 닭고기 알레르기, 슬개골 탈구 주의', required: false }
+];
+
+function openDogRegisterFlow() {
+  _dogRegStep = 0;
+  _dogRegData = {};
+  document.getElementById('dog-reg-modal').style.display = 'block';
+  renderDogRegStep();
+}
+
+function closeDogRegisterFlow() {
+  document.getElementById('dog-reg-modal').style.display = 'none';
+}
+
+function renderDogRegStep() {
+  const step = _dogRegSteps[_dogRegStep];
+  const total = _dogRegSteps.length;
+  const content = document.getElementById('dog-reg-content');
+  const progress = document.getElementById('dog-reg-progress');
+
+  // 프로그레스 바
+  progress.innerHTML = Array.from({length: total}, (_, i) =>
+    `<div style="flex:1; height:3px; border-radius:2px; background:${i <= _dogRegStep ? '#1a1a1a' : '#e5e3e0'}; transition:background 0.3s;"></div>`
+  ).join('');
+
+  let inputHtml = '';
+  if (step.type === 'text') {
+    inputHtml = `<input type="text" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; margin-top:24px;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()">`;
+  } else if (step.type === 'number') {
+    inputHtml = `<div style="display:flex; align-items:center; gap:8px; margin-top:24px;"><input type="number" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" min="${step.min || 0}" max="${step.max || 100}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; flex:1;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()"><span style="font-size:1rem; font-weight:600; color:var(--color-text-muted);">살</span></div>`;
+  } else if (step.type === 'textarea') {
+    inputHtml = `<textarea id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" rows="3" style="font-size:1rem; padding:14px 16px; border-radius:12px; margin-top:24px; resize:none;">${_dogRegData[step.key] || ''}</textarea>`;
+  } else if (step.type === 'breed-search') {
+    inputHtml = `
+      <div style="position:relative; margin-top:24px;">
+        <input type="text" id="dog-reg-input" class="form-input" placeholder="품종 검색..." value="${_dogRegData[step.key] || ''}" autocomplete="off" style="font-size:1.1rem; padding:14px 16px; border-radius:12px;" oninput="filterDogRegBreed(this.value)" onfocus="filterDogRegBreed(this.value)" autofocus>
+        <div id="dog-reg-breed-list" style="max-height:180px; overflow-y:auto; margin-top:8px;"></div>
+      </div>`;
+  } else if (step.type === 'cards') {
+    inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">
+      ${step.options.map(opt => `
+        <button onclick="selectDogRegCard('${step.key}','${opt.value}')" id="dog-reg-card-${opt.value}" style="flex:1; min-width:100px; padding:18px 16px; border:1.5px solid ${_dogRegData[step.key] === opt.value ? '#1a1a1a' : '#e5e3e0'}; border-radius:14px; background:${_dogRegData[step.key] === opt.value ? '#f5f3f0' : '#fff'}; text-align:center; cursor:pointer; transition:all 0.15s;">
+          <div style="font-size:0.95rem; font-weight:700; color:#1a1a1a;">${opt.label}</div>
+          <div style="font-size:0.72rem; color:#999; margin-top:3px;">${opt.desc}</div>
+        </button>
+      `).join('')}
+    </div>`;
+  }
+
+  const isLast = _dogRegStep === total - 1;
+  const canSkip = !step.required;
+
+  content.innerHTML = `
+    <div style="flex:1;">
+      <h2 style="font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; line-height:1.3;">${step.question}</h2>
+      ${step.sub ? `<p style="font-size:0.88rem; color:#999; margin-top:6px;">${step.sub}</p>` : ''}
+      ${inputHtml}
+    </div>
+    <div style="display:flex; gap:8px; margin-top:24px;">
+      ${_dogRegStep > 0 ? `<button onclick="prevDogRegStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; cursor:pointer;">이전</button>` : ''}
+      ${canSkip ? `<button onclick="skipDogRegStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; color:#999; cursor:pointer;">건너뛰기</button>` : ''}
+      <button onclick="${isLast ? 'finishDogRegister()' : 'nextDogRegStep()'}" style="flex:2; padding:14px; border:none; border-radius:12px; background:#1a1a1a; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">${isLast ? '등록 완료' : '다음'}</button>
+    </div>
+  `;
+
+  // 자동 포커스
+  setTimeout(() => document.getElementById('dog-reg-input')?.focus(), 100);
+}
+
+function selectDogRegCard(key, value) {
+  _dogRegData[key] = value;
+  renderDogRegStep();
+  // 카드 선택 후 0.3초 뒤 자동 다음
+  setTimeout(() => nextDogRegStep(), 300);
+}
+
+function nextDogRegStep() {
+  const step = _dogRegSteps[_dogRegStep];
+  const input = document.getElementById('dog-reg-input');
+  if (input) _dogRegData[step.key] = input.value.trim();
+  if (step.required && !_dogRegData[step.key]) { if(input) input.style.borderColor='#e53e3e'; return; }
+  if (_dogRegStep < _dogRegSteps.length - 1) { _dogRegStep++; renderDogRegStep(); }
+}
+
+function prevDogRegStep() {
+  if (_dogRegStep > 0) { _dogRegStep--; renderDogRegStep(); }
+}
+
+function skipDogRegStep() {
+  _dogRegData[_dogRegSteps[_dogRegStep].key] = '';
+  if (_dogRegStep < _dogRegSteps.length - 1) { _dogRegStep++; renderDogRegStep(); }
+  else finishDogRegister();
+}
+
+function filterDogRegBreed(query) {
+  const list = document.getElementById('dog-reg-breed-list');
+  if (!list || typeof BREEDS_DATA === 'undefined') return;
+  const q = query.toLowerCase().trim();
+  const filtered = q ? BREEDS_DATA.filter(b => b.name.toLowerCase().includes(q) || (b.nameEn && b.nameEn.toLowerCase().includes(q))).slice(0, 15) : BREEDS_DATA.slice(0, 15);
+  const sizeLabel = { small: '소형', medium: '중형', large: '대형' };
+  list.innerHTML = filtered.map(b =>
+    `<div onclick="document.getElementById('dog-reg-input').value='${b.name}';document.getElementById('dog-reg-breed-list').innerHTML=''" style="padding:10px 14px; font-size:0.88rem; cursor:pointer; display:flex; justify-content:space-between; border-radius:8px; transition:background 0.1s;" onmouseover="this.style.background='#f5f3f0'" onmouseout="this.style.background='transparent'"><span>${b.name}</span><span style="font-size:0.72rem; color:#999;">${sizeLabel[b.size] || ''}</span></div>`
+  ).join('');
+}
+
+function finishDogRegister() {
+  const input = document.getElementById('dog-reg-input');
+  if (input) _dogRegData[_dogRegSteps[_dogRegStep].key] = input.value.trim();
+
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  const result = AuthService.registerDog(user.id, {
+    name: _dogRegData.name,
+    breed: _dogRegData.breed,
+    age: Number(_dogRegData.age) || 0,
+    size: _dogRegData.size || 'medium',
+    gender: _dogRegData.gender || '',
+    weight: _dogRegData.weight || null,
+    neutered: _dogRegData.neutered === 'yes',
+    personality: _dogRegData.personality || '',
+    healthNote: _dogRegData.healthNote || ''
+  });
+
+  if (result.success) {
+    closeDogRegisterFlow();
+    renderProfilePage();
+  } else {
+    alert(result.error || '등록에 실패했습니다.');
+  }
 }
 
 /**
@@ -5397,71 +5752,134 @@ function renderWalkTrackingPage() {
   const selectedIdx = StorageService.get('walkingDogIdx', 0);
   const dog = dogs.length > 0 ? dogs[Math.min(selectedIdx, dogs.length - 1)] : null;
 
-  const dogSelectorHtml = dogs.length > 0 ? `
-    <div class="card" style="padding:16px; margin-bottom:16px; display:flex; align-items:center; gap:12px;">
-      <span style="font-weight:700; font-size:0.9rem;">🐕 산책할 반려견:</span>
-      ${dogs.length > 1 ? `
-        <select id="walking-dog-select" class="form-select" style="flex:1;" onchange="handleSelectWalkingDog()">
-          ${dogs.map((d, i) => `<option value="${i}" ${i === Math.min(selectedIdx, dogs.length - 1) ? 'selected' : ''}>${d.name} (${d.breed})</option>`).join('')}
-        </select>
-      ` : `<span style="font-weight:600;">${dog.name}</span> <span style="font-size:0.82rem; color:var(--color-text-light);">(${dog.breed})</span>`}
-    </div>
-  ` : `
-    <div class="card" style="padding:16px; margin-bottom:16px; text-align:center;">
-      <p style="color:var(--color-text-muted); font-size:0.85rem;">반려견을 먼저 등록해주세요</p>
-      <button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="Router.navigate('/profile')">프로필에서 등록</button>
-    </div>
-  `;
-
   renderPage(`
-    <div class="page-header">
-      <h1>🏃 산책 트래킹</h1>
-      <p>GPS로 산책을 기록하고 건강 데이터를 수집해요</p>
-    </div>
+    <style>
+      .walk-page { max-width:600px; margin:0 auto; }
+      .walk-hero { text-align:center; padding:40px 0 32px; }
+      .walk-hero__title { font-size:1.6rem; font-weight:700; letter-spacing:-0.5px; margin-bottom:4px; }
+      .walk-hero__sub { font-size:0.85rem; color:var(--color-text-muted); }
+      .walk-dog-select { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:32px; }
+      .walk-dog-chip { padding:8px 18px; border:1.5px solid var(--color-border); border-radius:20px; font-size:0.82rem; font-weight:600; background:#fff; cursor:pointer; transition:all 0.15s; }
+      .walk-dog-chip.active { background:var(--color-text); color:#fff; border-color:var(--color-text); }
+      .walk-map-container { position:relative; border-radius:16px; overflow:hidden; margin-bottom:24px; border:1px solid var(--color-border); }
+      .walk-map { height:280px; width:100%; }
+      .walk-map-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:var(--color-bg-section); font-size:0.88rem; color:var(--color-text-muted); pointer-events:none; }
+      .walk-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:var(--color-border); border:1px solid var(--color-border); border-radius:12px; overflow:hidden; margin-bottom:32px; }
+      .walk-stat { background:#fff; padding:20px 16px; text-align:center; }
+      .walk-stat__value { font-size:1.8rem; font-weight:700; letter-spacing:-1px; color:var(--color-text); line-height:1; }
+      .walk-stat__label { font-size:0.7rem; color:var(--color-text-muted); margin-top:6px; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+      .walk-start-btn { width:120px; height:120px; border-radius:50%; border:none; font-size:1.1rem; font-weight:700; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+      .walk-start-btn--go { background:var(--color-text); color:#fff; box-shadow:0 4px 24px rgba(0,0,0,0.2); }
+      .walk-start-btn--go:hover { transform:scale(1.05); box-shadow:0 6px 32px rgba(0,0,0,0.25); }
+      .walk-start-btn--go:active { transform:scale(0.97); }
+      .walk-start-btn--stop { background:#e53e3e; color:#fff; box-shadow:0 4px 24px rgba(229,62,62,0.3); }
+      .walk-start-btn--stop:hover { transform:scale(1.05); }
+      .walk-controls { text-align:center; margin-bottom:40px; }
+      .walk-controls__hint { font-size:0.75rem; color:var(--color-text-muted); margin-top:8px; }
+      .walk-status-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 16px; border-radius:20px; font-size:0.78rem; font-weight:700; margin-bottom:16px; }
+      .walk-status-badge--idle { background:var(--color-bg-section); color:var(--color-text-muted); }
+      .walk-status-badge--active { background:#f0fff4; color:#38a169; }
+      .walk-status-dot { width:8px; height:8px; border-radius:50%; }
+      .walk-status-dot--idle { background:var(--color-text-muted); }
+      .walk-status-dot--active { background:#38a169; animation:dotPulse 1.5s ease-in-out infinite; }
+      @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+      .walk-history { margin-top:8px; }
+      .walk-history__title { font-size:0.75rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--color-text-muted); font-weight:600; margin-bottom:12px; }
+      .walk-history-item { display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--color-border-light); }
+      .walk-history-item__date { font-size:0.85rem; font-weight:600; }
+      .walk-history-item__dog { font-size:0.75rem; color:var(--color-text-muted); margin-top:2px; }
+      .walk-history-item__stats { text-align:right; }
+      .walk-history-item__dist { font-size:0.95rem; font-weight:700; }
+      .walk-history-item__meta { font-size:0.72rem; color:var(--color-text-muted); margin-top:2px; }
+      .walk-complete { text-align:center; padding:32px 0; }
+      .walk-complete__title { font-size:1.2rem; font-weight:700; margin-bottom:8px; }
+      .walk-complete__summary { font-size:0.88rem; color:var(--color-text-light); margin-bottom:24px; }
+    </style>
 
-    <div id="tracking-alert"></div>
-
-    ${dogSelectorHtml}
-
-    <div class="card" style="padding:24px; margin-bottom:16px; text-align:center;">
-      <div id="tracking-status" style="margin-bottom:16px;">
-        <div style="font-size:3rem; margin-bottom:8px;">🐾</div>
-        <p style="font-size:1.1rem; font-weight:700;">산책을 시작해볼까요?</p>
-        <p style="color:var(--color-text-light); font-size:0.85rem;">GPS로 거리, 시간, 칼로리를 자동 기록해요</p>
+    <div class="walk-page">
+      <div class="walk-hero">
+        <div class="walk-hero__title">산책</div>
+        <div class="walk-hero__sub">GPS로 산책을 기록하세요</div>
       </div>
 
-      <div id="tracking-data" style="display:none; margin-bottom:20px;">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
-          <div class="card" style="padding:16px; background:var(--color-bg);">
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">거리</div>
-            <div id="track-distance" style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">0.000 km</div>
+      ${dogs.length > 1 ? `
+        <div class="walk-dog-select">
+          ${dogs.map((d, i) => `<button class="walk-dog-chip ${i === Math.min(selectedIdx, dogs.length - 1) ? 'active' : ''}" onclick="StorageService.set('walkingDogIdx',${i});renderWalkTrackingPage()">${d.name}</button>`).join('')}
+        </div>
+      ` : dogs.length === 1 ? `
+        <div style="text-align:center; margin-bottom:24px;">
+          <span style="font-size:0.85rem; color:var(--color-text-light);">${dog.name} · ${dog.breed}</span>
+        </div>
+      ` : `
+        <div style="text-align:center; margin-bottom:24px; padding:16px; border:1px dashed var(--color-border); border-radius:12px;">
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:8px;">반려견을 먼저 등록해주세요</p>
+          <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/profile')">프로필에서 등록</button>
+        </div>
+      `}
+
+      <div id="tracking-alert"></div>
+
+      <div class="walk-map-container">
+        <div id="tracking-map" class="walk-map"></div>
+        <div class="walk-map-overlay" id="walk-map-overlay">산책을 시작하면 경로가 표시됩니다</div>
+      </div>
+
+      <div id="tracking-data" style="display:none;">
+        <div class="walk-stats">
+          <div class="walk-stat">
+            <div class="walk-stat__value" id="track-distance">0.00</div>
+            <div class="walk-stat__label">킬로미터</div>
           </div>
-          <div class="card" style="padding:16px; background:var(--color-bg);">
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">시간</div>
-            <div id="track-duration" style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">0 분</div>
+          <div class="walk-stat">
+            <div class="walk-stat__value" id="track-duration">00:00</div>
+            <div class="walk-stat__label">시간</div>
           </div>
-          <div class="card" style="padding:16px; background:var(--color-bg);">
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">속도</div>
-            <div id="track-pace" style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">0.0 km/h</div>
+          <div class="walk-stat">
+            <div class="walk-stat__value" id="track-pace">0.0</div>
+            <div class="walk-stat__label">km/h</div>
           </div>
-          <div class="card" style="padding:16px; background:var(--color-bg);">
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">칼로리</div>
-            <div id="track-calories" style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">0 kcal</div>
+        </div>
+        <div class="walk-stats" style="grid-template-columns:1fr 1fr;">
+          <div class="walk-stat">
+            <div class="walk-stat__value" id="track-calories">0</div>
+            <div class="walk-stat__label">칼로리</div>
+          </div>
+          <div class="walk-stat">
+            <div class="walk-stat__value" id="track-steps">--</div>
+            <div class="walk-stat__label">걸음</div>
           </div>
         </div>
       </div>
 
-      <div id="tracking-map" style="height:300px; border-radius:12px; margin-bottom:16px; display:none;"></div>
-
-      <div id="tracking-buttons">
-        <button class="btn btn-primary" style="width:100%; padding:16px; font-size:1.1rem;" onclick="handleStartTracking()">🏃 산책 시작</button>
+      <div class="walk-controls" id="tracking-buttons">
+        <div id="tracking-status">
+          <div class="walk-status-badge walk-status-badge--idle">
+            <span class="walk-status-dot walk-status-dot--idle"></span>
+            대기 중
+          </div>
+        </div>
+        <button class="walk-start-btn walk-start-btn--go" onclick="handleStartTracking()">시작</button>
+        <div class="walk-controls__hint">GPS를 사용하여 경로를 기록합니다</div>
       </div>
-    </div>
 
-    <div id="walk-history-section"></div>
+      <div id="walk-history-section" class="walk-history"></div>
+    </div>
   `);
 
-  // 선택된 반려견의 산책 기록만 로드
+  // 지도 미리 초기화
+  const mapEl = document.getElementById('tracking-map');
+  if (mapEl && typeof L !== 'undefined') {
+    _trackingMap = L.map(mapEl, { zoomControl: false }).setView([37.5665, 126.978], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: ''
+    }).addTo(_trackingMap);
+    navigator.geolocation.getCurrentPosition((pos) => {
+      _trackingMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
+      L.circleMarker([pos.coords.latitude, pos.coords.longitude], { radius: 6, fillColor: '#1a1a1a', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(_trackingMap);
+      document.getElementById('walk-map-overlay').style.display = 'none';
+    }, () => {});
+  }
+
   const dogId = dog ? dog.name : null;
   loadWalkHistory(user.id, dogId);
 }
@@ -5480,10 +5898,11 @@ let _trackingTimer = null;
 
 function handleStartTracking() {
   const result = GPSTrackingService.startTracking((data) => {
-    document.getElementById('track-distance').textContent = data.distance.toFixed(3) + ' km';
-    document.getElementById('track-duration').textContent = data.duration + ' 분';
-    document.getElementById('track-pace').textContent = data.avgPace.toFixed(1) + ' km/h';
-    document.getElementById('track-calories').textContent = data.calories + ' kcal';
+    document.getElementById('track-distance').textContent = data.distance.toFixed(2);
+    const mins = data.duration;
+    document.getElementById('track-duration').textContent = String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
+    document.getElementById('track-pace').textContent = data.avgPace.toFixed(1);
+    document.getElementById('track-calories').textContent = data.calories;
 
     if (data.lastPosition && _trackingMap) {
       _trackingMap.setView([data.lastPosition.lat, data.lastPosition.lng], 16);
@@ -5500,27 +5919,27 @@ function handleStartTracking() {
   }
 
   document.getElementById('tracking-data').style.display = 'block';
-  document.getElementById('tracking-map').style.display = 'block';
+  const overlay = document.getElementById('walk-map-overlay');
+  if (overlay) overlay.style.display = 'none';
   document.getElementById('tracking-status').innerHTML = `
-    <div style="font-size:2rem; margin-bottom:8px;">🏃‍♂️</div>
-    <p style="font-size:1.1rem; font-weight:700; color:var(--color-success);">산책 중...</p>
+    <div class="walk-status-badge walk-status-badge--active">
+      <span class="walk-status-dot walk-status-dot--active"></span>
+      산책 중
+    </div>
   `;
   document.getElementById('tracking-buttons').innerHTML = `
-    <button class="btn btn-danger" style="width:100%; padding:16px; font-size:1.1rem;" onclick="handleStopTracking()">⏹ 산책 종료</button>
+    <div id="tracking-status">
+      <div class="walk-status-badge walk-status-badge--active">
+        <span class="walk-status-dot walk-status-dot--active"></span>
+        산책 중
+      </div>
+    </div>
+    <button class="walk-start-btn walk-start-btn--stop" onclick="handleStopTracking()">종료</button>
   `;
 
-  // 지도 초기화
-  const mapEl = document.getElementById('tracking-map');
-  if (mapEl && typeof L !== 'undefined') {
-    _trackingMap = L.map(mapEl).setView([37.5665, 126.978], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(_trackingMap);
-    _trackingPolyline = L.polyline([], { color: '#F59E0B', weight: 4 }).addTo(_trackingMap);
-
-    navigator.geolocation.getCurrentPosition((pos) => {
-      _trackingMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
-    });
+  // 지도에 경로 폴리라인 추가
+  if (_trackingMap && !_trackingPolyline) {
+    _trackingPolyline = L.polyline([], { color: '#1a1a1a', weight: 4, opacity: 0.8 }).addTo(_trackingMap);
   }
 
   // 타이머 업데이트
@@ -5555,53 +5974,207 @@ async function handleStopTracking() {
     WalletService.earnCoins(user.id, coins, `산책 완료 (${walkData.distance.toFixed(2)}km)`);
   }
 
-  document.getElementById('tracking-status').innerHTML = `
-    <div style="font-size:2rem; margin-bottom:8px;">✅</div>
-    <p style="font-size:1.1rem; font-weight:700;">산책 완료!</p>
-    <p style="color:var(--color-text-light); font-size:0.85rem;">
-      ${walkData.distance.toFixed(2)}km · ${walkData.duration}분 · ${walkData.calories}kcal
-    </p>
-  `;
+  document.getElementById('tracking-status').innerHTML = ``;
   document.getElementById('tracking-buttons').innerHTML = `
-    <button class="btn btn-primary" style="width:100%; padding:14px;" onclick="Router.navigate('/health')">❤️ 건강 분석 보기</button>
-    <button class="btn btn-secondary" style="width:100%; padding:14px; margin-top:8px;" onclick="renderWalkTrackingPage()">🏃 다시 산책하기</button>
+    <div class="walk-complete">
+      <div class="walk-complete__title">산책 완료</div>
+      <div class="walk-complete__summary">${walkData.distance.toFixed(2)}km · ${walkData.duration}분 · ${walkData.calories}kcal</div>
+      <div style="display:flex; gap:8px; justify-content:center;">
+        <button class="btn btn-primary" onclick="Router.navigate('/health')">건강 분석 보기</button>
+        <button class="btn btn-secondary" onclick="renderWalkTrackingPage()">다시 산책하기</button>
+      </div>
+    </div>
   `;
 
   if (_trackingMap) { try { _trackingMap.remove(); } catch(e) {} _trackingMap = null; }
 }
+
+let _walkHistoryCache = [];
+let _walkCalYear = new Date().getFullYear();
+let _walkCalMonth = new Date().getMonth();
+let _walkCalSelectedDate = null; // null이면 전체, 숫자면 해당 날짜
 
 async function loadWalkHistory(userId, dogId) {
   const section = document.getElementById('walk-history-section');
   if (!section) return;
 
   const walks = await GPSTrackingService.getWalkHistory(userId);
-  const filtered = dogId ? walks.filter(w => w.dogName === dogId || w.dogId === dogId) : walks;
+  _walkHistoryCache = dogId ? walks.filter(w => w.dogName === dogId || w.dogId === dogId) : walks;
+  _walkCalYear = new Date().getFullYear();
+  _walkCalMonth = new Date().getMonth();
+  _walkCalSelectedDate = null;
+
+  renderWalkCalendar();
+}
+
+function renderWalkCalendar() {
+  const section = document.getElementById('walk-history-section');
+  if (!section) return;
+  const filtered = _walkHistoryCache;
 
   if (filtered.length === 0) {
-    section.innerHTML = `
-      <div class="card" style="padding:24px; text-align:center;">
-        <div style="font-size:2rem; margin-bottom:8px;">📝</div>
-        <p style="color:var(--color-text-muted);">${dogId ? dogId + '의 산책 기록이 없어요' : '아직 산책 기록이 없어요'}</p>
-      </div>
-    `;
+    section.innerHTML = `<div style="text-align:center; padding:24px; color:var(--color-text-muted); font-size:0.85rem;">아직 산책 기록이 없습니다</div>`;
     return;
   }
 
-  section.innerHTML = `
-    <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:12px;">📋 ${dogId ? dogId + '의' : ''} 최근 산책 기록</h3>
-    ${filtered.slice(0, 10).map(w => `
-      <div class="card" style="padding:16px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <div style="font-weight:700; font-size:0.9rem;">${new Date(w.createdAt).toLocaleDateString('ko-KR')} ${new Date(w.createdAt).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}</div>
-          <div style="font-size:0.8rem; color:var(--color-text-light);">${w.dogName || '산책'}</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-weight:700; color:var(--color-primary-dark);">${(w.distance || 0).toFixed(2)} km</div>
-          <div style="font-size:0.8rem; color:var(--color-text-muted);">${w.duration || 0}분 · ${w.calories || 0}kcal</div>
-        </div>
+  const year = _walkCalYear;
+  const month = _walkCalMonth;
+  const now = new Date();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+
+  // 이 달의 산책 데이터
+  const monthKey = year + '-' + String(month + 1).padStart(2, '0');
+  const monthWalks = filtered.filter(w => {
+    const d = new Date(w.createdAt);
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+  const walkDays = {};
+  monthWalks.forEach(w => {
+    const day = new Date(w.createdAt).getDate();
+    if (!walkDays[day]) walkDays[day] = 0;
+    walkDays[day]++;
+  });
+
+  let calCells = '';
+  for (let i = 0; i < firstDay; i++) calCells += '<div class="walk-cal__cell walk-cal__cell--empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
+    const hasWalk = !!walkDays[d];
+    const isSelected = _walkCalSelectedDate === d;
+    calCells += `<div class="walk-cal__cell${isToday ? ' walk-cal__cell--today' : ''}${hasWalk ? ' walk-cal__cell--active' : ''}${isSelected ? ' walk-cal__cell--selected' : ''}" onclick="selectWalkCalDate(${d})">${d}${walkDays[d] > 1 ? '<span class="walk-cal__count">' + walkDays[d] + '</span>' : ''}</div>`;
+  }
+
+  const monthLabel = year + '년 ' + (month + 1) + '월';
+  const monthDist = monthWalks.reduce((s, w) => s + (w.distance || 0), 0);
+  const monthTime = monthWalks.reduce((s, w) => s + (w.duration || 0), 0);
+
+  // 기록 리스트 (선택된 날짜 필터)
+  let listWalks = monthWalks;
+  if (_walkCalSelectedDate) {
+    listWalks = monthWalks.filter(w => new Date(w.createdAt).getDate() === _walkCalSelectedDate);
+  }
+  listWalks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const listHtml = listWalks.length > 0 ? listWalks.map(w => `
+    <div class="walk-history-item" id="walk-item-${w.id}">
+      <div style="flex:1;">
+        <div class="walk-history-item__date">${new Date(w.createdAt).toLocaleDateString('ko-KR')} ${new Date(w.createdAt).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}</div>
+        <div class="walk-history-item__dog" id="walk-name-${w.id}">${w.title || w.dogName || '산책'}</div>
       </div>
-    `).join('')}
+      <div class="walk-history-item__stats">
+        <div class="walk-history-item__dist">${(w.distance || 0).toFixed(2)} km</div>
+        <div class="walk-history-item__meta">${w.duration || 0}분 · ${w.calories || 0}kcal</div>
+      </div>
+      <div style="display:flex; gap:4px; margin-left:12px;">
+        <button onclick="editWalkName('${w.id}')" style="background:none; border:none; font-size:0.75rem; color:var(--color-text-muted); cursor:pointer; padding:4px;">수정</button>
+        <button onclick="deleteWalkRecord('${w.id}')" style="background:none; border:none; font-size:0.75rem; color:#e53e3e; cursor:pointer; padding:4px;">삭제</button>
+      </div>
+    </div>
+  `).join('') : `<div style="text-align:center; padding:16px; color:var(--color-text-muted); font-size:0.82rem;">${_walkCalSelectedDate ? _walkCalSelectedDate + '일에 기록이 없습니다' : '이 달에 기록이 없습니다'}</div>`;
+
+  section.innerHTML = `
+    <style>
+      .walk-cal { margin-bottom:24px; }
+      .walk-cal__header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+      .walk-cal__nav { display:flex; align-items:center; gap:12px; }
+      .walk-cal__nav-btn { background:none; border:1px solid var(--color-border); border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:0.8rem; cursor:pointer; color:var(--color-text-light); transition:all 0.15s; }
+      .walk-cal__nav-btn:hover { border-color:var(--color-text); color:var(--color-text); }
+      .walk-cal__month { font-size:0.9rem; font-weight:700; min-width:100px; text-align:center; }
+      .walk-cal__summary { font-size:0.75rem; color:var(--color-text-muted); }
+      .walk-cal__days { display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; text-align:center; margin-bottom:4px; }
+      .walk-cal__day-label { font-size:0.65rem; color:var(--color-text-muted); font-weight:600; padding:4px 0; }
+      .walk-cal__grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; }
+      .walk-cal__cell { width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:0.72rem; color:var(--color-text-muted); border-radius:8px; cursor:pointer; transition:all 0.15s; position:relative; }
+      .walk-cal__cell:hover { background:var(--color-bg-section); }
+      .walk-cal__cell--empty { cursor:default; }
+      .walk-cal__cell--empty:hover { background:transparent; }
+      .walk-cal__cell--today { font-weight:700; color:var(--color-text); border:1.5px solid var(--color-text); }
+      .walk-cal__cell--active { background:var(--color-text); color:#fff; font-weight:700; }
+      .walk-cal__cell--active:hover { opacity:0.85; }
+      .walk-cal__cell--today.walk-cal__cell--active { border-color:var(--color-text); }
+      .walk-cal__cell--selected { box-shadow:0 0 0 2px var(--color-text); }
+      .walk-cal__count { position:absolute; top:2px; right:2px; font-size:0.5rem; background:#e53e3e; color:#fff; width:12px; height:12px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+      .walk-cal__filter { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+      .walk-cal__filter-label { font-size:0.78rem; color:var(--color-text-light); font-weight:600; }
+      .walk-cal__filter-clear { font-size:0.72rem; color:var(--color-text-muted); background:none; border:none; cursor:pointer; text-decoration:underline; }
+    </style>
+
+    <div class="walk-cal">
+      <div class="walk-cal__header">
+        <div class="walk-cal__nav">
+          <button class="walk-cal__nav-btn" onclick="changeWalkCalMonth(-1)">&lt;</button>
+          <div class="walk-cal__month">${monthLabel}</div>
+          <button class="walk-cal__nav-btn" onclick="changeWalkCalMonth(1)">&gt;</button>
+        </div>
+        <div class="walk-cal__summary">${monthWalks.length}회 · ${monthDist.toFixed(1)}km · ${monthTime}분</div>
+      </div>
+      <div class="walk-cal__days">
+        <div class="walk-cal__day-label">일</div><div class="walk-cal__day-label">월</div><div class="walk-cal__day-label">화</div><div class="walk-cal__day-label">수</div><div class="walk-cal__day-label">목</div><div class="walk-cal__day-label">금</div><div class="walk-cal__day-label">토</div>
+      </div>
+      <div class="walk-cal__grid">${calCells}</div>
+    </div>
+
+    ${_walkCalSelectedDate ? `
+      <div class="walk-cal__filter">
+        <span class="walk-cal__filter-label">${month + 1}월 ${_walkCalSelectedDate}일 기록</span>
+        <button class="walk-cal__filter-clear" onclick="selectWalkCalDate(null)">전체 보기</button>
+      </div>
+    ` : ''}
+
+    <div class="walk-history__title">${_walkCalSelectedDate ? '' : '최근 기록'}</div>
+    ${listHtml}
   `;
+}
+
+function changeWalkCalMonth(delta) {
+  _walkCalMonth += delta;
+  if (_walkCalMonth > 11) { _walkCalMonth = 0; _walkCalYear++; }
+  if (_walkCalMonth < 0) { _walkCalMonth = 11; _walkCalYear--; }
+  _walkCalSelectedDate = null;
+  renderWalkCalendar();
+}
+
+function selectWalkCalDate(day) {
+  if (_walkCalSelectedDate === day || day === null) {
+    _walkCalSelectedDate = null;
+  } else {
+    _walkCalSelectedDate = day;
+  }
+  renderWalkCalendar();
+}
+
+async function deleteWalkRecord(walkId) {
+  if (!confirm('이 산책 기록을 삭제할까요?')) return;
+  try {
+    await fetch('/api/walks/' + walkId, { method: 'DELETE' });
+    const item = document.getElementById('walk-item-' + walkId);
+    if (item) { item.style.opacity = '0'; item.style.transition = 'opacity 0.3s'; setTimeout(() => item.remove(), 300); }
+  } catch(e) { alert('삭제에 실패했습니다.'); }
+}
+
+function editWalkName(walkId) {
+  const nameEl = document.getElementById('walk-name-' + walkId);
+  if (!nameEl) return;
+  const current = nameEl.textContent;
+  nameEl.innerHTML = `<div style="display:flex;gap:4px;align-items:center;"><input type="text" id="walk-edit-${walkId}" value="${current}" style="font-size:0.78rem;padding:3px 8px;border:1px solid var(--color-border);border-radius:6px;width:100px;" onkeydown="if(event.key==='Enter')saveWalkName('${walkId}')"><button onclick="saveWalkName('${walkId}')" style="font-size:0.7rem;background:var(--color-text);color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;">저장</button></div>`;
+  document.getElementById('walk-edit-' + walkId)?.focus();
+}
+
+async function saveWalkName(walkId) {
+  const input = document.getElementById('walk-edit-' + walkId);
+  if (!input) return;
+  const newName = input.value.trim();
+  if (!newName) return;
+  try {
+    await fetch('/api/walks/' + walkId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newName, dogName: newName })
+    });
+    const nameEl = document.getElementById('walk-name-' + walkId);
+    if (nameEl) nameEl.textContent = newName;
+  } catch(e) { alert('수정에 실패했습니다.'); }
 }
 
 // --- 건강 분석 대시보드 페이지 ---
@@ -5652,38 +6225,63 @@ async function renderHealthDashboardPage() {
   const dog = selectedDogId !== '_all' ? dogs.find(d => d.name === selectedDogId) : null;
   const displayName = dog ? dog.name : '전체';
 
-  const dogSelectorHtml = dogs.length > 0 ? `
-    <div class="card" style="padding:16px; margin-bottom:16px; display:flex; align-items:center; gap:12px;">
-      <span style="font-weight:700; font-size:0.9rem;">🐕 분석 대상:</span>
-      <select id="health-dog-select" class="form-select" style="flex:1;" onchange="handleSelectHealthDog()">
-        <option value="_all" ${selectedDogId === '_all' ? 'selected' : ''}>📊 전체 (평균)</option>
-        ${dogs.map(d => `<option value="${d.name}" ${selectedDogId === d.name ? 'selected' : ''}>${d.name} (${d.breed} · ${d.age}살)</option>`).join('')}
-      </select>
-    </div>
-  ` : '';
-
   renderPage(`
-    <div class="page-header">
-      <h1>❤️ 건강 분석 대시보드</h1>
-      <p>${displayName === '전체' ? '전체 반려견' : dog.name + '의'} AI 건강 분석 리포트</p>
-    </div>
+    <style>
+      .health-page { max-width:600px; margin:0 auto; }
+      .health-header { margin-bottom:28px; }
+      .health-header__title { font-size:1.6rem; font-weight:700; letter-spacing:-0.5px; }
+      .health-header__sub { font-size:0.85rem; color:var(--color-text-muted); margin-top:4px; }
+      .health-dog-chips { display:flex; gap:8px; margin-bottom:28px; flex-wrap:wrap; }
+      .health-dog-chip { padding:8px 18px; border:1.5px solid var(--color-border); border-radius:20px; font-size:0.82rem; font-weight:600; background:#fff; cursor:pointer; transition:all 0.15s; }
+      .health-dog-chip.active { background:var(--color-text); color:#fff; border-color:var(--color-text); }
+      .health-score-ring { width:140px; height:140px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-direction:column; margin:0 auto 24px; position:relative; }
+      .health-score-ring__value { font-size:2.8rem; font-weight:700; letter-spacing:-2px; line-height:1; }
+      .health-score-ring__label { font-size:0.72rem; color:var(--color-text-muted); margin-top:4px; text-transform:uppercase; letter-spacing:1px; }
+      .health-summary-card { background:var(--color-bg-card); border:1px solid var(--color-border); border-radius:16px; padding:24px; margin-bottom:16px; }
+      .health-summary-card__title { font-size:0.72rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:600; margin-bottom:16px; }
+      .health-stats-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+      .health-stat-card { background:var(--color-bg-card); border:1px solid var(--color-border); border-radius:14px; padding:20px; }
+      .health-stat-card__label { font-size:0.72rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+      .health-stat-card__value { font-size:1.8rem; font-weight:700; letter-spacing:-1px; margin-top:4px; line-height:1; }
+      .health-stat-card__unit { font-size:0.75rem; color:var(--color-text-muted); font-weight:500; }
+      .health-stat-card__sub { font-size:0.72rem; color:var(--color-text-muted); margin-top:6px; }
+      .health-section { margin-bottom:24px; }
+      .health-section__title { font-size:0.75rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--color-text-muted); font-weight:600; margin-bottom:12px; }
+      .health-insight { background:var(--color-bg-card); border:1px solid var(--color-border); border-radius:14px; padding:18px 20px; margin-bottom:10px; }
+      .health-insight__header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+      .health-insight__title { font-size:0.88rem; font-weight:700; }
+      .health-insight__badge { font-size:0.68rem; font-weight:700; padding:3px 10px; border-radius:12px; }
+      .health-insight__text { font-size:0.82rem; color:var(--color-text-light); line-height:1.6; }
+      .health-detail-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--color-border-light); }
+      .health-detail-row:last-child { border-bottom:none; }
+      .health-detail-row__label { font-size:0.85rem; color:var(--color-text-light); }
+      .health-detail-row__value { font-size:0.88rem; font-weight:700; }
+      .health-action-btn { width:100%; padding:14px; border:1px solid var(--color-border); border-radius:12px; background:#fff; font-size:0.88rem; font-weight:600; text-align:center; cursor:pointer; transition:all 0.15s; margin-bottom:8px; }
+      .health-action-btn:hover { border-color:var(--color-text); }
+    </style>
 
-    <div id="health-alert"></div>
-
-    ${dogSelectorHtml}
-
-    <div style="display:flex; gap:8px; margin-bottom:16px;">
-      <button class="btn btn-primary" onclick="Router.navigate('/walk-tracking')">🏃 산책 시작</button>
-    </div>
-
-    <div id="health-stats-section">
-      <div style="text-align:center; padding:40px;">
-        <div class="spinner"></div>
-        <p style="margin-top:12px; color:var(--color-text-muted);">데이터 로딩 중...</p>
+    <div class="health-page">
+      <div class="health-header">
+        <div class="health-header__title">건강 분석</div>
+        <div class="health-header__sub">${displayName === '전체' ? '전체 반려견' : dog.name + '의'} 건강 리포트</div>
       </div>
-    </div>
 
-    <div id="health-analysis-section"></div>
+      ${dogs.length > 0 ? `
+        <div class="health-dog-chips">
+          <button class="health-dog-chip ${selectedDogId === '_all' ? 'active' : ''}" onclick="StorageService.set('selectedDogId','_all');renderHealthDashboardPage()">전체</button>
+          ${dogs.map(d => `<button class="health-dog-chip ${selectedDogId === d.name ? 'active' : ''}" onclick="StorageService.set('selectedDogId','${d.name}');renderHealthDashboardPage()">${d.name}</button>`).join('')}
+        </div>
+      ` : ''}
+
+      <div id="health-alert"></div>
+      <div id="health-stats-section">
+        <div style="text-align:center; padding:40px;"><div class="spinner"></div></div>
+      </div>
+      <div id="health-analysis-section"></div>
+
+      <button class="health-action-btn" onclick="Router.navigate('/walk-tracking')">산책 시작하기</button>
+      <button class="health-action-btn" onclick="Router.navigate('/ai')">AI 상담 받기</button>
+    </div>
   `);
 
   await loadHealthDashboard(user);
@@ -5713,55 +6311,47 @@ async function loadHealthDashboard(user) {
   if (statsSection) {
     if (!stats || stats.total.count === 0) {
       statsSection.innerHTML = `
-        <div class="card" style="padding:24px; text-align:center; margin-bottom:16px;">
-          <div style="font-size:2.5rem; margin-bottom:8px;">🐾</div>
-          <p style="font-weight:700; margin-bottom:8px;">아직 산책 데이터가 없어요</p>
-          <p style="color:var(--color-text-light); font-size:0.85rem; margin-bottom:16px;">산책을 시작하면 AI가 건강을 분석해줘요!</p>
-          <button class="btn btn-primary" onclick="Router.navigate('/walk-tracking')">🏃 첫 산책 시작하기</button>
+        <div style="text-align:center; padding:48px 20px;">
+          <div class="health-score-ring" style="border:3px dashed var(--color-border);">
+            <div class="health-score-ring__value" style="color:var(--color-text-muted);">--</div>
+            <div class="health-score-ring__label">활동 점수</div>
+          </div>
+          <p style="font-size:0.9rem; font-weight:600; margin-bottom:6px;">아직 산책 데이터가 없어요</p>
+          <p style="font-size:0.82rem; color:var(--color-text-muted);">산책을 시작하면 건강을 분석해드려요</p>
         </div>
       `;
     } else {
+      const scoreColor = activityScore >= 70 ? '#38a169' : activityScore >= 40 ? '#d69e2e' : '#e53e3e';
       statsSection.innerHTML = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
-          <div class="card" style="padding:16px; text-align:center;">
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">활동 점수</div>
-            <div style="font-size:2rem; font-weight:900; color:${activityScore >= 70 ? 'var(--color-success)' : activityScore >= 40 ? 'var(--color-primary-dark)' : 'var(--color-error)'};">${activityScore}</div>
-            <div style="font-size:0.75rem; color:var(--color-text-muted);">/100</div>
-          </div>
-          <div class="card" style="padding:16px; text-align:center;">
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">이번 주 산책</div>
-            <div style="font-size:2rem; font-weight:900; color:var(--color-primary-dark);">${stats.weekly.count}</div>
-            <div style="font-size:0.75rem; color:var(--color-text-muted);">회</div>
-          </div>
-          <div class="card" style="padding:16px; text-align:center;">
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">이번 주 거리</div>
-            <div style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">${stats.weekly.totalDistance}</div>
-            <div style="font-size:0.75rem; color:var(--color-text-muted);">km</div>
-          </div>
-          <div class="card" style="padding:16px; text-align:center;">
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">총 칼로리</div>
-            <div style="font-size:1.5rem; font-weight:900; color:var(--color-primary-dark);">${stats.weekly.totalCalories}</div>
-            <div style="font-size:0.75rem; color:var(--color-text-muted);">kcal</div>
+        <div style="text-align:center; margin-bottom:24px;">
+          <div class="health-score-ring" style="background:conic-gradient(${scoreColor} ${activityScore * 3.6}deg, var(--color-border-light) 0deg); padding:6px;">
+            <div style="width:100%; height:100%; border-radius:50%; background:var(--color-bg); display:flex; align-items:center; justify-content:center; flex-direction:column;">
+              <div class="health-score-ring__value" style="color:${scoreColor};">${activityScore}</div>
+              <div class="health-score-ring__label">활동 점수</div>
+            </div>
           </div>
         </div>
 
-        <div class="card" style="padding:16px; margin-bottom:16px;">
-          <h3 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">📊 전체 통계</h3>
-          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border);">
-            <span style="color:var(--color-text-light);">총 산책 횟수</span>
-            <span style="font-weight:700;">${stats.total.count}회</span>
+        <div class="health-stats-row">
+          <div class="health-stat-card">
+            <div class="health-stat-card__label">이번 주 산책</div>
+            <div class="health-stat-card__value">${stats.weekly.count}<span class="health-stat-card__unit"> 회</span></div>
+            <div class="health-stat-card__sub">총 ${stats.total.count}회</div>
           </div>
-          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border);">
-            <span style="color:var(--color-text-light);">총 거리</span>
-            <span style="font-weight:700;">${stats.total.totalDistance} km</span>
+          <div class="health-stat-card">
+            <div class="health-stat-card__label">이번 주 거리</div>
+            <div class="health-stat-card__value">${stats.weekly.totalDistance}<span class="health-stat-card__unit"> km</span></div>
+            <div class="health-stat-card__sub">총 ${stats.total.totalDistance}km</div>
           </div>
-          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-border);">
-            <span style="color:var(--color-text-light);">평균 거리</span>
-            <span style="font-weight:700;">${stats.total.avgDistance} km</span>
+          <div class="health-stat-card">
+            <div class="health-stat-card__label">이번 주 시간</div>
+            <div class="health-stat-card__value">${stats.weekly.totalDuration}<span class="health-stat-card__unit"> 분</span></div>
+            <div class="health-stat-card__sub">평균 ${stats.total.avgDuration}분/회</div>
           </div>
-          <div style="display:flex; justify-content:space-between; padding:8px 0;">
-            <span style="color:var(--color-text-light);">평균 시간</span>
-            <span style="font-weight:700;">${stats.total.avgDuration}분</span>
+          <div class="health-stat-card">
+            <div class="health-stat-card__label">이번 주 칼로리</div>
+            <div class="health-stat-card__value">${stats.weekly.totalCalories}<span class="health-stat-card__unit"> kcal</span></div>
+            <div class="health-stat-card__sub">평균 ${stats.total.avgDistance}km/회</div>
           </div>
         </div>
       `;
@@ -5832,68 +6422,65 @@ function renderHealthAnalysisResult(analysis, container, dogId) {
   const analyzedTime = cached?.analyzedAt ? new Date(cached.analyzedAt).toLocaleString('ko-KR') : '';
 
   container.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin:16px 0 12px;">
-      <h3 style="font-size:1.1rem; font-weight:800;">🔬 AI 건강 분석 결과</h3>
-      <div style="display:flex; align-items:center; gap:8px;">
-        ${analyzedTime ? `<span style="font-size:0.72rem; color:var(--color-text-muted);">${analyzedTime}</span>` : ''}
-        <button class="btn btn-secondary btn-sm" style="font-size:0.78rem;" onclick="handleRunHealthAnalysis()">🔄 새로 분석</button>
+    <div class="health-section">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="health-section__title">AI 분석 결과</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          ${analyzedTime ? `<span style="font-size:0.68rem; color:var(--color-text-muted);">${analyzedTime}</span>` : ''}
+          <button onclick="handleRunHealthAnalysis()" style="font-size:0.72rem; color:var(--color-text-muted); background:none; border:none; cursor:pointer; text-decoration:underline;">새로 분석</button>
+        </div>
       </div>
+
+      ${analysis.overallScore !== undefined ? `
+      <div class="health-insight">
+        <div class="health-insight__header">
+          <span class="health-insight__title">종합 건강 점수</span>
+          <span class="health-insight__badge" style="background:${analysis.overallScore >= 70 ? '#f0fff4;color:#38a169' : analysis.overallScore >= 40 ? '#fffff0;color:#d69e2e' : '#fff5f5;color:#e53e3e'}">${analysis.overallScore}/100</span>
+        </div>
+        ${analysis.summary ? `<div class="health-insight__text">${analysis.summary}</div>` : ''}
+      </div>` : ''}
+
+      ${analysis.behaviorAnalysis ? `
+      <div class="health-insight">
+        <div class="health-insight__header">
+          <span class="health-insight__title">행동 패턴</span>
+          <span class="health-insight__badge" style="background:var(--color-bg-section); color:var(--color-text-light);">${analysis.behaviorAnalysis.consistency || '-'}</span>
+        </div>
+        <div class="health-insight__text">${analysis.behaviorAnalysis.pattern || ''}</div>
+        ${analysis.behaviorAnalysis.recommendation ? `<div class="health-insight__text" style="margin-top:8px; padding-top:8px; border-top:1px solid var(--color-border-light);">${analysis.behaviorAnalysis.recommendation}</div>` : ''}
+      </div>` : ''}
+
+      ${analysis.obesityRisk ? `
+      <div class="health-insight">
+        <div class="health-insight__header">
+          <span class="health-insight__title">비만 위험</span>
+          <span class="health-insight__badge" style="background:${riskColor[analysis.obesityRisk.level] === 'var(--color-success)' ? '#f0fff4;color:#38a169' : '#fff5f5;color:#e53e3e'}">${analysis.obesityRisk.level || '-'}</span>
+        </div>
+        ${analysis.obesityRisk.factors ? `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">${analysis.obesityRisk.factors.map(f => '<span style="font-size:0.72rem; padding:2px 8px; background:var(--color-bg-section); border-radius:8px; color:var(--color-text-light);">' + f + '</span>').join('')}</div>` : ''}
+        ${analysis.obesityRisk.recommendation ? `<div class="health-insight__text">${analysis.obesityRisk.recommendation}</div>` : ''}
+      </div>` : ''}
+
+      ${analysis.dietRecommendation ? `
+      <div class="health-insight">
+        <div class="health-insight__title" style="margin-bottom:10px;">식단 추천</div>
+        ${analysis.dietRecommendation.dailyCalories ? `<div class="health-detail-row"><span class="health-detail-row__label">일일 권장 칼로리</span><span class="health-detail-row__value">${analysis.dietRecommendation.dailyCalories} kcal</span></div>` : ''}
+        ${analysis.dietRecommendation.mealFrequency ? `<div class="health-detail-row"><span class="health-detail-row__label">급여 횟수</span><span class="health-detail-row__value">${analysis.dietRecommendation.mealFrequency}</span></div>` : ''}
+        ${analysis.dietRecommendation.foods ? `<div style="margin-top:8px;"><span style="font-size:0.72rem; color:var(--color-text-muted);">추천 식품</span><div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">${analysis.dietRecommendation.foods.map(f => '<span style="font-size:0.75rem; padding:3px 10px; background:var(--color-bg-section); border-radius:10px;">' + f + '</span>').join('')}</div></div>` : ''}
+        ${analysis.dietRecommendation.avoid ? `<div style="margin-top:8px;"><span style="font-size:0.72rem; color:var(--color-text-muted);">주의 식품</span><div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">${analysis.dietRecommendation.avoid.map(f => '<span style="font-size:0.75rem; padding:3px 10px; background:#fff5f5; border-radius:10px; color:#e53e3e;">' + f + '</span>').join('')}</div></div>` : ''}
+      </div>` : ''}
+
+      ${analysis.vaccinationSchedule && analysis.vaccinationSchedule.upcoming && analysis.vaccinationSchedule.upcoming.length > 0 ? `
+      <div class="health-insight">
+        <div class="health-insight__title" style="margin-bottom:10px;">예방접종 일정</div>
+        ${analysis.vaccinationSchedule.upcoming.map(v => `
+          <div class="health-detail-row">
+            <span class="health-detail-row__label">${v.name}</span>
+            <span class="health-detail-row__value" style="font-size:0.82rem;">${v.dueDate || ''}</span>
+          </div>
+        `).join('')}
+        ${analysis.vaccinationSchedule.note ? `<div class="health-insight__text" style="margin-top:8px;">${analysis.vaccinationSchedule.note}</div>` : ''}
+      </div>` : ''}
     </div>
-
-    ${analysis.overallScore !== undefined ? `
-    <div class="card" style="padding:20px; margin-bottom:12px; text-align:center;">
-      <div style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:4px;">종합 건강 점수</div>
-      <div style="font-size:2.5rem; font-weight:900; color:${analysis.overallScore >= 70 ? 'var(--color-success)' : analysis.overallScore >= 40 ? 'var(--color-primary-dark)' : 'var(--color-error)'};">${analysis.overallScore}</div>
-      <div style="font-size:0.8rem; color:var(--color-text-muted);">/100</div>
-      ${analysis.summary ? `<p style="margin-top:12px; font-size:0.9rem; color:var(--color-text-light);">${analysis.summary}</p>` : ''}
-    </div>` : ''}
-
-    ${analysis.behaviorAnalysis ? `
-    <div class="card" style="padding:20px; margin-bottom:12px;">
-      <h4 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">🐕 행동 패턴 분석</h4>
-      <p style="font-size:0.85rem; margin-bottom:8px;">${analysis.behaviorAnalysis.pattern || ''}</p>
-      <div style="display:flex; gap:8px; margin-bottom:8px;">
-        <span class="badge badge-primary">규칙성: ${analysis.behaviorAnalysis.consistency || '-'}</span>
-      </div>
-      <p style="font-size:0.85rem; color:var(--color-text-light);">💡 ${analysis.behaviorAnalysis.recommendation || ''}</p>
-    </div>` : ''}
-
-    ${analysis.obesityRisk ? `
-    <div class="card" style="padding:20px; margin-bottom:12px;">
-      <h4 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">⚖️ 비만 위험 평가</h4>
-      <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
-        <div style="font-size:1.5rem; font-weight:900; color:${riskColor[analysis.obesityRisk.level] || 'var(--color-text)'};">${analysis.obesityRisk.level || '-'}</div>
-        ${analysis.obesityRisk.score !== undefined ? `<div style="font-size:0.85rem; color:var(--color-text-muted);">위험도 ${analysis.obesityRisk.score}/100</div>` : ''}
-      </div>
-      ${analysis.obesityRisk.factors ? `<div style="margin-bottom:8px;">${analysis.obesityRisk.factors.map(f => `<span class="badge" style="margin:2px; background:#FFF0F0; color:#D32F2F;">${f}</span>`).join('')}</div>` : ''}
-      <p style="font-size:0.85rem; color:var(--color-text-light);">💡 ${analysis.obesityRisk.recommendation || ''}</p>
-    </div>` : ''}
-
-    ${analysis.dietRecommendation ? `
-    <div class="card" style="padding:20px; margin-bottom:12px;">
-      <h4 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">🍽️ 식단 추천</h4>
-      ${analysis.dietRecommendation.dailyCalories ? `<p style="font-size:0.9rem; margin-bottom:8px;">일일 권장 칼로리: <strong>${analysis.dietRecommendation.dailyCalories} kcal</strong></p>` : ''}
-      ${analysis.dietRecommendation.mealFrequency ? `<p style="font-size:0.85rem; margin-bottom:8px;">급여 횟수: ${analysis.dietRecommendation.mealFrequency}</p>` : ''}
-      ${analysis.dietRecommendation.foods ? `<div style="margin-bottom:8px;"><span style="font-size:0.8rem; color:var(--color-text-muted);">추천 식품:</span> ${analysis.dietRecommendation.foods.map(f => `<span class="badge badge-success" style="margin:2px;">${f}</span>`).join('')}</div>` : ''}
-      ${analysis.dietRecommendation.avoid ? `<div style="margin-bottom:8px;"><span style="font-size:0.8rem; color:var(--color-text-muted);">피해야 할 식품:</span> ${analysis.dietRecommendation.avoid.map(f => `<span class="badge" style="margin:2px; background:#FFF0F0; color:#D32F2F;">${f}</span>`).join('')}</div>` : ''}
-      ${analysis.dietRecommendation.supplements ? `<div><span style="font-size:0.8rem; color:var(--color-text-muted);">추천 영양제:</span> ${analysis.dietRecommendation.supplements.map(s => `<span class="badge badge-primary" style="margin:2px;">${s}</span>`).join('')}</div>` : ''}
-    </div>` : ''}
-
-    ${analysis.vaccinationSchedule ? `
-    <div class="card" style="padding:20px; margin-bottom:12px;">
-      <h4 style="font-size:0.95rem; font-weight:800; margin-bottom:12px;">💉 예방접종 관리</h4>
-      ${analysis.vaccinationSchedule.upcoming && analysis.vaccinationSchedule.upcoming.length > 0 ? `
-        <div style="margin-bottom:12px;">
-          <div style="font-size:0.85rem; font-weight:700; margin-bottom:8px;">📅 예정된 접종</div>
-          ${analysis.vaccinationSchedule.upcoming.map(v => `
-            <div style="display:flex; justify-content:space-between; padding:8px; background:var(--color-bg); border-radius:8px; margin-bottom:4px;">
-              <span style="font-weight:600;">${v.name}</span>
-              <span style="font-size:0.85rem; color:var(--color-text-light);">${v.dueDate || ''} · ${v.importance || ''}</span>
-            </div>
-          `).join('')}
-        </div>` : ''}
-      ${analysis.vaccinationSchedule.note ? `<p style="font-size:0.85rem; color:var(--color-text-light);">📌 ${analysis.vaccinationSchedule.note}</p>` : ''}
-    </div>` : ''}
   `;
 }
 
