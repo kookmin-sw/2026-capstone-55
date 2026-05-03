@@ -44,11 +44,11 @@ router.post('/', (req, res) => {
     return res.status(400).json({ success: false, error: 'requestId, walkerId, requesterId가 필요합니다.' });
   }
 
-  // walk request 상태 → walking
+  // walk request 상태 → heading (픽업 이동 중)
   const requests = db.get('walkRequests', []);
   const reqIdx   = requests.findIndex(r => r.id === requestId);
   if (reqIdx !== -1) {
-    requests[reqIdx].status    = 'walking';
+    requests[reqIdx].status    = 'heading';
     requests[reqIdx].updatedAt = db.now();
     db.set('walkRequests', requests);
   }
@@ -58,15 +58,23 @@ router.post('/', (req, res) => {
     requestId,
     walkerId,
     requesterId,
-    dogName:   dogName || '',
-    status:    'walking',
-    startedAt: db.now(),
-    endedAt:   null
+    dogName:       dogName || '',
+    status:        'heading',
+    startedAt:     db.now(),
+    arrivedAt:     null,
+    walkStartedAt: null,
+    endedAt:       null
   };
 
   const sessions = db.get('walkSessions', []);
   sessions.push(session);
   db.set('walkSessions', sessions);
+
+  // 요청 객체에 sessionId 저장 (클라이언트에서 세션 ID 조회 없이 사용)
+  if (reqIdx !== -1) {
+    requests[reqIdx].sessionId = session.id;
+    db.set('walkRequests', requests);
+  }
 
   const emitToUser = req.app.get('emitToUser');
   if (emitToUser) emitToUser(requesterId, 'walk-started', { sessionId: session.id, walkerId });
@@ -101,6 +109,50 @@ router.patch('/:id/end', (req, res) => {
   if (emitToUser) emitToUser(s.requesterId, 'walk-ended', { sessionId: s.id, totalDistanceKm: totalDist });
 
   res.json({ success: true, session: sessions[idx], totalDistanceKm: totalDist });
+});
+
+// 도우미 도착 (heading → arrived)
+router.patch('/:id/arrive', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status !== 'heading') {
+    return res.json({ success: false, error: '이동 중 상태가 아닙니다.' });
+  }
+  sessions[idx].status    = 'arrived';
+  sessions[idx].arrivedAt = db.now();
+  db.set('walkSessions', sessions);
+
+  const s = sessions[idx];
+
+  // 요청 상태도 업데이트
+  const requests = db.get('walkRequests', []);
+  const reqIdx = requests.findIndex(r => r.id === s.requestId);
+  if (reqIdx !== -1) { requests[reqIdx].status = 'arrived'; db.set('walkRequests', requests); }
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) emitToUser(s.requesterId, 'walker-arrived', { sessionId: s.id, walkerName: req.body.walkerName || '' });
+
+  res.json({ success: true, session: sessions[idx] });
+});
+
+// 산책 실제 시작 (arrived → walking) — 도우미가 반려견 픽업 후 누름
+router.patch('/:id/start-walk', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status !== 'arrived') {
+    return res.json({ success: false, error: '도착 확인 후 산책을 시작할 수 있습니다.' });
+  }
+  sessions[idx].status        = 'walking';
+  sessions[idx].walkStartedAt = db.now();
+  db.set('walkSessions', sessions);
+
+  const s = sessions[idx];
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) emitToUser(s.requesterId, 'walk-tracking-started', { sessionId: s.id });
+
+  res.json({ success: true, session: sessions[idx] });
 });
 
 // 경로 포인트 추가 (세션별 파일에 직접 append)

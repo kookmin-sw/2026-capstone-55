@@ -211,4 +211,145 @@ router.patch('/:id/cancel', (req, res) => {
   res.json({ success: true });
 });
 
+// ── 지금 바로 요청 (브로드캐스트) ──────────────────────────────
+// POST /api/walk-requests/broadcast
+router.post('/broadcast', (req, res) => {
+  const {
+    requesterId, dogName, dogBreed, dogSize,
+    dogAggression, dogPersonality, walkDifficulty,
+    dogSpecialNotes, pickupLatitude, pickupLongitude
+  } = req.body;
+
+  if (!requesterId) {
+    return res.status(400).json({ success: false, error: 'requesterId가 필요합니다.' });
+  }
+
+  // 이미 broadcasting 중인 요청이 있으면 중복 방지
+  const existing = db.get('walkRequests', []);
+  const dup = existing.find(r => r.requesterId === requesterId && r.status === 'broadcasting');
+  if (dup) return res.json({ success: false, error: '이미 요청 중입니다.' });
+
+  const users = db.get('users', []);
+  const requester = users.find(u => u.id === requesterId);
+
+  const newRequest = {
+    id:             db.generateId(),
+    requesterId,
+    walkerId:       null,           // 아직 매칭 전
+    type:           'broadcast',    // 브로드캐스트 타입
+    requesterName:  requester ? (requester.nickname || requester.name) : '알 수 없음',
+    walkerName:     null,
+    dogName:        dogName || '',
+    dogBreed:       dogBreed || '',
+    dogSize:        dogSize || '',
+    dogAggression:  dogAggression || 'none',
+    dogPersonality: dogPersonality || 'normal',
+    walkDifficulty: walkDifficulty || 'easy',
+    dogSpecialNotes: dogSpecialNotes || '',
+    pickupLatitude:  pickupLatitude || null,
+    pickupLongitude: pickupLongitude || null,
+    status:         'broadcasting',
+    expiresAt:      new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5분 후 만료
+    createdAt:      db.now(),
+    updatedAt:      db.now()
+  };
+
+  existing.push(newRequest);
+  db.set('walkRequests', existing);
+
+  // 온라인 도우미 전체에게 브로드캐스트
+  const emitToAvailableWalkers = req.app.get('emitToAvailableWalkers');
+  let sentCount = 0;
+  if (emitToAvailableWalkers) {
+    sentCount = emitToAvailableWalkers('broadcast-walk-request', {
+      requestId:      newRequest.id,
+      requesterName:  newRequest.requesterName,
+      requesterImage: requester?.profileImage || null,
+      dogName:        newRequest.dogName,
+      dogSize:        newRequest.dogSize,
+      dogAggression:  newRequest.dogAggression,
+      walkDifficulty: newRequest.walkDifficulty,
+      dogSpecialNotes: newRequest.dogSpecialNotes,
+      pickupLatitude:  newRequest.pickupLatitude,
+      pickupLongitude: newRequest.pickupLongitude,
+      expiresAt:      newRequest.expiresAt
+    });
+  }
+
+  res.json({ success: true, request: newRequest, sentCount });
+});
+
+// PATCH /api/walk-requests/:id/accept-broadcast — 선착순 수락
+router.patch('/:id/accept-broadcast', (req, res) => {
+  const { walkerId } = req.body;
+  if (!walkerId) return res.status(400).json({ success: false, error: 'walkerId가 필요합니다.' });
+
+  const requests = db.get('walkRequests', []);
+  const idx = requests.findIndex(r => r.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, error: '요청을 찾을 수 없습니다.' });
+  if (requests[idx].status !== 'broadcasting') {
+    return res.json({ success: false, error: '이미 다른 도우미가 수락했습니다.' });
+  }
+
+  // 만료 체크
+  if (new Date(requests[idx].expiresAt) < new Date()) {
+    requests[idx].status = 'expired';
+    db.set('walkRequests', requests);
+    return res.json({ success: false, error: '요청이 만료되었습니다.' });
+  }
+
+  const walkers = db.get('walkers', []);
+  const walker = walkers.find(w => w.userId === walkerId);
+  const users = db.get('users', []);
+  const walkerUser = users.find(u => u.id === walkerId);
+
+  requests[idx].status    = 'accepted';
+  requests[idx].walkerId  = walkerId;
+  requests[idx].walkerName = walker?.userName || walkerUser?.nickname || walkerUser?.name || '도우미';
+  requests[idx].updatedAt = db.now();
+  db.set('walkRequests', requests);
+
+  const r = requests[idx];
+  const emitToUser = req.app.get('emitToUser');
+  const emitToAvailableWalkers = req.app.get('emitToAvailableWalkers');
+
+  // 요청자에게 매칭 성공 알림
+  if (emitToUser) {
+    emitToUser(r.requesterId, 'broadcast-matched', {
+      requestId:   r.id,
+      walkerId:    walkerId,
+      walkerName:  r.walkerName,
+      walkerPhone: walkerUser?.phoneNumber || null
+    });
+  }
+
+  // 다른 도우미들에게 취소 알림 (브로드캐스트)
+  if (emitToAvailableWalkers) {
+    emitToAvailableWalkers('broadcast-cancelled', {
+      requestId: r.id,
+      reason:    '다른 도우미가 수락했습니다.'
+    });
+  }
+
+  res.json({ success: true, request: requests[idx] });
+});
+
+// PATCH /api/walk-requests/:id/cancel-broadcast — 요청자 취소
+router.patch('/:id/cancel-broadcast', (req, res) => {
+  const requests = db.get('walkRequests', []);
+  const idx = requests.findIndex(r => r.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+
+  requests[idx].status    = 'cancelled';
+  requests[idx].updatedAt = db.now();
+  db.set('walkRequests', requests);
+
+  const emitToAvailableWalkers = req.app.get('emitToAvailableWalkers');
+  if (emitToAvailableWalkers) {
+    emitToAvailableWalkers('broadcast-cancelled', { requestId: req.params.id, reason: '요청자가 취소했습니다.' });
+  }
+
+  res.json({ success: true });
+});
+
 module.exports = router;

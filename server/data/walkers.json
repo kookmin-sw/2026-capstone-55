@@ -4,16 +4,23 @@
     "name": "김민준",
     "nickname": "민준워커",
     "intro": "강아지를 정말 사랑하는 산책 도우미입니다 🐶",
-    "location": "서울 강남구",
-    "experience": "3년",
-    "price": 15000,
-    "rating": 4.8,
-    "reviewCount": 24,
+    "location": "ㅇㄴ",
+    "experience": "ㅇㄴㅇㄴ",
+    "price": 0,
+    "rating": 5,
+    "reviewCount": 0,
     "isAvailable": true,
-    "registeredAt": "2026-04-01T00:00:00.000Z",
-    "lat": 37.60992421879295,
-    "lng": 126.99774297721345,
-    "lastLocationUpdatedAt": "2026-05-01T06:09:33.807Z"
+    "registeredAt": "2026-05-03T12:22:13.622Z",
+    "lat": 37.603462635408604,
+    "lng": 127.03231281985907,
+    "lastLocationUpdatedAt": "2026-05-03T12:22:23.697Z",
+    "preferredTime": "오전 (9-11시)",
+    "message": "ㅇㄴㅇㄴ",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ]
   },
   {
     "userId": "test-walker-002",

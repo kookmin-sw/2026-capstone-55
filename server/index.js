@@ -102,13 +102,27 @@ io.on('connection', (socket) => {
   });
 });
 
-// 특정 userId에게 이벤트 전송 (라우터에서 사용)
+// 특정 userId에게 이벤트 전송
 function emitToUser(userId, event, data) {
   const sid = userSockets[userId];
   if (sid) io.to(sid).emit(event, data);
 }
 
+// 온라인 상태인 모든 도우미에게 브로드캐스트
+function emitToAvailableWalkers(event, data) {
+  const db = require('./db');
+  const walkers = db.get('walkers', []);
+  const availableWalkerIds = walkers
+    .filter(w => w.isAvailable && userSockets[w.userId])
+    .map(w => w.userId);
+  availableWalkerIds.forEach(uid => {
+    io.to(userSockets[uid]).emit(event, data);
+  });
+  return availableWalkerIds.length;
+}
+
 app.set('emitToUser', emitToUser);
+app.set('emitToAvailableWalkers', emitToAvailableWalkers);
 
 // --- 서버 시작 ---
 server.listen(PORT, () => {

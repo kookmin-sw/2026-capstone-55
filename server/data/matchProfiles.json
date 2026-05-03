@@ -89,5 +89,28 @@
     "rating": 5,
     "reviewCount": 0,
     "createdAt": "2026-05-01T02:46:50.443Z"
+  },
+  {
+    "userId": "test-walker-001",
+    "userName": "김민준",
+    "role": "walker",
+    "location": "ㅇㄴ",
+    "lat": 37.603462635408604,
+    "lng": 127.03231281985907,
+    "dogSize": "medium",
+    "preferredTime": "오전 (9-11시)",
+    "message": "ㅇㄴㅇㄴ",
+    "price": 0,
+    "experience": "ㅇㄴㅇㄴ",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "specialty": "",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 0,
+    "createdAt": "2026-05-03T12:22:13.613Z"
   }
 ]
