@@ -117,18 +117,27 @@ router.patch('/:id/accept', (req, res) => {
   const users = db.get('users', []);
   const walkerUser = users.find(u => u.id === r.walkerId);
 
+  const walkerName = walker ? (walker.userName || walker.name) : (walkerUser ? (walkerUser.nickname || walkerUser.name) : '알 수 없음');
+  const walkerInfo = {
+    requestId:    r.id,
+    walkerId:     r.walkerId,
+    walkerName,
+    walkerIntro:  walker ? (walker.intro || walker.message || '') : '',
+    walkerRating: walker ? walker.rating : 5,
+    walkerReviewCount: walker ? walker.reviewCount : 0,
+    walkerExperience:  walker ? walker.experience : '',
+    walkerPrice:  walker ? walker.price : 0,
+    walkerPhone:  walkerUser ? (walkerUser.phoneNumber || '') : '',
+    walkerProfileImage: walkerUser ? (walkerUser.profileImage || '') : '',
+    walkerLat:    walker ? walker.lat : null,
+    walkerLng:    walker ? walker.lng : null,
+  };
+
   // Socket.IO로 요청자에게 수락 알림
   const emitToUser = req.app.get('emitToUser');
-  if (emitToUser) {
-    emitToUser(r.requesterId, 'walk-request-accepted', {
-      requestId: r.id,
-      walkerId:  r.walkerId,
-      walkerName: walker ? walker.userName : (walkerUser ? (walkerUser.nickname || walkerUser.name) : '알 수 없음'),
-      walkerPhone: walkerUser ? walkerUser.phoneNumber : null  // 수락 후에만 공개
-    });
-  }
+  if (emitToUser) emitToUser(r.requesterId, 'walk-request-accepted', walkerInfo);
 
-  res.json({ success: true, request: requests[idx] });
+  res.json({ success: true, request: { ...requests[idx], walkerInfo } });
 });
 
 // 거절
@@ -150,6 +159,33 @@ router.patch('/:id/reject', (req, res) => {
   }
 
   res.json({ success: true });
+});
+
+// 도우미 실시간 위치 업데이트 (수락 후 이동 중)
+router.patch('/:id/walker-location', (req, res) => {
+  const { lat, lng } = req.body;
+  const requests = db.get('walkRequests', []);
+  const idx = requests.findIndex(r => r.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+
+  requests[idx].walkerCurrentLat = lat;
+  requests[idx].walkerCurrentLng = lng;
+  requests[idx].walkerLocationUpdatedAt = db.now();
+  db.set('walkRequests', requests);
+
+  // Socket.IO로 요청자에게 실시간 위치 전달
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) emitToUser(requests[idx].requesterId, 'walker-location-update', { requestId: req.params.id, lat, lng });
+
+  res.json({ success: true });
+});
+
+// 도우미 현재 위치 조회
+router.get('/:id/walker-location', (req, res) => {
+  const requests = db.get('walkRequests', []);
+  const r = requests.find(r => r.id === req.params.id);
+  if (!r) return res.status(404).json({ success: false });
+  res.json({ success: true, lat: r.walkerCurrentLat, lng: r.walkerCurrentLng, updatedAt: r.walkerLocationUpdatedAt });
 });
 
 // 취소 (요청자)

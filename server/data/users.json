@@ -111,5 +111,39 @@
     "pawCoins": 3000,
     "createdAt": "2026-04-30T05:51:28.847Z",
     "nicknameChangedAt": "2026-04-30T05:51:49.675Z"
+  },
+  {
+    "id": "id-momd0r30-77515a9",
+    "email": "richponywill@gmail.com",
+    "name": "부자될래",
+    "nickname": "부자될래",
+    "passwordHash": "",
+    "socialKey": "google_112747055347649699329",
+    "provider": "google",
+    "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocJB1dNohtq6FlHVjEZOomOk1-mPDVQAVR24SkKjye5Vk55-=s96-c",
+    "referralCode": "PAW-F4G224",
+    "dogs": [
+      {
+        "id": "id-momd24ne-9fcvdy0",
+        "name": "초코",
+        "breed": "골든 리트리버",
+        "age": 2,
+        "size": "medium"
+      }
+    ],
+    "pawCoins": 3007,
+    "createdAt": "2026-05-01T03:35:12.157Z",
+    "nicknameChangedAt": "2026-05-01T03:35:15.174Z"
+  },
+  {
+    "id": "id-momd5tfr-fkyukxi",
+    "email": "daedun1@gmail.com",
+    "name": "이재준",
+    "nickname": "댕준",
+    "referralCode": "PAW-WHAMHK",
+    "dogs": [],
+    "pawCoins": 3000,
+    "createdAt": "2026-05-01T03:39:08.487Z",
+    "nicknameChangedAt": "2026-05-01T03:39:16.897Z"
   }
 ]

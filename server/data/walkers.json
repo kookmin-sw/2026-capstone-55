@@ -11,9 +11,9 @@
     "reviewCount": 24,
     "isAvailable": true,
     "registeredAt": "2026-04-01T00:00:00.000Z",
-    "lat": 37.60992661806679,
-    "lng": 126.99773276632945,
-    "lastLocationUpdatedAt": "2026-05-01T02:38:32.587Z"
+    "lat": 37.60992421879295,
+    "lng": 126.99774297721345,
+    "lastLocationUpdatedAt": "2026-05-01T06:09:33.807Z"
   },
   {
     "userId": "test-walker-002",
@@ -40,5 +40,24 @@
     "reviewCount": 8,
     "isAvailable": true,
     "registeredAt": "2026-04-01T00:00:00.000Z"
+  },
+  {
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "name": "Peter Lee",
+    "nickname": "Peter Lee",
+    "location": "d",
+    "preferredTime": "오전 (7-9시)",
+    "experience": "d",
+    "message": "dd",
+    "price": 0,
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "isAvailable": false,
+    "reviewCount": 0,
+    "rating": 5,
+    "registeredAt": "2026-05-01T05:05:13.608Z"
   }
 ]
