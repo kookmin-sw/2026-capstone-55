@@ -12,47 +12,39 @@
     "createdAt": "2026-04-10T07:54:18.464Z"
   },
   {
-    "id": "id-mo2r9f31-nmcx76f",
-    "email": "50dongja5295@kookmin.ac.kr",
-    "name": "‍하준서(학부생-인공지능전공)",
-    "nickname": "하준서",
-    "passwordHash": "",
-    "socialKey": "google_105515981647312236671",
-    "provider": "google",
-    "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocLEZCiT_QmKhp1hlHQKQ56G2L4PDjbqu18momzGVsw1odyAXw=s96-c",
-    "referralCode": "PAW-C8KSN4",
-    "dogs": [],
-    "pawCoins": 0,
-    "createdAt": "2026-04-17T10:18:27.613Z",
-    "nicknameChangedAt": "2026-04-17T10:18:35.396Z"
-  },
-  {
-    "id": "id-mo2s9e1c-2pg3r3v",
-    "email": "jaejun0128@naver.com",
-    "name": "이재준",
-    "nickname": "대둔",
-    "referralCode": "PAW-WY82TF",
-    "dogs": [],
-    "pawCoins": 3000,
-    "createdAt": "2026-04-17T10:46:25.872Z",
-    "nicknameChangedAt": "2026-04-17T10:46:32.708Z"
-  },
-  {
-    "id": "id-mok5uf8l-0badxjq",
+    "id": "id-momhvfbo-oxozxts",
     "email": "50dongja5295@naver.com",
     "name": "하준서",
     "nickname": "",
-    "referralCode": "PAW-8RSZYS",
+    "passwordHash": "hash_8fioo6",
+    "referralCode": "PAW-E9Q6JE",
     "dogs": [
       {
-        "id": "id-mok5w4we-r808t5j",
-        "name": "초코",
-        "breed": "포메라니안",
+        "id": "id-momik16z-quq1r6h",
+        "name": "딸기",
+        "breed": "시바 이누",
         "age": 3,
-        "size": "small"
+        "size": "small",
+        "gender": "male",
+        "weight": 9,
+        "neutered": true,
+        "personality": "사교적",
+        "healthNote": "탈구"
+      },
+      {
+        "id": "id-mophvynx-frpwj7l",
+        "name": "누룽지",
+        "breed": "골든 리트리버",
+        "age": 4,
+        "size": "medium",
+        "gender": "male",
+        "weight": 28,
+        "neutered": true,
+        "personality": "사교적",
+        "healthNote": null
       }
     ],
     "pawCoins": 3000,
-    "createdAt": "2026-04-29T14:38:47.205Z"
+    "createdAt": "2026-05-01T05:51:01.716Z"
   }
 ]

@@ -46,7 +46,7 @@ router.post('/analyze', async (req, res) => {
 
     // dogInfo.name 기준으로 산책 데이터 필터링
     let walks = loadWalks().filter(w => w.userId === userId);
-    if (dogInfo?.name) {
+    if (dogInfo?.name && !dogInfo?.allDogs) {
       walks = walks.filter(w => w.dogName === dogInfo.name || w.dogId === dogInfo.name);
     }
     const model = getGemini();
@@ -82,7 +82,15 @@ router.post('/analyze', async (req, res) => {
     const prompt = `당신은 반려견 건강 전문 AI 수의사입니다. 다음 데이터를 분석하여 JSON 형식으로 응답하세요.
 
 ## 반려견 정보
-- 이름: ${dogInfo?.name || '미등록'}
+${dogInfo?.allDogs ? dogInfo.allDogs.map((d, i) => `### 반려견 ${i+1}: ${d.name}
+- 견종: ${d.breed || '미등록'}
+- 나이: ${d.age || '미등록'}
+- 체중: ${d.weight || '미등록'}kg
+- 크기: ${d.size || '미등록'}
+- 성별: ${d.gender === 'male' ? '수컷' : d.gender === 'female' ? '암컷' : '미등록'}
+- 중성화: ${d.neutered === true ? '완료' : d.neutered === false ? '미완료' : '미등록'}
+- 성향: ${d.personality || '미등록'}
+- 건강 특이사항: ${d.healthNote || '없음'}`).join('\n') : `- 이름: ${dogInfo?.name || '미등록'}
 - 견종: ${dogInfo?.breed || '미등록'}
 - 나이: ${dogInfo?.age || '미등록'}
 - 체중: ${dogInfo?.weight || '미등록'}kg
@@ -90,7 +98,7 @@ router.post('/analyze', async (req, res) => {
 - 성별: ${dogInfo?.gender === 'male' ? '수컷' : dogInfo?.gender === 'female' ? '암컷' : '미등록'}
 - 중성화: ${dogInfo?.neutered === true ? '완료' : dogInfo?.neutered === false ? '미완료' : '미등록'}
 - 성향: ${dogInfo?.personality || '미등록'}
-- 건강 특이사항: ${dogInfo?.healthNote || '없음'}
+- 건강 특이사항: ${dogInfo?.healthNote || '없음'}`}
 
 ## 건강 서류 현황
 - 예방접종 기록: ${vaccinationDocs.length > 0 ? vaccinationDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}

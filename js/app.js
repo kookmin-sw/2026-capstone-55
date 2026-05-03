@@ -3367,6 +3367,14 @@ function renderProfilePage() {
 
   const sizeMap = { small: '소형', medium: '중형', large: '대형' };
 
+  // localStorage에서 반려견 사진 로드
+  if (user.dogs) {
+    user.dogs.forEach(d => {
+      const saved = localStorage.getItem('dogPhoto_' + d.id);
+      if (saved) d.photo = saved;
+    });
+  }
+
   renderPage(`
     <div class="page-header">
       <h1>내 프로필</h1>
@@ -3423,7 +3431,10 @@ function renderProfilePage() {
         ? user.dogs.map((d, idx) => `
           <div style="padding:12px 0; ${idx < user.dogs.length - 1 ? 'border-bottom:1px solid var(--color-border);' : ''}">
             <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="toggleDogDetail(${idx})">
-              <div style="width:44px; height:44px; border-radius:50%; background:var(--color-primary-light); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">🐕</div>
+              ${d.photo
+                ? `<img src="${d.photo}" style="width:44px; height:44px; border-radius:50%; object-fit:cover;">`
+                : `<div style="width:44px; height:44px; border-radius:50%; background:var(--color-primary-light); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">🐕</div>`
+              }
               <div style="flex:1;">
                 <div style="font-weight:700; font-size:1rem;">${d.name}</div>
                 <div style="font-size:0.82rem; color:var(--color-text-light);">${d.breed} · ${d.age}살 · ${sizeMap[d.size] || d.size}</div>
@@ -3498,6 +3509,7 @@ let _dogRegStep = 0;
 let _dogRegData = {};
 
 const _dogRegSteps = [
+  { key: 'photo', question: '반려견 사진을 올려주세요', sub: '프로필에 표시돼요 (건너뛰기 가능)', type: 'photo', required: false },
   { key: 'name', question: '반려견 이름이 뭐예요?', sub: '사랑하는 아이의 이름을 알려주세요', type: 'text', placeholder: '예: 초코', required: true },
   { key: 'breed', question: '품종을 알려주세요', sub: '검색해서 찾을 수 있어요', type: 'breed-search', required: true },
   { key: 'age', question: '나이가 어떻게 돼요?', sub: '대략적인 나이도 괜찮아요', type: 'number', placeholder: '예: 3', min: 0, max: 30, required: true },
@@ -3506,6 +3518,7 @@ const _dogRegSteps = [
     { value: 'medium', label: '중형', desc: '10~25kg' },
     { value: 'large', label: '대형', desc: '25kg~' }
   ]},
+  { key: 'weight', question: '체중이 어떻게 돼요?', sub: '정확하지 않아도 괜찮아요', type: 'number', placeholder: '예: 7.5', min: 0, max: 100, required: false, unit: 'kg' },
   { key: 'gender', question: '성별은요?', sub: '', type: 'cards', options: [
     { value: 'male', label: '남아', desc: '수컷' },
     { value: 'female', label: '여아', desc: '암컷' }
@@ -3547,10 +3560,22 @@ function renderDogRegStep() {
   ).join('');
 
   let inputHtml = '';
-  if (step.type === 'text') {
+  if (step.type === 'photo') {
+    const preview = _dogRegData.photoPreview || '';
+    inputHtml = `
+      <div style="text-align:center; margin-top:24px;">
+        <div id="dog-photo-preview" style="width:120px; height:120px; border-radius:50%; margin:0 auto 16px; background:${preview ? `url(${preview}) center/cover` : '#f5f3f0'}; display:flex; align-items:center; justify-content:center; font-size:2.5rem; border:2px dashed #e5e3e0; overflow:hidden;">
+          ${preview ? '' : '📷'}
+        </div>
+        <label style="display:inline-block; padding:10px 24px; background:#1a1a1a; color:#fff; border-radius:12px; font-size:0.9rem; font-weight:700; cursor:pointer;">
+          사진 선택
+          <input type="file" id="dog-reg-photo" accept="image/*" style="display:none;" onchange="handleDogPhotoSelect(this)">
+        </label>
+      </div>`;
+  } else if (step.type === 'text') {
     inputHtml = `<input type="text" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; margin-top:24px;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()">`;
   } else if (step.type === 'number') {
-    inputHtml = `<div style="display:flex; align-items:center; gap:8px; margin-top:24px;"><input type="number" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" min="${step.min || 0}" max="${step.max || 100}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; flex:1;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()"><span style="font-size:1rem; font-weight:600; color:var(--color-text-muted);">살</span></div>`;
+    inputHtml = `<div style="display:flex; align-items:center; gap:8px; margin-top:24px;"><input type="number" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" min="${step.min || 0}" max="${step.max || 100}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; flex:1;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()"><span style="font-size:1rem; font-weight:600; color:var(--color-text-muted);">${step.unit || '살'}</span></div>`;
   } else if (step.type === 'textarea') {
     inputHtml = `<textarea id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" rows="3" style="font-size:1rem; padding:14px 16px; border-radius:12px; margin-top:24px; resize:none;">${_dogRegData[step.key] || ''}</textarea>`;
   } else if (step.type === 'breed-search') {
@@ -3597,11 +3622,34 @@ function selectDogRegCard(key, value) {
   setTimeout(() => nextDogRegStep(), 300);
 }
 
+function handleDogPhotoSelect(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 2 * 1024 * 1024) { alert('2MB 이하 사진만 업로드 가능해요.'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    _dogRegData.photo = e.target.result;
+    _dogRegData.photoPreview = e.target.result;
+    const preview = document.getElementById('dog-photo-preview');
+    if (preview) {
+      preview.style.background = `url(${e.target.result}) center/cover`;
+      preview.innerHTML = '';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
 function nextDogRegStep() {
   const step = _dogRegSteps[_dogRegStep];
-  const input = document.getElementById('dog-reg-input');
-  if (input) _dogRegData[step.key] = input.value.trim();
-  if (step.required && !_dogRegData[step.key]) { if(input) input.style.borderColor='#e53e3e'; return; }
+  if (step.type !== 'photo') {
+    const input = document.getElementById('dog-reg-input');
+    if (input) _dogRegData[step.key] = input.value.trim();
+  }
+  if (step.required && !_dogRegData[step.key]) {
+    const input = document.getElementById('dog-reg-input');
+    if(input) input.style.borderColor='#e53e3e';
+    return;
+  }
   if (_dogRegStep < _dogRegSteps.length - 1) { _dogRegStep++; renderDogRegStep(); }
 }
 
@@ -3638,14 +3686,18 @@ function finishDogRegister() {
     breed: _dogRegData.breed,
     age: Number(_dogRegData.age) || 0,
     size: _dogRegData.size || 'medium',
-    gender: _dogRegData.gender || '',
-    weight: _dogRegData.weight || null,
-    neutered: _dogRegData.neutered === 'yes',
-    personality: _dogRegData.personality || '',
-    healthNote: _dogRegData.healthNote || ''
+    gender: _dogRegData.gender || null,
+    weight: _dogRegData.weight ? Number(_dogRegData.weight) : null,
+    neutered: _dogRegData.neutered === 'yes' ? true : _dogRegData.neutered === 'no' ? false : null,
+    personality: _dogRegData.personality || null,
+    healthNote: _dogRegData.healthNote || null
   });
 
   if (result.success) {
+    // 사진은 별도 localStorage에 저장
+    if (_dogRegData.photo && result.dog) {
+      localStorage.setItem('dogPhoto_' + result.dog.id, _dogRegData.photo);
+    }
     closeDogRegisterFlow();
     renderProfilePage();
   } else {
@@ -3859,6 +3911,14 @@ function showEditDogForm(idx) {
   editEl.style.display = 'block';
   editEl.innerHTML = `
     <div id="edit-dog-error-${idx}"></div>
+    <div style="text-align:center; margin-bottom:16px;">
+      <div id="edit-dog-photo-preview-${idx}" style="width:80px; height:80px; border-radius:50%; margin:0 auto 10px; ${d.photo ? `background:url('${d.photo}') center/cover` : 'background:#f5f3f0; display:flex; align-items:center; justify-content:center; font-size:2rem;'} overflow:hidden; border:2px dashed #e5e3e0;">${d.photo ? '' : '📷'}</div>
+      <label style="display:inline-block; padding:6px 16px; background:#1a1a1a; color:#fff; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+        사진 변경
+        <input type="file" id="edit-dog-photo-${idx}" accept="image/*" style="display:none;" onchange="handleEditDogPhoto(this, ${idx})">
+      </label>
+      ${d.photo ? `<button onclick="clearEditDogPhoto(${idx})" style="margin-left:6px; padding:6px 12px; background:#FFF0F0; color:#D32F2F; border:none; border-radius:10px; font-size:0.78rem; font-weight:600; cursor:pointer;">삭제</button>` : ''}
+    </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
       <div class="form-group" style="margin-bottom:0;">
         <label style="font-size:0.78rem;">이름</label>
@@ -3935,6 +3995,36 @@ function cancelEditDog(idx) {
   if (editEl) editEl.style.display = 'none';
 }
 
+let _editDogPhotoData = {};
+
+function handleEditDogPhoto(input, idx) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 2 * 1024 * 1024) { alert('2MB 이하 사진만 업로드 가능해요.'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    _editDogPhotoData[idx] = e.target.result;
+    const preview = document.getElementById(`edit-dog-photo-preview-${idx}`);
+    if (preview) {
+      preview.style.background = `url(${e.target.result}) center/cover`;
+      preview.innerHTML = '';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearEditDogPhoto(idx) {
+  _editDogPhotoData[idx] = '';
+  const preview = document.getElementById(`edit-dog-photo-preview-${idx}`);
+  if (preview) {
+    preview.style.background = '#f5f3f0';
+    preview.style.display = 'flex';
+    preview.style.alignItems = 'center';
+    preview.style.justifyContent = 'center';
+    preview.innerHTML = '📷';
+  }
+}
+
 function handleSaveEditDog(idx) {
   const user = AuthService.getCurrentUser();
   if (!user || !user.dogs || !user.dogs[idx]) return;
@@ -3955,26 +4045,38 @@ function handleSaveEditDog(idx) {
     return;
   }
 
+  // 사진은 별도 localStorage에 저장 (서버 동기화 문제 방지)
+  if (_editDogPhotoData[idx] !== undefined) {
+    const dogId = user.dogs[idx].id;
+    if (_editDogPhotoData[idx]) {
+      localStorage.setItem('dogPhoto_' + dogId, _editDogPhotoData[idx]);
+    } else {
+      localStorage.removeItem('dogPhoto_' + dogId);
+    }
+    delete _editDogPhotoData[idx];
+  }
+
+  // currentUser 기준으로 수정
+  const currentDog = user.dogs[idx];
+  currentDog.name = name;
+  currentDog.breed = breed;
+  currentDog.age = Number(age);
+  currentDog.size = size;
+  currentDog.gender = gender || null;
+  currentDog.weight = weight ? Number(weight) : null;
+  currentDog.neutered = neutered === 'yes' ? true : neutered === 'no' ? false : null;
+  currentDog.personality = personality || null;
+  currentDog.healthNote = healthNote || null;
+
+  // 서버 캐시 업데이트
   const users = StorageService.get('users', []);
   const userIdx = users.findIndex(u => u.id === user.id);
-  if (userIdx === -1) return;
+  if (userIdx !== -1) {
+    users[userIdx].dogs = user.dogs;
+    StorageService.set('users', users);
+  }
 
-  const dog = users[userIdx].dogs[idx];
-  dog.name = name;
-  dog.breed = breed;
-  dog.age = Number(age);
-  dog.size = size;
-  dog.gender = gender || null;
-  dog.weight = weight ? Number(weight) : null;
-  dog.neutered = neutered === 'yes' ? true : neutered === 'no' ? false : null;
-  dog.personality = personality || null;
-  dog.healthNote = healthNote || null;
-
-  StorageService.set('users', users);
-  const updated = { ...users[userIdx] };
-  delete updated.passwordHash;
-  StorageService.set('currentUser', updated);
-
+  StorageService.set('currentUser', user);
   renderProfilePage();
 }
 
@@ -6444,17 +6546,31 @@ async function handleRunHealthAnalysis() {
   }
 
   try {
-    const analysis = await HealthAnalysisService.analyzeHealth(user.id, dog ? {
-      name: dog.name,
-      breed: dog.breed,
-      age: dog.age,
-      weight: dog.weight || null,
-      size: dog.size,
-      gender: dog.gender || null,
-      neutered: dog.neutered != null ? dog.neutered : null,
-      personality: dog.personality || null,
-      healthNote: dog.healthNote || null
-    } : {}, selectedDogId);
+    let dogInfo = {};
+    if (dog) {
+      dogInfo = {
+        name: dog.name,
+        breed: dog.breed,
+        age: dog.age,
+        weight: dog.weight || null,
+        size: dog.size,
+        gender: dog.gender || null,
+        neutered: dog.neutered != null ? dog.neutered : null,
+        personality: dog.personality || null,
+        healthNote: dog.healthNote || null
+      };
+    } else if (dogs.length > 0) {
+      // 전체 선택 시 모든 반려견 정보 전달
+      dogInfo = {
+        name: '전체 (' + dogs.map(d => d.name).join(', ') + ')',
+        allDogs: dogs.map(d => ({
+          name: d.name, breed: d.breed, age: d.age, weight: d.weight,
+          size: d.size, gender: d.gender, neutered: d.neutered,
+          personality: d.personality, healthNote: d.healthNote
+        }))
+      };
+    }
+    const analysis = await HealthAnalysisService.analyzeHealth(user.id, dogInfo, selectedDogId);
 
     if (section) renderHealthAnalysisResult(analysis, section, selectedDogId);
   } catch (e) {
@@ -6483,7 +6599,7 @@ function renderHealthAnalysisResult(analysis, container, dogId) {
         <div class="health-section__title">AI 분석 결과</div>
         <div style="display:flex; align-items:center; gap:8px;">
           ${analyzedTime ? `<span style="font-size:0.68rem; color:var(--color-text-muted);">${analyzedTime}</span>` : ''}
-          <button onclick="handleRunHealthAnalysis()" style="font-size:0.72rem; color:var(--color-text-muted); background:none; border:none; cursor:pointer; text-decoration:underline;">새로 분석</button>
+          <button onclick="handleRunHealthAnalysis()" style="font-size:0.78rem; color:#fff; background:#1a1a1a; border:none; cursor:pointer; padding:7px 16px; border-radius:20px; font-weight:700; transition:all 0.2s;" onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='none'">새로 분석</button>
         </div>
       </div>
 
@@ -6519,7 +6635,7 @@ function renderHealthAnalysisResult(analysis, container, dogId) {
       ${analysis.dietRecommendation ? `
       <div class="health-insight">
         <div class="health-insight__title" style="margin-bottom:10px;">식단 추천</div>
-        ${analysis.dietRecommendation.dailyCalories ? `<div class="health-detail-row"><span class="health-detail-row__label">일일 권장 칼로리</span><span class="health-detail-row__value">${analysis.dietRecommendation.dailyCalories} kcal</span></div>` : ''}
+        ${analysis.dietRecommendation.dailyCalories ? `<div class="health-detail-row" style="flex-direction:column; align-items:flex-start; gap:4px;"><span class="health-detail-row__label">일일 권장 칼로리</span><span class="health-detail-row__value" style="font-size:0.85rem; line-height:1.5;">${typeof analysis.dietRecommendation.dailyCalories === 'number' ? analysis.dietRecommendation.dailyCalories + ' kcal' : analysis.dietRecommendation.dailyCalories}</span></div>` : ''}
         ${analysis.dietRecommendation.mealFrequency ? `<div class="health-detail-row"><span class="health-detail-row__label">급여 횟수</span><span class="health-detail-row__value">${analysis.dietRecommendation.mealFrequency}</span></div>` : ''}
         ${analysis.dietRecommendation.foods ? `<div style="margin-top:8px;"><span style="font-size:0.72rem; color:var(--color-text-muted);">추천 식품</span><div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">${analysis.dietRecommendation.foods.map(f => '<span style="font-size:0.75rem; padding:3px 10px; background:var(--color-bg-section); border-radius:10px;">' + f + '</span>').join('')}</div></div>` : ''}
         ${analysis.dietRecommendation.avoid ? `<div style="margin-top:8px;"><span style="font-size:0.72rem; color:var(--color-text-muted);">주의 식품</span><div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">${analysis.dietRecommendation.avoid.map(f => '<span style="font-size:0.75rem; padding:3px 10px; background:#fff5f5; border-radius:10px; color:#e53e3e;">' + f + '</span>').join('')}</div></div>` : ''}
