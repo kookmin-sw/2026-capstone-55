@@ -12,138 +12,39 @@
     "createdAt": "2026-04-10T07:54:18.464Z"
   },
   {
-    "id": "id-mo2r9f31-nmcx76f",
-    "email": "50dongja5295@kookmin.ac.kr",
-    "name": "‍하준서(학부생-인공지능전공)",
-    "nickname": "하준서",
-    "passwordHash": "",
-    "socialKey": "google_105515981647312236671",
-    "provider": "google",
-    "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocLEZCiT_QmKhp1hlHQKQ56G2L4PDjbqu18momzGVsw1odyAXw=s96-c",
-    "referralCode": "PAW-C8KSN4",
-    "dogs": [],
-    "pawCoins": 0,
-    "createdAt": "2026-04-17T10:18:27.613Z",
-    "nicknameChangedAt": "2026-04-17T10:18:35.396Z"
-  },
-  {
-    "id": "id-mo2s9e1c-2pg3r3v",
-    "email": "jaejun0128@naver.com",
-    "name": "이재준",
-    "nickname": "대둔",
-    "referralCode": "PAW-WY82TF",
-    "dogs": [],
-    "pawCoins": 3000,
-    "createdAt": "2026-04-17T10:46:25.872Z",
-    "nicknameChangedAt": "2026-04-17T10:46:32.708Z"
-  },
-  {
-    "id": "id-mok5uf8l-0badxjq",
+    "id": "id-momhvfbo-oxozxts",
     "email": "50dongja5295@naver.com",
     "name": "하준서",
     "nickname": "",
-    "referralCode": "PAW-8RSZYS",
+    "passwordHash": "hash_8fioo6",
+    "referralCode": "PAW-E9Q6JE",
     "dogs": [
       {
-        "id": "id-mok5w4we-r808t5j",
-        "name": "초코",
-        "breed": "포메라니안",
+        "id": "id-momik16z-quq1r6h",
+        "name": "딸기",
+        "breed": "시바 이누",
         "age": 3,
-        "size": "small"
-      }
-    ],
-    "pawCoins": 3000,
-    "createdAt": "2026-04-24T03:27:00.723Z",
-    "nicknameChangedAt": "2026-04-24T03:27:12.847Z"
-  },
-  {
-    "id": "test-walker-001",
-    "email": "walker1@test.com",
-    "name": "김민준",
-    "nickname": "민준워커",
-    "passwordHash": "hash_izf3u4",
-    "referralCode": "PAW-WALK01",
-    "dogs": [],
-    "pawCoins": 500,
-    "createdAt": "2026-04-01T00:00:00.000Z"
-  },
-  {
-    "id": "test-walker-002",
-    "email": "walker2@test.com",
-    "name": "박지수",
-    "nickname": "지수워커",
-    "passwordHash": "hash_izf3u4",
-    "referralCode": "PAW-WALK02",
-    "dogs": [],
-    "pawCoins": 500,
-    "createdAt": "2026-04-01T00:00:00.000Z"
-  },
-  {
-    "id": "test-walker-003",
-    "email": "walker3@test.com",
-    "name": "이서연",
-    "nickname": "서연워커",
-    "passwordHash": "hash_izf3u4",
-    "referralCode": "PAW-WALK03",
-    "dogs": [],
-    "pawCoins": 500,
-    "createdAt": "2026-04-01T00:00:00.000Z"
-  },
-  {
-    "id": "id-mol2g5lb-rvnvuvi",
-    "email": "cndqja5853@gmail.com",
-    "name": "Peter Lee",
-    "nickname": "Peter Lee",
-    "passwordHash": "",
-    "socialKey": "google_117318945525600160426",
-    "provider": "google",
-    "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocKBRQuFrTAGFUpPuWf07hd29x5mRV5oU_8sUvKI4mWAO3C9Mw=s96-c",
-    "referralCode": "PAW-R49XVD",
-    "dogs": [
+        "size": "small",
+        "gender": "male",
+        "weight": 9,
+        "neutered": true,
+        "personality": "사교적",
+        "healthNote": "탈구"
+      },
       {
-        "id": "id-mol2jyay-78rppym",
-        "name": "댕댕이",
+        "id": "id-mophvynx-frpwj7l",
+        "name": "누룽지",
         "breed": "골든 리트리버",
-        "age": 3,
-        "size": "medium"
+        "age": 4,
+        "size": "medium",
+        "gender": "male",
+        "weight": 28,
+        "neutered": true,
+        "personality": "사교적",
+        "healthNote": null
       }
     ],
     "pawCoins": 3000,
-    "createdAt": "2026-04-30T05:51:28.847Z",
-    "nicknameChangedAt": "2026-04-30T05:51:49.675Z"
-  },
-  {
-    "id": "id-momd0r30-77515a9",
-    "email": "richponywill@gmail.com",
-    "name": "부자될래",
-    "nickname": "부자될래",
-    "passwordHash": "",
-    "socialKey": "google_112747055347649699329",
-    "provider": "google",
-    "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocJB1dNohtq6FlHVjEZOomOk1-mPDVQAVR24SkKjye5Vk55-=s96-c",
-    "referralCode": "PAW-F4G224",
-    "dogs": [
-      {
-        "id": "id-momd24ne-9fcvdy0",
-        "name": "초코",
-        "breed": "골든 리트리버",
-        "age": 2,
-        "size": "medium"
-      }
-    ],
-    "pawCoins": 3007,
-    "createdAt": "2026-05-01T03:35:12.157Z",
-    "nicknameChangedAt": "2026-05-01T03:35:15.174Z"
-  },
-  {
-    "id": "id-momd5tfr-fkyukxi",
-    "email": "daedun1@gmail.com",
-    "name": "이재준",
-    "nickname": "댕준",
-    "referralCode": "PAW-WHAMHK",
-    "dogs": [],
-    "pawCoins": 3000,
-    "createdAt": "2026-05-01T03:39:08.487Z",
-    "nicknameChangedAt": "2026-05-01T03:39:16.897Z"
+    "createdAt": "2026-05-01T05:51:01.716Z"
   }
 ]
