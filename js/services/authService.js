@@ -151,7 +151,21 @@ const AuthService = (() => {
    */
   function getCurrentUser() {
     const token = StorageService.get(AUTH_TOKEN_KEY);
-    if (!token) return null;
+    if (!token) {
+      // [임시] 로그인 없이 테스트용 유저
+      return {
+        id: 'test-user',
+        name: '김재준',
+        nickname: '재준',
+        email: 'jaejun@pawsitive.com',
+        dogs: [
+          { id: 'd1', name: '초코', breed: '골든 리트리버', age: 3, size: 'large', gender: 'male', personality: '활발함', healthNote: '' }
+        ],
+        pawCoins: 5000,
+        isAdmin: false,
+        createdAt: new Date().toISOString()
+      };
+    }
 
     // 토큰 만료 확인
     if (new Date(token.expiresAt) < new Date()) {
