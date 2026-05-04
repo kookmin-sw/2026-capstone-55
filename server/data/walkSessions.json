@@ -1,0 +1,28 @@
+[
+  {
+    "id": "id-mops4u4o-d9ngmo1",
+    "requestId": "id-momijszk-tyqpypc",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "댕댕이",
+    "status": "completed",
+    "startedAt": "2026-05-03T13:01:35.496Z",
+    "arrivedAt": "2026-05-03T13:03:09.177Z",
+    "walkStartedAt": "2026-05-04T10:35:45.779Z",
+    "endedAt": "2026-05-04T10:38:08.248Z",
+    "totalDistanceKm": 0.006
+  },
+  {
+    "id": "id-mor1kazc-vhedmsq",
+    "requestId": "id-mor1j7ox-ctc62a0",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "댕댕이",
+    "status": "completed",
+    "startedAt": "2026-05-04T10:13:19.896Z",
+    "arrivedAt": "2026-05-04T10:21:27.840Z",
+    "walkStartedAt": "2026-05-04T10:21:43.736Z",
+    "endedAt": "2026-05-04T10:28:52.257Z",
+    "totalDistanceKm": 0.019
+  }
+]

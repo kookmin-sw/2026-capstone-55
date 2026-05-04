@@ -25,6 +25,8 @@ const matchingRoutes     = require('./routes/matching');
 const chatRoutes         = require('./routes/chat');
 const walkRequestRoutes  = require('./routes/walk-requests');
 const walkSessionRoutes  = require('./routes/walk-sessions');
+const walkChatRoutes     = require('./routes/walk-chat');
+const walkReviewRoutes   = require('./routes/walk-review');
 
 const app    = express();
 const server = http.createServer(app);
@@ -73,6 +75,8 @@ app.use('/api/matching', matchingRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/walk-requests', walkRequestRoutes);
 app.use('/api/walk-sessions', walkSessionRoutes);
+app.use('/api/walk-chat',     walkChatRoutes);
+app.use('/api/walk-review',   walkReviewRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
@@ -125,6 +129,33 @@ app.set('emitToUser', emitToUser);
 app.set('emitToAvailableWalkers', emitToAvailableWalkers);
 
 // --- 서버 시작 ---
+// 오래된 요청 자동 만료 (10분마다 실행)
+const db = require('./db');
+setInterval(() => {
+  const now = Date.now();
+  const cutoff24h = now - 24 * 60 * 60 * 1000;
+  const cutoff2h  = now - 2  * 60 * 60 * 1000;
+
+  const requests = db.get('walkRequests', []);
+  let changed = false;
+  requests.forEach(r => {
+    const created = new Date(r.createdAt).getTime();
+    // pending 상태로 2시간 지난 것 → expired
+    if (r.status === 'pending' && created < cutoff2h) {
+      r.status = 'expired'; changed = true;
+    }
+    // accepted/heading 상태로 24시간 지난 것 → expired
+    if (['accepted','heading'].includes(r.status) && created < cutoff24h) {
+      r.status = 'expired'; changed = true;
+    }
+    // broadcasting 상태 만료 체크
+    if (r.status === 'broadcasting' && r.expiresAt && new Date(r.expiresAt) < new Date()) {
+      r.status = 'expired'; changed = true;
+    }
+  });
+  if (changed) db.set('walkRequests', requests);
+}, 10 * 60 * 1000);
+
 server.listen(PORT, () => {
   console.log(`🐾 Pawsitive 서버가 http://localhost:${PORT} 에서 실행 중!`);
   console.log('');

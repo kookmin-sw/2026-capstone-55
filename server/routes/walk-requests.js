@@ -107,6 +107,16 @@ router.patch('/:id/accept', (req, res) => {
 
   requests[idx].status = 'accepted';
   requests[idx].updatedAt = db.now();
+
+  // 같은 요청자의 다른 pending 요청 자동 취소 (중복 방지)
+  const requesterId = requests[idx].requesterId;
+  requests.forEach((r, i) => {
+    if (i !== idx && r.requesterId === requesterId && r.status === 'pending') {
+      requests[i].status = 'cancelled';
+      requests[i].updatedAt = db.now();
+    }
+  });
+
   db.set('walkRequests', requests);
 
   const r = requests[idx];
@@ -209,6 +219,18 @@ router.patch('/:id/cancel', (req, res) => {
   }
 
   res.json({ success: true });
+});
+
+// GET /api/walk-requests/broadcast/active — 현재 브로드캐스팅 중인 요청 목록
+router.get('/broadcast/active', (req, res) => {
+  const requests = db.get('walkRequests', []);
+  const now = new Date();
+  const active = requests.filter(r =>
+    r.type === 'broadcast' &&
+    r.status === 'broadcasting' &&
+    new Date(r.expiresAt) > now
+  );
+  res.json({ success: true, requests: active });
 });
 
 // ── 지금 바로 요청 (브로드캐스트) ──────────────────────────────
