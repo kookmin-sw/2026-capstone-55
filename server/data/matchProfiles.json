@@ -112,5 +112,28 @@
     "rating": 5,
     "reviewCount": 0,
     "createdAt": "2026-05-03T12:22:13.613Z"
+  },
+  {
+    "userId": "test-user",
+    "userName": "알 수 없음",
+    "role": "requester",
+    "location": "마포구 합정동",
+    "lat": null,
+    "lng": null,
+    "dogSize": "medium",
+    "preferredTime": "오후 (5-7시)",
+    "message": "",
+    "price": 0,
+    "experience": "없음",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "specialty": "",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 0,
+    "createdAt": "2026-05-04T00:40:20.045Z"
   }
 ]
