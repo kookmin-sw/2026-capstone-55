@@ -24,5 +24,68 @@
     "walkStartedAt": "2026-05-04T10:21:43.736Z",
     "endedAt": "2026-05-04T10:28:52.257Z",
     "totalDistanceKm": 0.019
+  },
+  {
+    "id": "id-mosc6u8t-3ri3rqc",
+    "requestId": "id-mosc6hrk-hrgq3f2",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "댕댕이",
+    "status": "completed",
+    "startedAt": "2026-05-05T07:58:33.629Z",
+    "arrivedAt": "2026-05-05T08:03:14.224Z",
+    "walkStartedAt": "2026-05-05T08:03:17.928Z",
+    "endedAt": "2026-05-05T08:07:57.536Z",
+    "totalDistanceKm": 0
+  },
+  {
+    "id": "id-moscmgz0-5ji60oc",
+    "requestId": "id-moscj3gb-2d084t4",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "댕댕이",
+    "status": "heading",
+    "startedAt": "2026-05-05T08:10:42.924Z",
+    "arrivedAt": null,
+    "walkStartedAt": null,
+    "endedAt": null
+  },
+  {
+    "id": "id-mosfccly-d9qt08s",
+    "requestId": "id-mosfc1ls-3a5zv5m",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "댕댕이",
+    "status": "completed",
+    "startedAt": "2026-05-05T09:26:49.558Z",
+    "arrivedAt": "2026-05-05T09:27:05.558Z",
+    "walkStartedAt": "2026-05-05T09:27:09.402Z",
+    "endedAt": "2026-05-05T09:29:34.026Z",
+    "totalDistanceKm": 0
+  },
+  {
+    "id": "id-moshvna2-arcpxhg",
+    "requestId": "id-moshv9kp-pfzo3wq",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "댕댕이",
+    "status": "completed",
+    "startedAt": "2026-05-05T10:37:49.082Z",
+    "arrivedAt": "2026-05-05T10:46:57.293Z",
+    "walkStartedAt": "2026-05-05T10:47:04.246Z",
+    "endedAt": "2026-05-05T10:57:06.502Z",
+    "totalDistanceKm": 0.005
+  },
+  {
+    "id": "id-motw7xgo-z80ghkw",
+    "requestId": "id-motw7cio-qgkev39",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "댕댕이",
+    "status": "arrived",
+    "startedAt": "2026-05-06T10:07:02.952Z",
+    "arrivedAt": "2026-05-06T10:10:04.271Z",
+    "walkStartedAt": null,
+    "endedAt": null
   }
 ]

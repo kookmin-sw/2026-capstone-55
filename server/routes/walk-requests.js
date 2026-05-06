@@ -108,12 +108,28 @@ router.patch('/:id/accept', (req, res) => {
   requests[idx].status = 'accepted';
   requests[idx].updatedAt = db.now();
 
-  // 같은 요청자의 다른 pending 요청 자동 취소 (중복 방지)
+  const acceptedId = req.params.id;
   const requesterId = requests[idx].requesterId;
+  const walkerId   = requests[idx].walkerId;
+
+  // (1) 같은 요청자의 다른 pending 요청 자동 취소 (1:1 매칭 보장)
   requests.forEach((r, i) => {
     if (i !== idx && r.requesterId === requesterId && r.status === 'pending') {
       requests[i].status = 'cancelled';
       requests[i].updatedAt = db.now();
+    }
+  });
+
+  // (2) 같은 도우미의 다른 pending 요청(다른 요청자) 자동 거절 — 도우미 중복 수락 방지
+  requests.forEach((r, i) => {
+    if (i !== idx && r.walkerId === walkerId && r.status === 'pending') {
+      requests[i].status = 'walker_busy';
+      requests[i].updatedAt = db.now();
+      // 해당 요청자에게 "도우미가 다른 요청을 수락함" 알림
+      const emitToUserInner = req.app.get('emitToUser');
+      if (emitToUserInner) {
+        emitToUserInner(r.requesterId, 'walk-request-walker-busy', { requestId: r.id });
+      }
     }
   });
 
@@ -204,18 +220,26 @@ router.patch('/:id/cancel', (req, res) => {
   const idx = requests.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false });
 
-  if (!['pending', 'accepted'].includes(requests[idx].status)) {
+  if (!['pending', 'accepted', 'heading'].includes(requests[idx].status)) {
     return res.json({ success: false, error: '취소할 수 없는 상태입니다.' });
   }
 
   requests[idx].status = 'cancelled';
   requests[idx].updatedAt = db.now();
+  requests[idx].cancelledBy = req.body?.cancelledBy || 'requester';
   db.set('walkRequests', requests);
 
   const r = requests[idx];
   const emitToUser = req.app.get('emitToUser');
   if (emitToUser) {
-    emitToUser(r.walkerId, 'walk-request-cancelled', { requestId: r.id });
+    // 요청자가 취소 → 도우미에게 알림
+    if (r.cancelledBy === 'requester' || !r.cancelledBy) {
+      emitToUser(r.walkerId, 'walk-request-cancelled', { requestId: r.id, cancelledBy: 'requester' });
+    }
+    // 도우미가 취소 → 요청자에게 알림
+    if (r.cancelledBy === 'walker') {
+      emitToUser(r.requesterId, 'walk-request-cancelled', { requestId: r.id, cancelledBy: 'walker' });
+    }
   }
 
   res.json({ success: true });
@@ -298,7 +322,11 @@ router.post('/broadcast', (req, res) => {
     });
   }
 
-  res.json({ success: true, request: newRequest, sentCount });
+  // DB 기준 isAvailable 도우미 수 (Socket 연결 여부 무관)
+  const walkers = db.get('walkers', []);
+  const availableCount = walkers.filter(w => w.isAvailable && w.userId !== requesterId).length;
+
+  res.json({ success: true, request: newRequest, sentCount, availableCount });
 });
 
 // PATCH /api/walk-requests/:id/accept-broadcast — 선착순 수락

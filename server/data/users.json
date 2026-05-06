@@ -106,6 +106,13 @@
         "breed": "골든 리트리버",
         "age": 3,
         "size": "medium"
+      },
+      {
+        "id": "id-mosfig0p-6ovtcit",
+        "name": "초코",
+        "breed": "포메라니안",
+        "age": 5,
+        "size": "small"
       }
     ],
     "pawCoins": 3000,
@@ -145,5 +152,85 @@
     "pawCoins": 3000,
     "createdAt": "2026-05-01T03:39:08.487Z",
     "nicknameChangedAt": "2026-05-01T03:39:16.897Z"
+  },
+  {
+    "id": "dummy-walker-001",
+    "email": "dummy-walker-001@pawsitive.dev",
+    "name": "김민서",
+    "nickname": "김민서",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.602Z"
+  },
+  {
+    "id": "dummy-walker-002",
+    "email": "dummy-walker-002@pawsitive.dev",
+    "name": "박지훈",
+    "nickname": "박지훈",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "id": "dummy-walker-003",
+    "email": "dummy-walker-003@pawsitive.dev",
+    "name": "이수연",
+    "nickname": "이수연",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "id": "dummy-walker-004",
+    "email": "dummy-walker-004@pawsitive.dev",
+    "name": "최현우",
+    "nickname": "최현우",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "id": "dummy-walker-005",
+    "email": "dummy-walker-005@pawsitive.dev",
+    "name": "정다은",
+    "nickname": "정다은",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "id": "dummy-walker-006",
+    "email": "dummy-walker-006@pawsitive.dev",
+    "name": "강동현",
+    "nickname": "강동현",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "id": "dummy-walker-007",
+    "email": "dummy-walker-007@pawsitive.dev",
+    "name": "윤서희",
+    "nickname": "윤서희",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "id": "dummy-walker-008",
+    "email": "dummy-walker-008@pawsitive.dev",
+    "name": "임준혁",
+    "nickname": "임준혁",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "id": "dummy-walker-009",
+    "email": "dummy-walker-009@pawsitive.dev",
+    "name": "오지민",
+    "nickname": "오지민",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "id": "dummy-walker-010",
+    "email": "dummy-walker-010@pawsitive.dev",
+    "name": "한수빈",
+    "nickname": "한수빈",
+    "passwordHash": "hash_izf3u4",
+    "createdAt": "2026-05-05T05:29:44.603Z"
   }
 ]

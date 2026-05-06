@@ -96,6 +96,16 @@ io.on('connection', (socket) => {
     if (userId) {
       userSockets[userId] = socket.id;
       socket.userId = userId;
+      // walker 프로필이 있으면 lastSeenAt 갱신 (신선도 반영)
+      try {
+        const db = require('./db');
+        const walkers = db.get('walkers', []);
+        const idx = walkers.findIndex(w => w.userId === userId);
+        if (idx >= 0) {
+          walkers[idx].lastSeenAt = new Date().toISOString();
+          db.set('walkers', walkers);
+        }
+      } catch (e) { /* noop */ }
     }
   });
 

@@ -70,9 +70,11 @@ router.post('/', (req, res) => {
   sessions.push(session);
   db.set('walkSessions', sessions);
 
-  // 요청 객체에 sessionId 저장 (클라이언트에서 세션 ID 조회 없이 사용)
+  // 요청 객체에 sessionId 저장 + status를 heading으로 업데이트
   if (reqIdx !== -1) {
     requests[reqIdx].sessionId = session.id;
+    requests[reqIdx].status = 'heading';
+    requests[reqIdx].updatedAt = db.now();
     db.set('walkRequests', requests);
   }
 
@@ -148,7 +150,16 @@ router.patch('/:id/start-walk', (req, res) => {
   sessions[idx].walkStartedAt = db.now();
   db.set('walkSessions', sessions);
 
+  // walk-request status도 walking으로 업데이트 (요청자 화면 동기화)
   const s = sessions[idx];
+  const walkRequests = db.get('walkRequests', []);
+  const reqIdx = walkRequests.findIndex(r => r.id === s.requestId);
+  if (reqIdx !== -1) {
+    walkRequests[reqIdx].status = 'walking';
+    walkRequests[reqIdx].updatedAt = db.now();
+    db.set('walkRequests', walkRequests);
+  }
+
   const emitToUser = req.app.get('emitToUser');
   if (emitToUser) emitToUser(s.requesterId, 'walk-tracking-started', { sessionId: s.id });
 
