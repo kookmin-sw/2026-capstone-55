@@ -5,95 +5,6 @@
 
 // Lucide 아이콘 헬퍼
 const ICONS={'home':'<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>','map-pin':'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>','clock':'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>','paw-print':'<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/>','message-circle':'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>','activity':'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>','book-open':'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>','users':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>','wallet':'<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>','graduation-cap':'<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>','search':'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>','bot':'<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>','handshake':'<path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/>','map':'<polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/>','bell':'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>','route':'<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>','star':'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>','calendar':'<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>','check-circle':'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>','user':'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>','flag':'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>','navigation':'<polygon points="3 11 22 2 13 21 11 13 3 11"/>','heart':'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>','sparkles':'<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>'};
-/** 지도 로딩 힌트에 MP4 애니메이션 표시 (canvas 방식 — 오토플레이 정책 우회) */
-let _hintVidEl = null; // 전역 비디오 소스 (미리 로딩)
-
-function _preloadHintVideo() {
-  if (_hintVidEl) return;
-  _hintVidEl = document.createElement('video');
-  _hintVidEl.src = '/pawsitive_loading.mp4';
-  _hintVidEl.loop = true;
-  _hintVidEl.muted = true;
-  _hintVidEl.setAttribute('playsinline', '');
-  _hintVidEl.setAttribute('preload', 'auto');
-  _hintVidEl.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
-  document.body.appendChild(_hintVidEl);
-  _hintVidEl.load();
-  _hintVidEl.play().catch(() => {});
-}
-
-function _setHintVideo(hint, title, subtitle) {
-  if (!hint) return;
-  hint.innerHTML = '';
-  hint.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#ffffff;z-index:10;padding:16px;';
-
-  _preloadHintVideo();
-
-  // 캔버스 (flex 자식 — 절대위치 X)
-  const canvas = document.createElement('canvas');
-  canvas.style.cssText = 'display:block;flex-shrink:0;background:#ffffff;';
-  hint.appendChild(canvas);
-
-  if (title) {
-    const t = document.createElement('div');
-    t.style.cssText = 'font-weight:700;font-size:0.95rem;color:#1a1a1a;margin-top:12px;text-align:center;';
-    t.textContent = title;
-    hint.appendChild(t);
-  }
-  if (subtitle) {
-    const s = document.createElement('div');
-    s.style.cssText = 'font-size:0.78rem;color:#718096;line-height:1.5;text-align:center;margin-top:4px;';
-    s.innerHTML = subtitle;
-    hint.appendChild(s);
-  }
-
-  const ctx = canvas.getContext('2d');
-  let rafId = null;
-  let active = true;
-  let sized = false;
-
-  const draw = () => {
-    if (!active || !hint.isConnected) { active = false; return; }
-    const vid = _hintVidEl;
-    if (vid && vid.readyState >= 2 && vid.videoWidth > 0) {
-      if (!sized) {
-        const W = hint.offsetWidth  || 400;
-        const H = hint.offsetHeight || 400;
-        const aspect = vid.videoWidth / vid.videoHeight;
-        const maxH = H * 0.72;
-        let cw = W, ch = W / aspect;
-        if (ch > maxH) { ch = maxH; cw = maxH * aspect; }
-        canvas.width  = Math.round(cw);
-        canvas.height = Math.round(ch);
-        canvas.style.width  = canvas.width  + 'px';
-        canvas.style.height = canvas.height + 'px';
-        sized = true;
-      }
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-    }
-    rafId = requestAnimationFrame(draw);
-  };
-
-  const startDraw = () => {
-    if (!active) return;
-    if (_hintVidEl) _hintVidEl.play().catch(() => {});
-    if (!rafId) draw();
-  };
-
-  if (_hintVidEl && _hintVidEl.readyState >= 2) {
-    startDraw();
-  } else if (_hintVidEl) {
-    _hintVidEl.addEventListener('canplay',    startDraw, { once: true });
-    _hintVidEl.addEventListener('loadeddata', startDraw, { once: true });
-  }
-  setTimeout(startDraw, 200);
-  setTimeout(startDraw, 700);
-
-  canvas._stopDraw = () => { active = false; if (rafId) cancelAnimationFrame(rafId); };
-}
-
 function icon(name,size,color){size=size||16;color=color||'currentColor';var p=ICONS[name]||ICONS['paw-print'];return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;flex-shrink:0;">'+p+'</svg>';}
 
 // ============================================================
@@ -200,7 +111,7 @@ function showPaymentConfirmModal({ dogSize, dogName, duration = 40 }) {
       ? dogs.map((d, i) => `
         <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--color-border);border-radius:10px;cursor:pointer;transition:all 0.15s;margin-bottom:6px;" class="pay-dog-label">
           <input type="checkbox" class="pay-dog-cb" value="${i}" data-size="${d.size || 'small'}" data-name="${d.name}" ${i === 0 ? 'checked' : ''} style="width:18px;height:18px;accent-color:#1a1a1a;">
-          ${icon('paw-print', 20)}
+          <span style="font-size:1.1rem;">🐕</span>
           <div style="flex:1;">
             <div style="font-weight:700;font-size:0.88rem;">${d.name}</div>
             <div style="font-size:0.72rem;color:var(--color-text-muted);">${sizeLabel[d.size] || '소형견'} · ${(WALK_PRICING[d.size] || WALK_PRICING.small).toLocaleString()}원/40분</div>
@@ -212,7 +123,7 @@ function showPaymentConfirmModal({ dogSize, dogName, duration = 40 }) {
     <div id="${modalId}" style="position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);">
     <div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
     <div style="text-align:center;margin-bottom:20px;">
-    <div style="margin-bottom:8px;">${icon('wallet', 32)}</div>
+    <div style="font-size:2rem;margin-bottom:8px;">💳</div>
     <div style="font-size:1.1rem;font-weight:800;">산책 결제</div>
     </div>
 
@@ -641,10 +552,6 @@ const Router = (() => {
  // 매칭 페이지 벗어나면 폴링 정지
  if (typeof stopWalkerPolling === 'function' && path !== '/matching') stopWalkerPolling();
 
- // 산책 세션 페이지가 아닐 때 채팅 버튼 숨김
- const chatPages = ['/matching', '/walk-tracking', '/walk-session'];
- if (!chatPages.includes(path) && typeof hideChatButton === 'function') hideChatButton();
-
  // 정확한 매칭 먼저 시도
  if (routes[path]) {
  currentRoute = path;
@@ -807,7 +714,7 @@ function refreshDrawer() {
  ${walkSection}
  <div class="nav-drawer__divider"></div>
  <div class="nav-drawer__section-label">AI 서비스</div>
- ${item('bot', 'AI 반려견 상담', '/ai')}
+ ${item('', 'AI 반려견 상담', '/ai')}
  ${item('activity', '건강 분석', '/health')}
  <div class="nav-drawer__divider"></div>
  <div class="nav-drawer__section-label">정보</div>
@@ -1011,7 +918,7 @@ function renderHomePage() {
  <div id="service-panel" class="service-panel">
  <div class="service-panel__head">
  <img src="/pawsitive_logo_transparent.png" class="service-panel__logo" alt="Pawsitive">
- <button class="service-panel__close" onclick="closeServicePanel()">✕</button>
+ <button class="service-panel__close" onclick="closeServicePanel()">?</button>
  </div>
  <div class="service-panel__body">
  <span class="service-panel__tag">서비스 소개</span>
@@ -1087,7 +994,7 @@ function renderBreedListPage() {
  AI 맞춤 추천
  </button>
  <button id="tab-encyclopedia" class="breed-tab ${breedPageTab === 'encyclopedia' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('encyclopedia')" style="flex:1; padding:12px 16px; border:none; cursor:pointer; font-weight:700; font-size:0.95rem; transition:all 0.2s;">
- 📖 품종 백과사전
+ 품종 백과사전
  </button>
  </div>
  <div id="breed-tab-content"></div>
@@ -1126,118 +1033,96 @@ function renderBreedTabContent() {
 // --- AI 맞춤 품종 추천 UI ---
 function renderBreedRecommendUI() {
  return `
- <div class="card" style="padding:24px; margin-bottom:20px;">
- <h2 style="margin-bottom:4px;">나에게 맞는 반려견 찾기</h2>
- <p style="color:var(--color-text-muted); margin-bottom:20px; font-size:0.9rem;">생활 환경과 선호도를 선택하면 AI가 딱 맞는 품종을 추천해드려요!</p>
-
- <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px;">
- <!-- 크기 -->
- <div class="recommend-field">
- <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">선호 크기</label>
- <select id="rec-size" class="form-input" style="width:100%;">
- <option value="any">상관없음</option>
- <option value="small">소형 (7kg 미만)</option>
- <option value="medium">중형 (7~15kg)</option>
- <option value="large">대형 (15kg 이상)</option>
- </select>
+ <div style="padding:24px; margin-bottom:20px; border:1px solid var(--color-border); border-radius:16px; text-align:center;">
+ <h2 style="margin-bottom:4px; font-size:1.1rem; font-weight:700;">나에게 맞는 반려견 찾기</h2>
+ <p style="color:var(--color-text-muted); margin-bottom:20px; font-size:0.85rem;">생활 환경과 선호도를 선택하면 AI가 맞춤 추천해드려요</p>
+ <button class="btn btn-primary" onclick="openBreedRecFlow()" style="padding:14px 32px; font-size:0.95rem;">추천 시작하기</button>
  </div>
-
- <!-- 운동량 -->
- <div class="recommend-field">
- <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🏃 운동량</label>
- <select id="rec-exercise" class="form-input" style="width:100%;">
- <option value="any">상관없음</option>
- <option value="low">적음 (하루 30분 이하)</option>
- <option value="medium">보통 (하루 30분~1시간)</option>
- <option value="high">많음 (하루 1시간 이상)</option>
- </select>
- </div>
-
- <!-- 미용 관리 -->
- <div class="recommend-field">
- <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">✂️ 미용 관리</label>
- <select id="rec-grooming" class="form-input" style="width:100%;">
- <option value="any">상관없음</option>
- <option value="low">적음 (관리 편한 견종)</option>
- <option value="medium">보통</option>
- <option value="high">많음 (미용 즐기는 편)</option>
- </select>
- </div>
-
- <!-- 훈련 용이성 -->
- <div class="recommend-field">
- <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">훈련 용이성</label>
- <select id="rec-trainability" class="form-input" style="width:100%;">
- <option value="any">상관없음</option>
- <option value="high">높음 (초보자도 쉽게)</option>
- <option value="medium">보통</option>
- <option value="low">낮음 (경험자 추천)</option>
- </select>
- </div>
-
- <!-- 짖음 -->
- <div class="recommend-field">
- <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🔊 짖음 정도</label>
- <select id="rec-barking" class="form-input" style="width:100%;">
- <option value="any">상관없음</option>
- <option value="low">적음 (조용한 견종)</option>
- <option value="medium">보통</option>
- <option value="high">많음</option>
- </select>
- </div>
-
- <!-- 추천 마릿수 -->
- <div class="recommend-field">
- <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">추천 마릿수</label>
- <input type="number" id="rec-count" class="form-input" style="width:100%;" value="3" min="1" placeholder="원하는 마릿수 입력">
- </div>
- </div>
-
- <!-- 체크박스 옵션 -->
- <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:16px;">
- <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.9rem;">
- <input type="checkbox" id="rec-child"> 👶 아이가 있는 가정
- </label>
- <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.9rem;">
- <input type="checkbox" id="rec-apartment"> 🏢 아파트 거주
- </label>
- </div>
-
- <!-- 자유 입력 -->
- <div style="margin-top:16px;">
- <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">추가로 원하는 조건 (선택)</label>
- <textarea id="rec-freetext" class="form-input" rows="2" placeholder="예: 털이 잘 안 빠지는 견종이 좋아요, 혼자 있는 시간이 많아요, 처음 키우는 초보예요..." style="width:100%; resize:vertical;"></textarea>
- </div>
-
- <!-- 추천 버튼 -->
- <button id="rec-submit-btn" class="btn btn-primary" onclick="handleBreedRecommend()" style="width:100%; margin-top:20px; padding:14px; font-size:1rem; font-weight:800;">
- AI 맞춤 추천 받기
- </button>
- </div>
-
- <!-- 추천 결과 영역 -->
  <div id="breed-recommend-result"></div>
+ <div id="breed-rec-modal" style="display:none; position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
+ <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
+ <div style="background:#fff; border-radius:20px; width:100%; max-width:540px; min-height:440px; padding:48px 40px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+ <button onclick="closeBreedRecFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
+ <div id="breed-rec-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
+ <div id="breed-rec-content" style="flex:1; display:flex; flex-direction:column;"></div>
+ </div>
+ </div>
+ </div>
  `;
+}
+
+let _breedRecStep = 0;
+let _breedRecData = {};
+const _breedRecSteps = [
+ { key: 'size', question: '선호하는 크기는?', type: 'cards', options: [
+ { value: 'any', label: '상관없음', desc: '' }, { value: 'small', label: '소형', desc: '7kg 이하' },
+ { value: 'medium', label: '중형', desc: '7~15kg' }, { value: 'large', label: '대형', desc: '15kg 이상' }
+ ]},
+ { key: 'exerciseLevel', question: '원하는 운동량은?', type: 'cards', options: [
+ { value: 'any', label: '상관없음', desc: '' }, { value: 'low', label: '적음', desc: '하루 30분 이하' },
+ { value: 'medium', label: '보통', desc: '30분~1시간' }, { value: 'high', label: '많음', desc: '1시간 이상' }
+ ]},
+ { key: 'groomingLevel', question: '미용 관리는?', type: 'cards', options: [
+ { value: 'any', label: '상관없음', desc: '' }, { value: 'low', label: '적음', desc: '관리 편한' },
+ { value: 'medium', label: '보통', desc: '' }, { value: 'high', label: '많음', desc: '미용 즐기는' }
+ ]},
+ { key: 'trainability', question: '훈련 용이성은?', type: 'cards', options: [
+ { value: 'any', label: '상관없음', desc: '' }, { value: 'high', label: '높음', desc: '초보자도 쉽게' },
+ { value: 'medium', label: '보통', desc: '' }, { value: 'low', label: '낮음', desc: '경험자 추천' }
+ ]},
+ { key: 'environment', question: '생활 환경은?', type: 'cards', options: [
+ { value: 'apartment', label: '아파트', desc: '' }, { value: 'house', label: '주택/마당', desc: '' },
+ { value: 'child', label: '아이가 있어요', desc: '' }, { value: 'any', label: '상관없음', desc: '' }
+ ]},
+ { key: 'freetext', question: '추가로 원하는 조건이 있나요?', sub: '없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '예: 털이 잘 안 빠지는 견종, 처음 키우는 초보예요...', required: false }
+];
+
+function openBreedRecFlow() { _breedRecStep = 0; _breedRecData = {}; document.getElementById('breed-rec-modal').style.display = 'block'; renderBreedRecStep(); }
+function closeBreedRecFlow() { document.getElementById('breed-rec-modal').style.display = 'none'; }
+
+function renderBreedRecStep() {
+ const step = _breedRecSteps[_breedRecStep]; const total = _breedRecSteps.length;
+ const content = document.getElementById('breed-rec-content');
+ const progress = document.getElementById('breed-rec-progress');
+ progress.innerHTML = Array.from({length:total}, (_,i) => `<div style="flex:1; height:3px; border-radius:2px; background:${i <= _breedRecStep ? '#1a1a1a' : '#e5e3e0'};"></div>`).join('');
+ let inputHtml = '';
+ if (step.type === 'cards') {
+ inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">${step.options.map(o => `<button onclick="selectBreedRecCard('${step.key}','${o.value}')" style="flex:1; min-width:90px; padding:18px 14px; border:2px solid ${_breedRecData[step.key]===o.value?'#1a1a1a':'#e5e3e0'}; border-radius:14px; background:${_breedRecData[step.key]===o.value?'#1a1a1a':'#fff'}; color:${_breedRecData[step.key]===o.value?'#fff':'#1a1a1a'}; text-align:center; cursor:pointer; transition:all 0.15s;"><div style="font-size:0.92rem; font-weight:700;">${o.label}</div>${o.desc ? `<div style="font-size:0.7rem; opacity:0.7; margin-top:3px;">${o.desc}</div>` : ''}</button>`).join('')}</div>`;
+ } else if (step.type === 'textarea') {
+ inputHtml = `<textarea id="breed-rec-input" class="form-input" placeholder="${step.placeholder||''}" rows="3" style="font-size:1rem; padding:14px 16px; border-radius:12px; margin-top:24px; resize:none;">${_breedRecData[step.key]||''}</textarea>`;
+ }
+ const isLast = _breedRecStep === total - 1;
+ content.innerHTML = `<div style="flex:1;"><h2 style="font-size:1.6rem; font-weight:700; letter-spacing:-0.5px;">${step.question}</h2>${step.sub?`<p style="font-size:0.88rem; color:#999; margin-top:6px;">${step.sub}</p>`:''}${inputHtml}</div><div style="display:flex; gap:8px; margin-top:24px;">${_breedRecStep>0?`<button onclick="_breedRecStep--;renderBreedRecStep()" style="flex:1; padding:16px; border:1.5px solid #e5e3e0; border-radius:14px; background:#fff; font-size:0.9rem; font-weight:600; cursor:pointer;">이전</button>`:``}${!step.required&&step.type!=='cards'?`<button onclick="_breedRecData[_breedRecSteps[_breedRecStep].key]='';${isLast?'finishBreedRec()':'_breedRecStep++;renderBreedRecStep()'}" style="flex:1; padding:16px; border:1.5px solid #e5e3e0; border-radius:14px; background:#fff; font-size:0.9rem; font-weight:600; color:#999; cursor:pointer;">건너뛰기</button>`:``}<button onclick="${isLast?'finishBreedRec()':'nextBreedRecStep()'}" style="flex:2; padding:16px; border:none; border-radius:14px; background:#1a1a1a; color:#fff; font-size:1rem; font-weight:700; cursor:pointer;">${isLast?'추천 받기':'다음'}</button></div>`;
+}
+
+function selectBreedRecCard(key, value) { _breedRecData[key] = value; renderBreedRecStep(); setTimeout(() => nextBreedRecStep(), 300); }
+function nextBreedRecStep() { const step = _breedRecSteps[_breedRecStep]; const input = document.getElementById('breed-rec-input'); if (input) _breedRecData[step.key] = input.value.trim(); if (_breedRecStep < _breedRecSteps.length - 1) { _breedRecStep++; renderBreedRecStep(); } }
+
+function finishBreedRec() {
+ const input = document.getElementById('breed-rec-input');
+ if (input) _breedRecData[_breedRecSteps[_breedRecStep].key] = input.value.trim();
+ closeBreedRecFlow();
+ const resultEl = document.getElementById('breed-recommend-result');
+ if (resultEl) resultEl.innerHTML = '<div style="text-align:center; padding:32px;"><div class="spinner"></div><p style="color:var(--color-text-muted); margin-top:12px;">품종 데이터를 분석하고 있어요...</p></div>';
+ handleBreedRecommend();
 }
 
 // --- AI 품종 추천 요청 핸들러 ---
 async function handleBreedRecommend() {
- const btn = document.getElementById('rec-submit-btn');
  const resultEl = document.getElementById('breed-recommend-result');
 
  const preferences = {
- size: document.getElementById('rec-size')?.value || 'any',
- exerciseLevel: document.getElementById('rec-exercise')?.value || 'any',
- groomingLevel: document.getElementById('rec-grooming')?.value || 'any',
- trainability: document.getElementById('rec-trainability')?.value || 'any',
- barkingLevel: document.getElementById('rec-barking')?.value || 'any',
- childFriendly: document.getElementById('rec-child')?.checked || false,
- apartmentFriendly: document.getElementById('rec-apartment')?.checked || false,
- freeText: document.getElementById('rec-freetext')?.value?.trim() || ''
+ size: _breedRecData.size || 'any',
+ exerciseLevel: _breedRecData.exerciseLevel || 'any',
+ groomingLevel: _breedRecData.groomingLevel || 'any',
+ trainability: _breedRecData.trainability || 'any',
+ barkingLevel: 'any',
+ childFriendly: _breedRecData.environment === 'child',
+ apartmentFriendly: _breedRecData.environment === 'apartment',
+ freeText: _breedRecData.freetext || ''
  };
- const count = parseInt(document.getElementById('rec-count')?.value) || 3;
+ const count = 3;
 
- if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></div> AI가 분석 중...'; }
  if (resultEl) resultEl.innerHTML = `
  <div class="card" style="padding:40px; text-align:center;">
  <div class="spinner" style="margin:0 auto 16px;"></div>
@@ -1268,8 +1153,6 @@ async function handleBreedRecommend() {
  } catch (e) {
  resultEl.innerHTML = `<div class="alert alert-error">서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.</div>`;
  }
-
- if (btn) { btn.disabled = false; btn.innerHTML = 'AI 맞춤 추천 받기'; }
 }
 
 // --- 추천 결과 렌더링 ---
@@ -1306,8 +1189,8 @@ function renderBreedRecommendResult(data) {
  </div>
  <p style="font-size:0.9rem; line-height:1.7; margin-bottom:12px; color:var(--color-text);">${rec.reason}</p>
  <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:12px;">
- ${rec.pros ? `<div style="flex:1; min-width:140px;"><div style="font-size:0.8rem; font-weight:700; color:#4CAF50; margin-bottom:6px;">장점</div>${rec.pros.map(p => `<div style="font-size:0.85rem; padding:2px 0;">✓ ${p}</div>`).join('')}</div>` : ''}
- ${rec.cons ? `<div style="flex:1; min-width:140px;"><div style="font-size:0.8rem; font-weight:700; color:#FF9800; margin-bottom:6px;">주의점</div>${rec.cons.map(c => `<div style="font-size:0.85rem; padding:2px 0;">· ${c}</div>`).join('')}</div>` : ''}
+ ${rec.pros ? `<div style="flex:1; min-width:140px;"><div style="font-size:0.8rem; font-weight:700; color:#4CAF50; margin-bottom:6px;">장점</div>${rec.pros.map(p => `<div style="font-size:0.85rem; padding:2px 0;">? ${p}</div>`).join('')}</div>` : ''}
+ ${rec.cons ? `<div style="flex:1; min-width:140px;"><div style="font-size:0.8rem; font-weight:700; color:#FF9800; margin-bottom:6px;">주의점</div>${rec.cons.map(c => `<div style="font-size:0.85rem; padding:2px 0;">? ${c}</div>`).join('')}</div>` : ''}
  </div>
  ${rec.tip ? `<div style="background:var(--color-bg-warm); padding:10px 14px; border-radius:10px; font-size:0.85rem; margin-bottom:12px;"><strong>꿀팁:</strong> ${rec.tip}</div>` : ''}
  <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds/${rec.id}')" style="margin-top:2px;">상세 정보 보기 →</button>
@@ -1399,8 +1282,8 @@ function renderBreedDetailPage(params) {
  ${breed.groomingLevel ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">미용 관리</div><span class="badge ' + levelColor[breed.groomingLevel] + '" style="margin-top:4px;">' + levelMap[breed.groomingLevel] + '</span></div>' : ''}
  ${breed.trainability ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">훈련 난이도</div><span class="badge ' + levelColor[breed.trainability] + '" style="margin-top:4px;">' + levelMap[breed.trainability] + '</span></div>' : ''}
  ${breed.barkingLevel ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">짖음</div><span class="badge ' + levelColor[breed.barkingLevel] + '" style="margin-top:4px;">' + levelMap[breed.barkingLevel] + '</span></div>' : ''}
- ${breed.childFriendly !== undefined ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">아이 친화</div><div style="font-weight:800; margin-top:4px; color:' + (breed.childFriendly ? '#00AA76' : '#D32F2F') + ';">' + (breed.childFriendly ? '✓' : '✕') + '</div></div>' : ''}
- ${breed.apartmentFriendly !== undefined ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">아파트 적합</div><div style="font-weight:800; margin-top:4px; color:' + (breed.apartmentFriendly ? '#00AA76' : '#D32F2F') + ';">' + (breed.apartmentFriendly ? '✓' : '✕') + '</div></div>' : ''}
+ ${breed.childFriendly !== undefined ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">아이 친화</div><div style="font-weight:800; margin-top:4px;">' + (breed.childFriendly ? '?' : '?') + '</div></div>' : ''}
+ ${breed.apartmentFriendly !== undefined ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">아파트 적합</div><div style="font-weight:800; margin-top:4px;">' + (breed.apartmentFriendly ? '?' : '?') + '</div></div>' : ''}
  </div>
  </div>
 
@@ -1482,17 +1365,17 @@ function renderEducationPage() {
  const pct = Math.round(progress.ratio * 100);
 
  const categories = [
- { key: 'all', icon: '', label: '전체' },
- { key: 'basics', icon: '', label: '기본상식' },
- { key: 'body-language', icon: '', label: '바디랭귀지' },
- { key: 'training', icon: '', label: '훈련' },
- { key: 'health', icon: '', label: '건강관리' },
- { key: 'nutrition', icon: '🍖', label: '영양/식이' },
- { key: 'grooming', icon: '✂️', label: '미용/관리' },
- { key: 'safety', icon: '', label: '안전' },
- { key: 'puppy', icon: '', label: '퍼피케어' },
- { key: 'senior', icon: '', label: '노견케어' },
- { key: 'law', icon: '', label: '법률/에티켓' }
+ { key: 'all', label: '전체', color: '#1a1a1a' },
+ { key: 'basics', label: '기본상식', color: '#6366f1' },
+ { key: 'body-language', label: '바디랭귀지', color: '#8b5cf6' },
+ { key: 'training', label: '훈련', color: '#ec4899' },
+ { key: 'health', label: '건강관리', color: '#ef4444' },
+ { key: 'nutrition', label: '영양/식이', color: '#f59e0b' },
+ { key: 'grooming', label: '미용/관리', color: '#10b981' },
+ { key: 'safety', label: '안전', color: '#3b82f6' },
+ { key: 'puppy', label: '퍼피케어', color: '#f472b6' },
+ { key: 'senior', label: '노견케어', color: '#78716c' },
+ { key: 'law', label: '법률/에티켓', color: '#64748b' }
  ];
 
  renderPage(`
@@ -1510,7 +1393,7 @@ function renderEducationPage() {
  </div>
  </div>
  <div class="tabs" style="flex-wrap:wrap; gap:4px;">
- ${categories.map(c => `<button class="tab${c.key === 'all' ? ' active' : ''}" onclick="filterEducation('${c.key}', this)" style="font-size:0.82rem; padding:8px 12px;">${c.icon} ${c.label}</button>`).join('')}
+ ${categories.map(c => `<button class="tab${c.key === 'all' ? ' active' : ''}" onclick="filterEducation('${c.key}', this)" style="font-size:0.82rem; padding:8px 12px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${c.color}; margin-right:5px; vertical-align:middle;"></span>${c.label}</button>`).join('')}
  </div>
  <div class="grid-2" id="education-list">
  ${renderEducationCards(EducationService.getByCategory('all'), progress.completedIds)}
@@ -1521,29 +1404,43 @@ function renderEducationPage() {
 function renderEducationCards(items, completedIds) {
  if (items.length === 0) {
  return `<div class="empty-state" style="grid-column:1/-1;">
- <div class="empty-icon">📭</div>
  <p>콘텐츠가 없습니다</p>
  </div>`;
  }
  completedIds = completedIds || [];
- const catMap = {
- basics: '기본상식', 'body-language': '바디랭귀지', training: '훈련',
- health: '건강관리', nutrition: '🍖 영양/식이', grooming: '✂️ 미용/관리',
- safety: '안전', puppy: '퍼피케어', senior: '노견케어', law: '법률/에티켓',
- posture: '자세', leash: '리드줄'
+ const catMeta = {
+ basics: { label: '기본상식', color: '#6366f1', bg: '#eef2ff' },
+ 'body-language': { label: '바디랭귀지', color: '#8b5cf6', bg: '#f5f3ff' },
+ training: { label: '훈련', color: '#ec4899', bg: '#fdf2f8' },
+ health: { label: '건강관리', color: '#ef4444', bg: '#fef2f2' },
+ nutrition: { label: '영양/식이', color: '#f59e0b', bg: '#fffbeb' },
+ grooming: { label: '미용/관리', color: '#10b981', bg: '#ecfdf5' },
+ safety: { label: '안전', color: '#3b82f6', bg: '#eff6ff' },
+ puppy: { label: '퍼피케어', color: '#f472b6', bg: '#fdf2f8' },
+ senior: { label: '노견케어', color: '#78716c', bg: '#f5f5f4' },
+ law: { label: '법률/에티켓', color: '#64748b', bg: '#f8fafc' },
+ posture: { label: '자세', color: '#8b5cf6', bg: '#f5f3ff' },
+ leash: { label: '리드줄', color: '#ec4899', bg: '#fdf2f8' }
  };
  return items.map(item => {
  const isCompleted = completedIds.includes(item.id);
+ const meta = catMeta[item.category] || { label: item.category, color: '#999', bg: '#f5f5f5' };
  return `
- <div class="card" onclick="Router.navigate('/education/${item.id}')" style="cursor:pointer;${isCompleted ? ' border-left:3px solid var(--color-primary, #FF8FAB);' : ''}">
- <div class="card__body">
- <div class="card__subtitle">
- <span class="badge badge-primary">${catMap[item.category]}</span>
- ${isCompleted ? '<span class="badge" style="background:#d1fae5; color:#065f46; margin-left:4px;">완료</span>' : ''}
+ <div class="card" onclick="Router.navigate('/education/${item.id}')" style="cursor:pointer; overflow:hidden;">
+ <div style="height:4px; background:${meta.color};"></div>
+ <div class="card__body" style="padding-top:12px;">
+ <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+ <span style="display:inline-block; padding:3px 10px; border-radius:6px; font-size:0.72rem; font-weight:600; background:${meta.bg}; color:${meta.color};">${meta.label}</span>
+ ${isCompleted ? `<span style="display:inline-block; padding:3px 10px; border-radius:6px; font-size:0.72rem; font-weight:600; background:#d1fae5; color:#065f46;">완료</span>` : ''}
  </div>
- <div class="card__title" style="margin-top:8px;">${item.title}</div>
- <div class="card__text" style="margin-top:6px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+ <div class="card__title" style="font-size:0.95rem; line-height:1.4;">${item.title}</div>
+ <div class="card__text" style="margin-top:6px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:0.82rem; color:#777;">
  ${item.body.substring(0, 80)}...
+ </div>
+ <div style="margin-top:10px; display:flex; align-items:center; gap:6px;">
+ <span style="font-size:0.72rem; color:#aaa;">${item.quiz ? item.quiz.length + '문제' : ''}</span>
+ <span style="flex:1;"></span>
+ <span style="font-size:0.75rem; color:${meta.color}; font-weight:600;">학습하기 &rarr;</span>
  </div>
  </div>
  </div>
@@ -1579,7 +1476,7 @@ function renderEducationDetailPage(params) {
  const catMap = {
  basics: '기본상식', 'body-language': '바디랭귀지', training: '훈련',
  health: '건강관리', nutrition: '🍖 영양/식이', grooming: '✂️ 미용/관리',
- safety: '안전', puppy: '퍼피케어', senior: '노견케어', law: '법률/에티켓',
+ safety: '안전', puppy: '퍼피케어', senior: '🐕 노견케어', law: '법률/에티켓',
  posture: '자세', leash: '리드줄'
  };
  const user = AuthService.getCurrentUser();
@@ -1827,8 +1724,8 @@ function renderAiPage() {
  .ai-input-area { padding:16px 24px 24px; flex-shrink:0; }
  .ai-input-box { max-width:720px; margin:0 auto; display:flex; gap:8px; align-items:flex-end; border:1.5px solid #e5e3e0; border-radius:24px; padding:10px 16px; background:#fff; transition:border-color 0.15s; box-shadow:0 2px 12px rgba(0,0,0,0.04); }
  .ai-input-box:focus-within { border-color:#1a1a1a; box-shadow:0 2px 16px rgba(0,0,0,0.08); }
- .ai-input-box input { flex:1; border:none; background:transparent; font-size:0.9rem; outline:none; padding:4px 0; font-family:inherit; color:#1a1a1a; }
- .ai-input-box input::placeholder { color:#bbb; }
+ .ai-input-box input { flex:1; border:none; background:transparent; font-size:0.95rem; outline:none; padding:8px 0; font-family:inherit; color:#1a1a1a; min-width:0; width:100%; }
+ .ai-input-box input::placeholder { color:#bbb; font-size:0.88rem; }
  .ai-send-circle { width:32px; height:32px; border-radius:50%; background:#1a1a1a; color:#fff; border:none; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:opacity 0.15s; }
  .ai-send-circle:hover { opacity:0.8; }
  .ai-send-circle:disabled { opacity:0.2; }
@@ -1867,9 +1764,17 @@ function renderAiPage() {
  <div class="ai-main__header">
  </div>
 
- <div id="ai-health-fields" style="display:none;">
+ <div id="ai-dog-selector-wrap" style="display:none;">
  <div class="ai-health-bar">
  <div class="ai-health-bar__inner" style="padding-top:12px;">
+ <div id="ai-dog-selector" style="width:100%;"></div>
+ </div>
+ </div>
+ </div>
+
+ <div id="ai-health-fields" style="display:none;">
+ <div class="ai-health-bar">
+ <div class="ai-health-bar__inner" style="padding-top:8px;">
  <div style="position:relative; flex:1;">
  <input type="text" id="ai-breed" class="form-input" placeholder="품종 검색..." autocomplete="off" style="font-size:0.82rem; padding:6px 10px; border-radius:8px; width:100%;" oninput="filterBreedDropdown(this.value)" onfocus="showBreedDropdown()" onblur="setTimeout(()=>hideBreedDropdown(),200)">
  <div id="ai-breed-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; max-height:180px; overflow-y:auto; background:#fff; border:1px solid #e5e3e0; border-radius:8px; margin-top:4px; z-index:10; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
@@ -1933,7 +1838,7 @@ function _renderAiSidebar() {
  const isActive = _aiCurrentSession && _aiCurrentSession.id === s.id;
  return '<div class="ai-sidebar__item' + (isActive ? ' active' : '') + '" onclick="loadAiSession(\'' + s.id + '\')">' +
  '<span class="ai-sidebar__item-title">' + s.title + '</span>' +
- '<button class="ai-sidebar__item-del" onclick="event.stopPropagation();deleteAiSession(\'' + s.id + '\')" title="삭제">✕</button>' +
+ '<button class="ai-sidebar__item-del" onclick="event.stopPropagation();deleteAiSession(\'' + s.id + '\')" title="삭제">?</button>' +
  '</div>';
  }).join('');
 }
@@ -1962,7 +1867,7 @@ function editSessionTitle(sessionId) {
  const titleEl = document.getElementById('session-title-' + sessionId);
  if (!titleEl) return;
  const currentTitle = titleEl.textContent;
- titleEl.innerHTML = '<div style="display:flex;gap:4px;"><input type="text" id="edit-title-input-' + sessionId + '" class="form-input" value="' + currentTitle.replace(/"/g, '&quot;') + '" maxlength="30" style="font-size:0.82rem;padding:4px 8px;height:28px;" onkeydown="if(event.key===\'Enter\')confirmEditTitle(\'' + sessionId + '\');if(event.key===\'Escape\')renderAiSessionList();"><button onclick="confirmEditTitle(\'' + sessionId + '\')" style="background:var(--color-primary);color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:0.75rem;cursor:pointer;">✓</button></div>';
+ titleEl.innerHTML = '<div style="display:flex;gap:4px;"><input type="text" id="edit-title-input-' + sessionId + '" class="form-input" value="' + currentTitle.replace(/"/g, '&quot;') + '" maxlength="30" style="font-size:0.82rem;padding:4px 8px;height:28px;" onkeydown="if(event.key===\'Enter\')confirmEditTitle(\'' + sessionId + '\');if(event.key===\'Escape\')renderAiSessionList();"><button onclick="confirmEditTitle(\'' + sessionId + '\')" style="background:var(--color-primary);color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:0.75rem;cursor:pointer;">?</button></div>';
  const input = document.getElementById('edit-title-input-' + sessionId);
  if (input) { input.focus(); input.select(); }
 }
@@ -2027,7 +1932,9 @@ async function loadAiSession(sessionId) {
  // 탭 상태 업데이트
  document.getElementById('ai-tab-training').classList.toggle('active', _aiChatMode === 'training');
  document.getElementById('ai-tab-health').classList.toggle('active', _aiChatMode === 'health');
- document.getElementById('ai-health-fields').style.display = _aiChatMode === 'health' ? 'block' : 'none';
+ document.getElementById('ai-health-fields').style.display = 'block';
+ const dogWrap = document.getElementById('ai-dog-selector-wrap');
+ if (dogWrap) dogWrap.style.display = 'block';
  updateAiModeDesc();
  restoreAiChat();
  document.getElementById('ai-sessions-panel').style.display = 'none';
@@ -2138,11 +2045,13 @@ function switchAiMode(mode) {
  if (tabH) tabH.classList.toggle('active', mode === 'health');
 
  const healthFields = document.getElementById('ai-health-fields');
- if (healthFields) healthFields.style.display = mode === 'health' ? 'block' : 'none';
+ if (healthFields) healthFields.style.display = 'block';
+ const dogSelWrap = document.getElementById('ai-dog-selector-wrap');
+ if (dogSelWrap) dogSelWrap.style.display = 'block';
  updateAiModeDesc();
 
  const input = document.getElementById('ai-input');
- if (input) input.placeholder = mode === 'training' ? '훈련/행동 관련 질문을 입력해주세요...' : '증상이나 건강 관련 질문을 입력해주세요...';
+ if (input) input.placeholder = mode === 'training' ? '훈련·행동 질문을 입력하세요' : '건강·질병 질문을 입력하세요';
 }
 
 function selectAiModeCard(mode) {
@@ -2166,24 +2075,98 @@ function selectAiModeCard(mode) {
  if (tabH) tabH.classList.toggle('active', mode === 'health');
 
  const healthFields = document.getElementById('ai-health-fields');
- if (healthFields) healthFields.style.display = mode === 'health' ? 'block' : 'none';
+ if (healthFields) healthFields.style.display = 'block';
+ const dogSelWrap2 = document.getElementById('ai-dog-selector-wrap');
+ if (dogSelWrap2) dogSelWrap2.style.display = 'block';
 
  // 설명 표시
  const detail = document.getElementById('ai-mode-detail');
  if (detail) {
  if (mode === 'training') {
- detail.innerHTML = '<div style="font-size:0.82rem; color:#666; border-left:2px solid #1a1a1a; padding-left:12px;"><div style="font-weight:700; color:#1a1a1a; margin-bottom:4px;">이런 질문에 좋아요</div><div style="line-height:1.6;">· 강아지가 짖는 이유와 교정법<br>· 분리불안 해결 방법<br>· 산책 훈련, 사회화 방법</div></div>';
+ detail.innerHTML = '<div style="font-size:0.82rem; color:#666; border-left:2px solid #1a1a1a; padding-left:12px;"><div style="font-weight:700; color:#1a1a1a; margin-bottom:4px;">이런 질문에 좋아요</div><div style="line-height:1.6;">• 강아지가 짖는 이유와 교정법<br>• 분리불안 해결 방법<br>• 산책 훈련, 사회화 방법</div></div>';
  } else {
- detail.innerHTML = '<div style="font-size:0.82rem; color:#666; border-left:2px solid #1a1a1a; padding-left:12px;"><div style="font-weight:700; color:#1a1a1a; margin-bottom:4px;">이런 질문에 좋아요</div><div style="line-height:1.6;">· 구토, 설사 등 증상 분석<br>· 사진으로 피부/눈 상태 진단<br>· 예방접종, 응급 대처법</div></div>';
+ detail.innerHTML = '<div style="font-size:0.82rem; color:#666; border-left:2px solid #1a1a1a; padding-left:12px;"><div style="font-weight:700; color:#1a1a1a; margin-bottom:4px;">이런 질문에 좋아요</div><div style="line-height:1.6;">• 구토, 설사 등 증상 분석<br>• 사진으로 피부/눈 상태 진단<br>• 예방접종, 응급 대처법</div></div>';
  }
  }
 
  // 입력창 포커스
  const input = document.getElementById('ai-input');
  if (input) {
- input.placeholder = mode === 'training' ? '훈련/행동 관련 질문을 입력해주세요...' : '증상이나 건강 관련 질문을 입력해주세요...';
+ input.placeholder = mode === 'training' ? '훈련·행동 질문을 입력하세요' : '건강·질병 질문을 입력하세요';
  input.focus();
  }
+
+ // 반려견 선택 칩 렌더링
+ _renderAiDogSelector();
+
+ // 등록된 반려견 정보 자동 채우기
+ const user = AuthService.getCurrentUser();
+ const dogs = user?.dogs || [];
+ const selectedDog = dogs[_aiSelectedDogIdx] || dogs[0];
+ if (selectedDog) {
+ const breedInput = document.getElementById('ai-breed');
+ const ageInput = document.getElementById('ai-age');
+ if (breedInput) breedInput.value = selectedDog.breed || '';
+ if (ageInput) ageInput.value = selectedDog.age ? selectedDog.age + '살' : '';
+ }
+}
+
+// 반려견 선택 상태 (-1 = 다른 강아지)
+let _aiSelectedDogIdx = 0;
+
+function _renderAiDogSelector() {
+ const container = document.getElementById('ai-dog-selector');
+ if (!container) return;
+ const user = AuthService.getCurrentUser();
+ const dogs = user?.dogs || [];
+ if (dogs.length === 0) { container.innerHTML = ''; return; }
+
+ const chips = dogs.map((d, i) =>
+ `<button onclick="selectAiDog(${i})" style="padding:6px 14px; border-radius:20px; font-size:0.78rem; font-weight:600; border:1.5px solid ${_aiSelectedDogIdx === i ? '#1a1a1a' : '#e5e3e0'}; background:${_aiSelectedDogIdx === i ? '#1a1a1a' : '#fff'}; color:${_aiSelectedDogIdx === i ? '#fff' : '#666'}; cursor:pointer; transition:all 0.15s;">${d.name}</button>`
+ ).join('');
+ const otherChip = `<button onclick="selectAiDog(-1)" style="padding:6px 14px; border-radius:20px; font-size:0.78rem; font-weight:600; border:1.5px solid ${_aiSelectedDogIdx === -1 ? '#1a1a1a' : '#e5e3e0'}; background:${_aiSelectedDogIdx === -1 ? '#1a1a1a' : '#fff'}; color:${_aiSelectedDogIdx === -1 ? '#fff' : '#666'}; cursor:pointer; transition:all 0.15s;">다른 강아지</button>`;
+ container.innerHTML = `<div style="display:flex; gap:6px; flex-wrap:wrap;">${chips}${otherChip}</div>`;
+}
+
+function selectAiDog(idx) {
+ _aiSelectedDogIdx = idx;
+ _renderAiDogSelector();
+ const user = AuthService.getCurrentUser();
+ const dogs = user?.dogs || [];
+ const breedInput = document.getElementById('ai-breed');
+ const ageInput = document.getElementById('ai-age');
+ if (idx >= 0 && dogs[idx]) {
+ if (breedInput) breedInput.value = dogs[idx].breed || '';
+ if (ageInput) ageInput.value = dogs[idx].age ? dogs[idx].age + '살' : '';
+ } else {
+ if (breedInput) breedInput.value = '';
+ if (ageInput) ageInput.value = '';
+ }
+}
+
+function _getAiDogContext() {
+ const user = AuthService.getCurrentUser();
+ const dogs = user?.dogs || [];
+ if (_aiSelectedDogIdx === -1 || dogs.length === 0) {
+ const breed = document.getElementById('ai-breed')?.value || '';
+ const age = document.getElementById('ai-age')?.value || '';
+ if (breed || age) return '[질문 대상: ' + breed + (age ? ', ' + age : '') + '] ';
+ return '';
+ }
+ const dog = dogs[_aiSelectedDogIdx] || dogs[0];
+ if (!dog) return '';
+ const sizeMap = { small: '소형', medium: '중형', large: '대형' };
+ let ctx = '[반려견: ' + dog.name + ', ' + (dog.breed || '') + ', ' + (dog.age || '?') + '살';
+ ctx += ', ' + (sizeMap[dog.size] || '');
+ if (dog.weight) ctx += ', ' + dog.weight + 'kg';
+ if (dog.personality) ctx += ', 성격: ' + dog.personality;
+ if (dog.healthNote) ctx += ', 특이사항: ' + dog.healthNote;
+ ctx += '] ';
+ if (dogs.length > 1) {
+ const others = dogs.filter((_, i) => i !== _aiSelectedDogIdx).map(d => d.name + '(' + (d.breed || '') + ')').join(', ');
+ ctx += '[함께 사는 반려견: ' + others + '] ';
+ }
+ return ctx;
 }
 
 function showBreedDropdown() {
@@ -2334,9 +2317,9 @@ function _processAiFile(file) {
  const preview = document.getElementById('ai-file-preview');
  if (preview) {
  if (file.type.startsWith('image/')) {
- preview.innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--color-bg-warm);border-radius:8px;position:relative;"><img src="' + base64Full + '" style="height:48px;max-width:120px;object-fit:cover;border-radius:6px;"><button onclick="removeAiFile()" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#333;color:#fff;border:none;font-size:0.6rem;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</button></div>';
+ preview.innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--color-bg-warm);border-radius:8px;position:relative;"><img src="' + base64Full + '" style="height:48px;max-width:120px;object-fit:cover;border-radius:6px;"><button onclick="removeAiFile()" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#333;color:#fff;border:none;font-size:0.6rem;display:flex;align-items:center;justify-content:center;cursor:pointer;">?</button></div>';
  } else {
- preview.innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--color-bg-warm);border-radius:8px;"><span style="font-size:1rem;">🐾</span><span style="font-size:0.78rem;font-weight:600;">' + file.name + '</span><button onclick="removeAiFile()" style="background:none;border:none;cursor:pointer;font-size:0.9rem;">✕</button></div>';
+ preview.innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--color-bg-warm);border-radius:8px;"><span style="font-size:1rem;">🐾</span><span style="font-size:0.78rem;font-weight:600;">' + file.name + '</span><button onclick="removeAiFile()" style="background:none;border:none;cursor:pointer;font-size:0.9rem;">?</button></div>';
  }
  preview.style.display = 'block';
  }
@@ -2402,22 +2385,19 @@ async function handleAiChat() {
  // 파일 첨부 초기화
  removeAiFile();
  } else if (_aiChatMode === 'health') {
- const breed = document.getElementById('ai-breed')?.value || '';
- const age = document.getElementById('ai-age')?.value || '';
  apiUrl = '/api/ai/consult';
- const healthPrefix = '[건강/질병 상담 모드] ';
- const breedInfo = breed ? '품종: ' + breed + '. ' : '';
- const ageInfo = age ? '나이: ' + age + '. ' : '';
+ const dogContext = _getAiDogContext();
  body = JSON.stringify({
- message: healthPrefix + breedInfo + ageInfo + message,
+ message: '[건강/질병 상담 모드] ' + dogContext + message,
  history: _aiCurrentSession.messages,
  mode: 'health',
  aiName: getAiName()
  });
  } else {
  apiUrl = '/api/ai/consult';
+ const dogContext = _getAiDogContext();
  body = JSON.stringify({
- message,
+ message: dogContext + message,
  history: _aiCurrentSession.messages,
  mode: 'training',
  aiName: getAiName()
@@ -2551,7 +2531,7 @@ function renderAiConsultPage() {
 
  <div id="consult-chat" style="margin-bottom:16px;">
  <div class="card" style="padding:20px; text-align:center; color:var(--color-text-light);">
- <div style="margin-bottom:8px;">${icon('bot', 40)}</div>
+ <div style="font-size:2.5rem; margin-bottom:8px;">???</div>
  <p style="font-weight:700;">안녕하세요! AI 훈련사예요~</p>
  <p style="font-size:0.85rem; margin-top:4px;">반려견 행동 문제나 훈련 방법에 대해 물어봐주세요!</p>
  </div>
@@ -2640,19 +2620,80 @@ async function handleAiConsult() {
 function renderCommunityPage() {
  const user = AuthService.getCurrentUser();
 
- const posts = CommunityService.getFeed(1);
+ // 샘플 데이터 초기화 (한 번만)
+ if (!window._communityInitialized) {
+ window._communityInitialized = true;
+ const existing = CommunityService.getFeed(1);
+ if (existing.length < 3) {
+ const samples = [
+ { authorId: 'sample-1', authorName: '초코맘', text: '오늘 초코랑 한강 산책 다녀왔어요! 날씨가 너무 좋아서 1시간이나 걸었네요 🐾\n\n#한강산책 #포메라니안 #산책일기 #반려견일상', imageData: null, walkData: { dogName: '초코', distance: 2.3, duration: 58, coordinates: [] } },
+ { authorId: 'sample-2', authorName: '뽀삐아빠', text: '뽀삐가 오늘 처음으로 "앉아"를 성공했어요!! 3주 동안 매일 연습한 보람이 있네요 ㅠㅠ\n\n#훈련성공 #말티즈 #기본훈련 #앉아', imageData: null, walkData: null },
+ { authorId: 'sample-3', authorName: '골든러버', text: '비 오는 날 산책은 역시 레인코트 필수! 우리 해피는 비 맞는 걸 좋아하지만 발 씻기가 힘들어요 ㅋㅋ\n\n#골든리트리버 #비오는날 #산책 #대형견일상', imageData: null, walkData: { dogName: '해피', distance: 1.5, duration: 35, coordinates: [] } },
+ { authorId: 'sample-4', authorName: '시바집사', text: '시바 스크림 들어보신 분...? 오늘 병원 갔다가 주차장에서 10분간 하울링 콘서트 열었습니다 😂\n\n#시바이누 #시바스크림 #동물병원 #웃긴일상', imageData: null, walkData: null },
+ { authorId: 'sample-5', authorName: '댕댕이네', text: '우리 동네 반려견 놀이터 추천합니다! 마포구 월드컵공원 옆에 있는데 넓고 깨끗해요. 소형견/대형견 구역 분리되어 있어서 안전하고요.\n\n#반려견놀이터 #마포구 #추천장소 #산책코스', imageData: null, walkData: null },
+ { authorId: 'sample-1', authorName: '초코맘', text: '초코 슬개골 수술 후 재활 2주차! 조금씩 걸음이 좋아지고 있어요. 같은 경험 있으신 분 팁 공유해주세요 🙏\n\n#슬개골탈구 #재활 #포메라니안 #건강관리', imageData: null, walkData: null },
+ { authorId: 'sample-6', authorName: '비숑프리제', text: '오늘의 미용 완료! 테디베어컷으로 했는데 너무 귀여워서 계속 쳐다보게 돼요 ㅎㅎ\n\n#비숑프리제 #미용 #테디베어컷 #귀여워', imageData: null, walkData: null },
+ { authorId: 'sample-3', authorName: '골든러버', text: '해피 4살 생일 파티! 강아지 케이크 만들어줬더니 3초만에 흡입했어요 ㅋㅋㅋ\n\n#생일축하 #골든리트리버 #강아지케이크 #4살', imageData: null, walkData: null }
+ ];
+ samples.forEach(s => {
+ try { CommunityService.createPost(s); } catch(e) {}
+ });
+ }
+ }
+
+ const allPosts = CommunityService.getFeed(1);
+ const _communityTab = window._communityTab || 'all';
+ const hashFilter = window._communityHashFilter || '';
+ const searchQuery = window._communitySearch || '';
+
+ // 필터링
+ let displayPosts = allPosts;
+ if (_communityTab === 'mine' && user) {
+ displayPosts = displayPosts.filter(p => p.authorId === user.id);
+ }
+ if (hashFilter) {
+ displayPosts = displayPosts.filter(p => p.text && p.text.includes('#' + hashFilter));
+ }
+ if (searchQuery) {
+ const q = searchQuery.toLowerCase();
+ displayPosts = displayPosts.filter(p => (p.text && p.text.toLowerCase().includes(q)) || (p.authorName && p.authorName.toLowerCase().includes(q)));
+ }
+
+ // 인기 해시태그 추출
+ const tagCounts = {};
+ allPosts.forEach(p => {
+ const tags = (p.text || '').match(/#([\wㄱ-ㅎㅏ-ㅣ가-힣]+)/g);
+ if (tags) tags.forEach(t => { const tag = t.slice(1); tagCounts[tag] = (tagCounts[tag] || 0) + 1; });
+ });
+ const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
  let createFormHtml = '';
  if (user) {
+ const walkOptions = (window._recentWalks || []).map(w =>
+ `<option value="${w.id}">${new Date(w.createdAt).toLocaleDateString('ko-KR')} ${w.dogName || '산책'} (${(w.distance||0).toFixed(1)}km)</option>`
+ ).join('');
+
  createFormHtml = `
- <div class="card" style="padding:16px; margin-bottom:20px;">
- <div style="display:flex; gap:10px; align-items:flex-start;">
- <div class="post-card__avatar">${user.name.charAt(0)}</div>
- <div style="flex:1;">
- <textarea id="new-post-text" class="form-input" placeholder="산책 이야기를 공유해보세요..." style="min-height:60px;"></textarea>
- <div id="post-create-error" style="margin-top:4px;"></div>
- <div style="text-align:right; margin-top:8px;">
- <button class="btn btn-primary btn-sm" onclick="handleCreatePost()">게시하기</button>
+ <div class="card" style="padding:20px; margin-bottom:16px; border-radius:16px;">
+ <div style="display:flex; gap:12px; align-items:flex-start;">
+ <div style="width:36px; height:36px; border-radius:50%; background:#1a1a1a; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0;">${(user.nickname || user.name).charAt(0)}</div>
+ <div style="flex:1; min-width:0;">
+ <textarea id="new-post-text" class="form-input" placeholder="무슨 일이 있었나요? #해시태그를 넣어보세요" style="min-height:70px; border:none; padding:8px 0; font-size:0.92rem; resize:none; background:transparent;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+ <div id="post-image-preview" style="display:none; margin:8px 0;"></div>
+ <div id="post-walk-preview" style="display:none; margin:8px 0;"></div>
+ <div id="post-create-error"></div>
+ <div style="display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--color-border); padding-top:10px; margin-top:10px;">
+ <div style="display:flex; gap:6px;">
+ <label style="cursor:pointer; padding:5px 10px; border-radius:8px; font-size:0.75rem; color:#666; background:var(--color-bg-warm); font-weight:600;">
+ 사진
+ <input type="file" id="post-image-input" accept="image/*" style="display:none;" onchange="handlePostImageSelect(this)">
+ </label>
+ <select id="post-walk-select" style="padding:5px 10px; border-radius:8px; font-size:0.75rem; color:#666; background:var(--color-bg-warm); border:none; font-weight:600; cursor:pointer;" onchange="handlePostWalkSelect(this)">
+ <option value="">경로 첨부</option>
+ ${walkOptions}
+ </select>
+ </div>
+ <button class="btn btn-primary btn-sm" onclick="handleCreatePost()" style="padding:7px 18px; border-radius:20px; font-size:0.8rem; font-weight:700;">게시</button>
  </div>
  </div>
  </div>
@@ -2660,22 +2701,145 @@ function renderCommunityPage() {
  `;
  } else {
  createFormHtml = `
- <div class="card" style="padding:20px; margin-bottom:20px; text-align:center; background:var(--color-bg-warm);">
- <p style="margin:0; font-size:0.95rem;">게시물을 작성하려면 <a href="#/login" style="color:var(--color-primary, #7C4DFF); font-weight:700;">로그인</a>이 필요해요!</p>
+ <div class="card" style="padding:16px; margin-bottom:16px; text-align:center; background:var(--color-bg-warm); border-radius:16px;">
+ <p style="margin:0; font-size:0.88rem;">게시물을 작성하려면 <a href="#/login" style="color:var(--color-primary); font-weight:700;">로그인</a>이 필요해요</p>
  </div>
  `;
  }
 
  renderPage(`
- <div class="page-header">
+ <div class="page-header" style="margin-bottom:12px;">
  <h1>커뮤니티</h1>
- <p>반려인들과 우리 아이 이야기를 나눠봐요~ </p>
  </div>
+
+ <div style="display:flex; gap:16px;">
+ <!-- 왼쪽 사이드바 -->
+ <div style="width:200px; flex-shrink:0; position:sticky; top:80px; align-self:flex-start;" class="community-sidebar">
+ <div style="margin-bottom:16px;">
+ <button onclick="window._communityTab='all';window._communityHashFilter='';window._communitySearch='';renderCommunityPage()" style="display:block; width:100%; text-align:left; padding:10px 14px; border:none; border-radius:10px; font-size:0.88rem; font-weight:${_communityTab==='all'?'700':'500'}; cursor:pointer; background:${_communityTab==='all'?'#1a1a1a':'transparent'}; color:${_communityTab==='all'?'#fff':'#555'}; margin-bottom:4px;">전체 피드</button>
+ <button onclick="window._communityTab='mine';window._communityHashFilter='';window._communitySearch='';renderCommunityPage()" style="display:block; width:100%; text-align:left; padding:10px 14px; border:none; border-radius:10px; font-size:0.88rem; font-weight:${_communityTab==='mine'?'700':'500'}; cursor:pointer; background:${_communityTab==='mine'?'#1a1a1a':'transparent'}; color:${_communityTab==='mine'?'#fff':'#555'}; margin-bottom:4px;">내 피드</button>
+ </div>
+ ${topTags.length > 0 ? `
+ <div style="padding-top:12px; border-top:1px solid var(--color-border);">
+ <div style="font-size:0.72rem; font-weight:700; color:#999; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">인기 태그</div>
+ <div style="display:flex; flex-wrap:wrap; gap:6px;">
+ ${topTags.map(([tag, count]) => `<button onclick="window._communityHashFilter='${tag}';window._communityTab='all';renderCommunityPage()" style="padding:4px 10px; border-radius:12px; border:1px solid ${hashFilter===tag?'#1a1a1a':'var(--color-border)'}; background:${hashFilter===tag?'#1a1a1a':'#fff'}; color:${hashFilter===tag?'#fff':'#666'}; font-size:0.72rem; font-weight:600; cursor:pointer;">#${tag}</button>`).join('')}
+ </div>
+ </div>
+ ` : ''}
+ </div>
+
+ <!-- 메인 피드 -->
+ <div style="flex:1; min-width:0;">
+ <!-- 검색 -->
+ <div style="margin-bottom:12px; position:relative;">
+ <input type="text" id="community-search-input" placeholder="글 또는 #해시태그 검색 (Enter)" value="${searchQuery}" oninput="handleCommunitySearchSuggest(this.value)" onkeydown="if(event.key==='Enter'){window._communitySearch=this.value;renderCommunityPage()}" style="width:100%; padding:10px 14px; border:1.5px solid var(--color-border); border-radius:12px; font-size:0.85rem; outline:none; background:#fff;" onfocus="this.style.borderColor='#1a1a1a'" onblur="setTimeout(()=>{this.style.borderColor='var(--color-border)';document.getElementById('search-suggest').style.display='none'},200)">
+ <div id="search-suggest" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--color-border); border-radius:10px; margin-top:4px; max-height:180px; overflow-y:auto; z-index:10; box-shadow:0 4px 12px rgba(0,0,0,0.08);"></div>
+ </div>
+
+ ${hashFilter ? `<div style="margin-bottom:10px; display:flex; align-items:center; gap:8px;"><span style="font-size:0.85rem; font-weight:700; color:var(--color-primary);">#${hashFilter}</span><button onclick="window._communityHashFilter='';renderCommunityPage()" style="background:none; border:none; font-size:0.72rem; color:#999; cursor:pointer;">✕ 해제</button></div>` : ''}
+
  ${createFormHtml}
+
  <div id="community-feed">
- ${renderPostCards(posts, user)}
+ ${renderPostCards(displayPosts, user)}
  </div>
+ </div>
+ </div>
+
+ <style>
+ @media (max-width:768px) {
+ .community-sidebar { display:none !important; }
+ }
+ </style>
  `);
+
+ // 산책 기록 로드
+ if (user && !window._recentWalks) {
+ fetch('/api/walks/history/' + user.id).then(r => r.json()).then(data => {
+ if (data.success) { window._recentWalks = data.walks.slice(0, 10); }
+ }).catch(() => {});
+ }
+
+ // 산책 경로 지도 렌더링
+ setTimeout(() => {
+ displayPosts.forEach(p => {
+ if (p.walkData && p.walkData.coordinates && p.walkData.coordinates.length > 1) {
+ const el = document.getElementById('post-map-' + p.id);
+ if (el && !el._mapInit) {
+ el._mapInit = true;
+ const coords = p.walkData.coordinates.map(c => [c.lat, c.lng]);
+ const map = L.map(el, { zoomControl: false, attributionControl: false }).fitBounds(coords, { padding: [15, 15] });
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+ L.polyline(coords, { color: '#F59E0B', weight: 5, opacity: 0.9 }).addTo(map);
+ const startIcon = L.divIcon({ className: '', html: '<div style="width:10px;height:10px;background:#22C55E;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>', iconSize: [10, 10], iconAnchor: [5, 5] });
+ const endIcon = L.divIcon({ className: '', html: '<div style="width:10px;height:10px;background:#EF4444;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>', iconSize: [10, 10], iconAnchor: [5, 5] });
+ L.marker(coords[0], { icon: startIcon }).addTo(map);
+ L.marker(coords[coords.length - 1], { icon: endIcon }).addTo(map);
+ }
+ }
+ });
+ }, 300);
+}
+
+// 게시물 이미지 첨부
+let _postImageData = null;
+function handlePostImageSelect(input) {
+ if (!input.files || !input.files[0]) return;
+ const file = input.files[0];
+ if (file.size > 5 * 1024 * 1024) { alert('5MB 이하만 가능해요.'); return; }
+ const reader = new FileReader();
+ reader.onload = (e) => {
+ _postImageData = e.target.result;
+ const preview = document.getElementById('post-image-preview');
+ if (preview) {
+ preview.style.display = 'block';
+ preview.innerHTML = `<div style="position:relative; display:inline-block;"><img src="${e.target.result}" style="max-height:150px; border-radius:10px;"><button onclick="_postImageData=null;document.getElementById('post-image-preview').style.display='none';document.getElementById('post-image-preview').innerHTML=''" style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:#333;color:#fff;border:none;font-size:0.6rem;cursor:pointer;">✕</button></div>`;
+ }
+ };
+ reader.readAsDataURL(file);
+}
+
+// 산책 경로 첨부
+let _postWalkData = null;
+function handlePostWalkSelect(select) {
+ const walkId = select.value;
+ if (!walkId) { _postWalkData = null; document.getElementById('post-walk-preview').style.display = 'none'; return; }
+ const walk = (window._recentWalks || []).find(w => w.id === walkId);
+ if (!walk) return;
+ _postWalkData = walk;
+ const preview = document.getElementById('post-walk-preview');
+ if (preview) {
+ preview.style.display = 'block';
+ preview.innerHTML = `<div style="padding:12px; background:var(--color-bg-warm); border-radius:10px; font-size:0.82rem;"><strong>${walk.dogName || '산책'}</strong> · ${(walk.distance||0).toFixed(2)}km · ${walk.duration||0}분<button onclick="_postWalkData=null;document.getElementById('post-walk-select').value='';document.getElementById('post-walk-preview').style.display='none'" style="margin-left:8px;background:none;border:none;color:#999;cursor:pointer;font-size:0.75rem;">✕</button></div>`;
+ }
+}
+
+// 검색 자동완성 (해시태그 제안)
+function handleCommunitySearchSuggest(value) {
+ const suggest = document.getElementById('search-suggest');
+ if (!suggest) return;
+ if (!value || value.length < 1) { suggest.style.display = 'none'; return; }
+
+ const allPosts = CommunityService.getFeed(1);
+ const tagCounts = {};
+ allPosts.forEach(p => {
+ const tags = (p.text || '').match(/#([\wㄱ-ㅎㅏ-ㅣ가-힣]+)/g);
+ if (tags) tags.forEach(t => { const tag = t.slice(1); tagCounts[tag] = (tagCounts[tag] || 0) + 1; });
+ });
+
+ const q = value.replace(/^#/, '').toLowerCase();
+ const matched = Object.entries(tagCounts)
+ .filter(([tag]) => tag.toLowerCase().includes(q))
+ .sort((a, b) => b[1] - a[1])
+ .slice(0, 6);
+
+ if (matched.length === 0) { suggest.style.display = 'none'; return; }
+
+ suggest.style.display = 'block';
+ suggest.innerHTML = matched.map(([tag, count]) =>
+ `<div onclick="window._communityHashFilter='${tag}';window._communitySearch='';renderCommunityPage()" style="padding:8px 14px; font-size:0.82rem; cursor:pointer; display:flex; justify-content:space-between; transition:background 0.1s;" onmouseover="this.style.background='#f5f3f0'" onmouseout="this.style.background='#fff'"><span style="font-weight:600;">#${tag}</span><span style="color:#999; font-size:0.72rem;">${count}개 게시물</span></div>`
+ ).join('');
 }
 
 /**
@@ -2687,57 +2851,69 @@ function renderCommunityPage() {
 function renderPostCards(posts, user) {
  if (posts.length === 0) {
  return `
- <div class="empty-state">
- <div class="empty-icon"></div>
- <p>아직 게시물이 없습니다. 첫 번째 게시물을 작성해보세요!</p>
+ <div style="text-align:center; padding:40px 20px; color:var(--color-text-muted);">
+ <p style="font-size:0.9rem;">아직 게시물이 없어요. 첫 번째 이야기를 공유해보세요!</p>
  </div>
  `;
  }
 
  return posts.map(post => {
- const isLiked = user && post.likedBy.includes(user.id);
- const heartIcon = isLiked ? '' : '';
- const likedClass = isLiked ? ' liked' : '';
+ const isLiked = user && post.likedBy && post.likedBy.includes(user.id);
+ const likedClass = isLiked ? ' color:var(--color-primary);font-weight:700;' : '';
  const timeAgo = formatTimeAgo(post.createdAt);
 
- const commentsHtml = post.comments.length > 0
- ? `<div class="comment-list">
+ // 해시태그 링크 변환
+ let bodyHtml = (post.text || '').replace(/\n/g, '<br>');
+ bodyHtml = bodyHtml.replace(/#([\wㄱ-ㅎㅏ-ㅣ가-힣]+)/g, '<a onclick="window._communityHashFilter=\'$1\';renderCommunityPage()" style="color:var(--color-primary);cursor:pointer;font-weight:600;">#$1</a>');
+
+ // 이미지
+ const imageHtml = post.imageData ? `<div style="margin-top:12px;"><img src="${post.imageData}" style="width:100%; max-height:300px; object-fit:cover; border-radius:12px;"></div>` : '';
+
+ // 산책 경로
+ let walkHtml = '';
+ if (post.walkData && post.walkData.coordinates && post.walkData.coordinates.length > 1) {
+ walkHtml = `<div style="margin-top:12px; padding:12px; background:var(--color-bg-warm); border-radius:12px;">
+ <div style="font-size:0.82rem; font-weight:700; margin-bottom:6px;">${post.walkData.dogName || '산책'} · ${(post.walkData.distance||0).toFixed(2)}km · ${post.walkData.duration||0}분</div>
+ <div id="post-map-${post.id}" style="height:140px; border-radius:8px; overflow:hidden;"></div>
+ </div>`;
+ } else if (post.walkData) {
+ walkHtml = `<div style="margin-top:12px; padding:10px 14px; background:var(--color-bg-warm); border-radius:10px; font-size:0.82rem;">
+ <strong>${post.walkData.dogName || '산책'}</strong> · ${(post.walkData.distance||0).toFixed(2)}km · ${post.walkData.duration||0}분
+ </div>`;
+ }
+
+ const commentsHtml = post.comments && post.comments.length > 0
+ ? `<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--color-border);">
  ${post.comments.map(c => `
- <div class="comment-item">
- <div class="comment-item__avatar">${c.authorName.charAt(0)}</div>
- <div class="comment-item__content">
- <span class="comment-item__author">${c.authorName}</span>
- <div class="comment-item__text">${c.text}</div>
- </div>
+ <div style="display:flex; gap:8px; margin-bottom:8px;">
+ <div style="width:24px; height:24px; border-radius:50%; background:var(--color-border); display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; flex-shrink:0;">${c.authorName.charAt(0)}</div>
+ <div><span style="font-weight:700; font-size:0.8rem;">${c.authorName}</span> <span style="font-size:0.82rem; color:#555;">${c.text}</span></div>
  </div>
  `).join('')}
  </div>`
  : '';
 
  const commentFormHtml = user
- ? `<div class="comment-form">
- <input type="text" id="comment-input-${post.id}" placeholder="댓글을 입력하세요..." onkeydown="if(event.key==='Enter')handleAddComment('${post.id}')">
- <button onclick="handleAddComment('${post.id}')">게시</button>
+ ? `<div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--color-border);">
+ <input type="text" id="comment-input-${post.id}" placeholder="댓글을 입력하고 Enter..." style="width:100%; border:none; background:var(--color-bg-warm); padding:8px 12px; border-radius:20px; font-size:0.82rem; outline:none;" onkeydown="if(event.key==='Enter')handleAddComment('${post.id}')">
  </div>`
  : '';
 
  return `
- <div class="post-card">
- <div class="post-card__header">
- <div class="post-card__avatar">${post.authorName.charAt(0)}</div>
- <div>
- <div class="post-card__author">${post.authorName}</div>
- <div class="post-card__time">${timeAgo}</div>
+ <div class="card" style="padding:20px; margin-bottom:12px; border-radius:16px;">
+ <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+ <div style="width:36px; height:36px; border-radius:50%; background:#1a1a1a; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem;">${post.authorName.charAt(0)}</div>
+ <div style="flex:1;">
+ <div style="font-weight:700; font-size:0.88rem;">${post.authorName}</div>
+ <div style="font-size:0.72rem; color:var(--color-text-muted);">${timeAgo}</div>
  </div>
  </div>
- <div class="post-card__body">${post.text}</div>
- <div class="post-card__actions">
- <button class="post-action-btn${likedClass}" onclick="handleToggleLike('${post.id}')">
- ${heartIcon} <span>${post.likes}</span>
- </button>
- <button class="post-action-btn">
- <span>${post.comments.length}</span>
- </button>
+ <div style="font-size:0.92rem; line-height:1.6; color:#333;">${bodyHtml}</div>
+ ${imageHtml}
+ ${walkHtml}
+ <div style="display:flex; gap:16px; margin-top:14px; padding-top:12px; border-top:1px solid var(--color-border);">
+ <button onclick="handleToggleLike('${post.id}')" style="background:none; border:none; font-size:0.82rem; cursor:pointer;${likedClass}">♥ ${post.likes || 0}</button>
+ <span style="font-size:0.82rem; color:var(--color-text-muted);">${(post.comments||[]).length}개 댓글</span>
  </div>
  ${commentsHtml}
  ${commentFormHtml}
@@ -2780,12 +2956,24 @@ function handleCreatePost() {
  const text = textEl ? textEl.value : '';
  const errEl = document.getElementById('post-create-error');
 
+ if (!text.trim() && !_postImageData && !_postWalkData) {
+ if (errEl) errEl.innerHTML = '<div class="alert alert-error">내용을 입력해주세요.</div>';
+ return;
+ }
+
  try {
- CommunityService.createPost({
+ const postData = {
  authorId: user.id,
- authorName: user.name,
+ authorName: user.nickname || user.name,
  text: text
- });
+ };
+ if (_postImageData) postData.imageData = _postImageData;
+ if (_postWalkData) postData.walkData = _postWalkData;
+
+ CommunityService.createPost(postData);
+ _postImageData = null;
+ _postWalkData = null;
+ showToast('게시물이 등록되었어요!', 'success');
  renderCommunityPage();
  } catch (e) {
  if (errEl) errEl.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
@@ -2845,7 +3033,7 @@ function renderWalletPage() {
  renderPage(`
  <div class="page-header">
  <h1>Paw 지갑</h1>
- <p>활동으로 코인을 모으고 사용해봐요~</p>
+ <p>활동으로 코인을 모으고 사용해봐요~ ??</p>
  </div>
  <div class="wallet-balance">
  <div class="balance-label">보유 Paw 코인</div>
@@ -2862,7 +3050,7 @@ function renderWalletPage() {
  </div>
  </div>
  <div style="margin-top:16px; text-align:center;">
- <button class="btn btn-primary" onclick="showLoginModal('Paw 코인을 적립하고 사용하려면 로그인이 필요해요!\\n산책, 커뮤니티 활동으로 코인을 모을 수 있어요.')">${icon('wallet',16)} 코인 적립 시작하기</button>
+ <button class="btn btn-primary" onclick="showLoginModal('Paw 코인을 적립하고 사용하려면 로그인이 필요해요!\\n산책, 커뮤니티 활동으로 코인을 모을 수 있어요.')">?? 코인 적립 시작하기</button>
  </div>
  `);
  return;
@@ -2906,7 +3094,7 @@ function renderWalletPage() {
  renderPage(`
  <div class="page-header">
  <h1>Paw 지갑</h1>
- <p>활동으로 코인을 모으고 사용해봐요~</p>
+ <p>활동으로 코인을 모으고 사용해봐요~ ??</p>
  </div>
  <div class="wallet-balance">
  <div class="balance-label">보유 Paw 코인</div>
@@ -2973,45 +3161,19 @@ function renderMatchingPage() {
  return;
  }
 
- // 요청자: 상태별 화면 분기 (대기/진행 중이면 대시보드 차단)
+ // 요청자: 진행 중인 산책이 있으면 무조건 실시간 추적 화면으로 (다른 UI 접근 차단)
  if (myProfile.role === 'requester') {
  fetch(`/api/walk-requests?requesterId=${user.id}`)
  .then(res => res.json())
  .then(data => {
- const reqs = data.requests || [];
-
- // 산책 진행 중 → 실시간 추적 화면
- const activeReq = reqs.find(r =>
+ const activeReq = (data.requests || []).find(r =>
    ['accepted', 'heading', 'arrived', 'walking'].includes(r.status)
  );
- if (activeReq) { renderRequesterActiveWalkScreen(user, activeReq); return; }
-
- // 응답 대기 중(pending/broadcasting) → 블러 오버레이 표시 (GPS 지도 숨김)
- const pendingReq = reqs.find(r => ['pending', 'broadcasting'].includes(r.status));
- if (pendingReq) {
-   // 배경 렌더는 최소한으로
-   renderPage(`
-     <div style="height:100vh;background:var(--color-bg);display:flex;align-items:center;justify-content:center;">
-       <p style="color:var(--color-text-muted);font-size:0.9rem;">도우미 응답 대기 중...</p>
-     </div>`);
-   // 이미 오버레이가 떠 있으면 다시 생성 안 함 (중복 타이머 방지)
-   if (!document.getElementById('broadcast-waiting')) {
-     showWalkerWaitingOverlay(pendingReq.id, 0);
-   }
-   // 수락 이벤트 수신 시 정상 화면으로
-   const _onMatch = () => {
-     document.getElementById('broadcast-waiting')?.remove();
-     clearInterval(_broadcastTimer);
-     renderMatchingPage();
-     RealtimeService.off('walk-request-accepted', _onMatch);
-     RealtimeService.off('broadcast-matched', _onMatch);
-   };
-   RealtimeService.on('walk-request-accepted', _onMatch);
-   RealtimeService.on('broadcast-matched', _onMatch);
-   return;
+ if (activeReq) {
+   renderRequesterActiveWalkScreen(user, activeReq);
+ } else {
+   MatchingService.refreshFromServer().then(() => renderRequesterDashboard(user, myProfile));
  }
-
- MatchingService.refreshFromServer().then(() => renderRequesterDashboard(user, myProfile));
  })
  .catch(() => {
  MatchingService.refreshFromServer().then(() => renderRequesterDashboard(user, myProfile));
@@ -3026,7 +3188,6 @@ function renderMatchingPage() {
 
 /** 역할 선택 화면 */
 function renderMatchingRoleSelect(selectedRole) {
- hideChatButton(); // 역할 미등록 상태 → 채팅 버튼 불필요
  const user = AuthService.getCurrentUser();
  const walkerSel = selectedRole === 'walker';
  const reqSel = selectedRole === 'requester';
@@ -3128,7 +3289,7 @@ function renderMatchingRoleSelect(selectedRole) {
  return `<div class="form-group" style="margin-bottom:16px;">
  <label>함께할 반려견</label>
  <div style="padding:12px 14px;border:1px solid var(--color-border);border-radius:10px;background:#fafaf8;display:flex;align-items:center;gap:10px;">
- ${icon('paw-print', 20)}
+ <span style="font-size:1.2rem;">??</span>
  <div>
  <div style="font-weight:700;font-size:0.9rem;">${d.name}</div>
  <div style="font-size:0.75rem;color:var(--color-text-muted);">${d.breed || ''}${d.size ? ' · ' + (sizeLabel[d.size] || d.size) : ''}</div>
@@ -3140,7 +3301,7 @@ function renderMatchingRoleSelect(selectedRole) {
  const checkboxes = dogs.map(d =>
  `<label class="match-dog-check" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--color-border);border-radius:10px;cursor:pointer;transition:all 0.15s;margin-bottom:8px;">
    <input type="checkbox" class="match-dog-checkbox" value="${d.id}" style="width:18px;height:18px;accent-color:#1a1a1a;cursor:pointer;">
-   ${icon('paw-print', 20)}
+   <span style="font-size:1.2rem;">??</span>
    <div style="flex:1;min-width:0;">
      <div style="font-weight:700;font-size:0.88rem;">${d.name}</div>
      <div style="font-size:0.72rem;color:var(--color-text-muted);">${d.breed || ''}${d.size ? ' · ' + (sizeLabel[d.size] || d.size) : ''}</div>
@@ -3181,7 +3342,7 @@ function renderMatchingRoleSelect(selectedRole) {
  </div>
 
  <div class="match-role-grid">
- <div class="match-role-card ${walkerSel ? 'match-role-card--selected' : ''}" onclick="renderMatchingRoleSelectStatic('walker')">
+ <div class="match-role-card ${walkerSel ? 'match-role-card--selected' : ''}" onclick="openMatchRegisterFlow('walker')">
  ${walkerSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
  <div class="match-role-card__img-wrap">
  <img src="/images/dog_walker.png" alt="산책 도우미" class="match-role-card__img">
@@ -3191,7 +3352,7 @@ function renderMatchingRoleSelect(selectedRole) {
  <p class="match-role-card__desc">다른 분의 반려견을<br>산책시켜 드려요</p>
  </div>
  </div>
- <div class="match-role-card ${reqSel ? 'match-role-card--selected' : ''}" onclick="renderMatchingRoleSelectStatic('requester')">
+ <div class="match-role-card ${reqSel ? 'match-role-card--selected' : ''}" onclick="openMatchRegisterFlow('requester')">
  ${reqSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
  <div class="match-role-card__img-wrap">
  <img src="/images/dog_owner.png" alt="산책 요청자" class="match-role-card__img">
@@ -3207,6 +3368,10 @@ function renderMatchingRoleSelect(selectedRole) {
  ${!selectedRole ? '<p class="match-role-hint">위 카드를 클릭해서 역할을 선택해주세요</p>' : ''}
  `);
 
+ // Task 7.3: Pre-populate walker form fields if existing profile data is available
+ if (walkerSel && user) {
+ prePopulateWalkerForm(user.id);
+ }
 }
 
 // 토스 스타일 매칭 등록 플로우
@@ -3297,7 +3462,7 @@ function openMatchRegisterFlow(role) {
  <div id="match-reg-modal" style="position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
  <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
  <div style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
- <button onclick="closeMatchRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
+ <button onclick="closeMatchRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">?</button>
  <div id="match-reg-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
  <div id="match-reg-content" style="flex:1; display:flex; flex-direction:column;"></div>
  </div>
@@ -3587,9 +3752,12 @@ function handleRegisterMatchProfile(role, flowData) {
 
  MatchingService.registerProfile(user.id, { role, location: location.trim(), preferredTime, message: message.trim(), isAvailable: true, ...extra });
 
- // 도우미로 등록 시 walkers.json에도 추가 + 즉시 GPS 위치 설정
+ // 도우미로 등록 시 walkers.json에도 추가 (브로드캐스트 대상에 포함되도록)
  if (role === 'walker') {
- const walkerPayload = {
+ fetch('/api/walkers', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
  userId: user.id,
  name: user.name || user.nickname,
  nickname: user.nickname || user.name,
@@ -3603,38 +3771,8 @@ function handleRegisterMatchProfile(role, flowData) {
  largeDogExp: extra.largeDogExp || 'none',
  aggressionHandle: extra.aggressionHandle || 'no',
  ownPetExp: extra.ownPetExp || 'none',
- isAvailable: true,
- };
-
- const _registerAndGoLive = async (lat, lng) => {
- // 1단계: 등록 (서버가 isAvailable=false로 강제 설정)
- await fetch('/api/walkers', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify(walkerPayload)
- }).catch(() => {});
-
- // 2단계: 즉시 ON + GPS 반영 (등록 직후 지도에 표시)
- MatchingService.setAvailability(user.id, true, lat, lng);
- await fetch('/api/walkers/availability', {
- method: 'PATCH',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ userId: user.id, isAvailable: true, lat, lng })
- }).catch(() => {});
-
- await MatchingService.refreshFromServer();
- renderMatchingPage();
- };
-
- if (navigator.geolocation) {
- navigator.geolocation.getCurrentPosition(
- pos => _registerAndGoLive(pos.coords.latitude, pos.coords.longitude),
- () => _registerAndGoLive(null, null),
- { timeout: 5000, enableHighAccuracy: false }
- );
- } else {
- _registerAndGoLive(null, null);
- }
+ })
+ }).then(() => MatchingService.refreshFromServer()).catch(() => {});
  }
 
  refreshDrawer();
@@ -3647,59 +3785,20 @@ let _walkerLastRequestIds = new Set();
 
 function startWalkerPolling(userId) {
  stopWalkerPolling();
-
- // ── 소켓 즉시 알림: 1:1 직접 요청 ──
- RealtimeService.on('walk-request', (data) => {
-   const r = data.request;
-   if (!r || _walkerLastRequestIds.has(r.id)) return;
-   _walkerLastRequestIds.add(r.id);
-   showWalkerNotification(1);
-   const user = AuthService.getCurrentUser();
-   const profile = MatchingService.getMyProfile(userId);
-   if (user && profile) renderWalkerDashboard(user, profile);
- });
-
- // ── 소켓 즉시 알림: 브로드캐스트 (_fallback 포함 → 클라이언트 필터) ──
- RealtimeService.on('broadcast-walk-request', (data) => {
-   const profile = MatchingService.getMyProfile(userId);
-   // fallback/softBroadcast 이벤트는 실제 도우미 ON 상태일 때만 처리
-   if ((data._fallback || data._softBroadcast) && !profile?.isAvailable) return;
-   // 이미 알림 표시한 요청이면 스킵
-   if (data.requestId && _walkerLastRequestIds.has(data.requestId)) return;
-   if (data.requestId) _walkerLastRequestIds.add(data.requestId);
-   // 기존 showBroadcastNotification 호출
-   showBroadcastNotification(data);
- });
-
- // ── 폴링 백업 2초 ──
  _walkerPollInterval = setInterval(async () => {
-   try {
-     // 1:1 직접 요청 (pending)
-     const r1 = await fetch(`/api/walk-requests?walkerId=${userId}`);
-     const d1 = await r1.json();
-     const newDirect = (d1.requests || []).filter(r => r.status === 'pending' && !_walkerLastRequestIds.has(r.id));
-
-     // 브로드캐스트 요청 (broadcasting) — walkerId가 null이라 위 쿼리에 안 나옴
-     const r2 = await fetch('/api/walk-requests/broadcast/active');
-     const d2 = await r2.json();
-     const myProfile = MatchingService.getMyProfile(userId);
-     const newBroadcast = (d2.requests || []).filter(r =>
-       !_walkerLastRequestIds.has(r.id) &&
-       myProfile?.isAvailable  // 실제 도우미 ON 상태인 경우만
-     );
-
-     const allNew = [...newDirect, ...newBroadcast];
-     if (allNew.length > 0) {
-       allNew.forEach(r => _walkerLastRequestIds.add(r.id));
-       const user = AuthService.getCurrentUser();
-       const profile = MatchingService.getMyProfile(userId);
-       if (user && profile) {
-         showWalkerNotification(allNew.length);
-         renderWalkerDashboard(user, profile);
-       }
-     }
-   } catch (e) {}
- }, 2000);
+ try {
+ const requests = await MatchingService.getReceivedRequestsRemote(userId);
+ const pending = requests.filter(r => r.status === 'pending');
+ const newOnes = pending.filter(r => !_walkerLastRequestIds.has(r.id));
+ if (newOnes.length > 0) {
+ newOnes.forEach(r => _walkerLastRequestIds.add(r.id));
+ showWalkerNotification(newOnes.length);
+ const user = AuthService.getCurrentUser();
+ const profile = MatchingService.getMyProfile(userId);
+ if (user && profile) renderWalkerDashboard(user, profile);
+ }
+ } catch (e) { /* 네트워크 오류 무시 */ }
+ }, 5000);
 }
 
 function stopWalkerPolling() {
@@ -3726,7 +3825,7 @@ function showWalkerNotification(count) {
  <div style="font-weight:700;">산책 요청이 들어왔어요!</div>
  <div style="font-size:0.78rem;opacity:0.8;margin-top:2px;">새 요청 ${count}건 · 탭해서 확인하세요 →</div>
  </div>
- <span style="opacity:0.6;">${icon('bell', 18)}</span>`;
+ <span style="font-size:1.1rem;opacity:0.6;">?</span>`;
  notif.style.display = 'flex';
  clearTimeout(notif._hideTimer);
  notif._hideTimer = setTimeout(() => { if (notif) notif.style.display = 'none'; }, 8000);
@@ -3795,14 +3894,14 @@ async function renderWalkerDashboard(user, myProfile) {
  <div class="match-request-card__from">${fromName}</div>
  <div style="font-size:0.78rem;color:var(--color-text-muted);">${formatRelativeTime(r.createdAt)}</div>
  </div>
- ${r.status === 'accepted' ? `<span class="badge badge-success" style="margin-left:auto;">${icon('check-circle',12)} 수락됨</span>` : ''}
+ ${r.status === 'accepted' ? '<span class="badge badge-success" style="margin-left:auto;">? 수락됨</span>' : ''}
  ${r.status !== 'pending' && r.status !== 'accepted' ? '<span class="badge" style="margin-left:auto;">처리됨</span>' : ''}
  </div>
 
  <div class="match-request-card__body">
  ${(rd.dogs && rd.dogs.length > 1) ? `
  <div class="match-request-card__dog" style="align-items:flex-start;">
- ${icon('paw-print', 22)}
+ <span style="font-size:1.3rem;">?????</span>
  <div style="flex:1;">
  <div style="font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
  반려견 ${rd.dogs.length}마리 동시 산책
@@ -3814,7 +3913,7 @@ async function renderWalkerDashboard(user, myProfile) {
  </div>
  </div>` : (rd.dogName || dogSizeText) ? `
  <div class="match-request-card__dog">
- ${icon('paw-print', 22)}
+ <span style="font-size:1.3rem;">??</span>
  <div>
  <div style="font-weight:700;">${rd.dogName || '반려견'}${dogSizeText ? ` <span class="dw-size-tag">${dogSizeText}</span>` : ''}</div>
  ${rd.dogBreed ? `<div style="font-size:0.8rem;color:var(--color-text-muted);">${rd.dogBreed}</div>` : ''}
@@ -3822,7 +3921,7 @@ async function renderWalkerDashboard(user, myProfile) {
  </div>` : ''}
  <div class="match-request-card__info-grid">
  ${rd.location ? `<div class="match-request-card__info-item">${icon('map-pin',13)} ${rd.location}${rd.lat && rd.lng ? ` <span style="font-size:0.68rem;color:#00AA76;font-weight:700;margin-left:4px;">· GPS</span>` : ''}</div>` : ''}
- ${rd.desiredTime ? `<div class="match-request-card__info-item">${rd.desiredTime === '지금 (즉시 매칭)' ? `<span style="color:#00AA76;font-weight:700;">${icon('navigation',13)} 지금 · 즉시 매칭</span>` : `${icon('clock',13)} ${rd.desiredTime}`}</div>` : ''}
+ ${rd.desiredTime ? `<div class="match-request-card__info-item">${rd.desiredTime === '지금 (즉시 매칭)' ? `<span style="color:#00AA76;font-weight:700;">? 지금 · 즉시 매칭</span>` : `${icon('clock',13)} ${rd.desiredTime}`}</div>` : ''}
  </div>
  ${rd.notes ? `<div class="match-request-card__notes">"${rd.notes}"</div>` : ''}
  </div>
@@ -3847,7 +3946,7 @@ async function renderWalkerDashboard(user, myProfile) {
  <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
  <div class="match-walk-card__info">
  <div class="match-walk-card__name">${pName}</div>
- <div style="font-size:0.8rem;color:var(--color-text-muted);">${icon('clock',12)} 매칭 시각: ${relative} · ${time}</div>
+ <div style="font-size:0.8rem;color:var(--color-text-muted);">? 매칭 시각: ${relative} · ${time}</div>
  <span class="badge badge-info" style="margin-top:4px;">산책 진행 중</span>
  </div>
  </div>
@@ -4243,9 +4342,9 @@ function renderRequesterActiveWalkScreen(user, req) {
  const walkerName = req.walkerName || '도우미';
  const statusMap = {
    accepted: { label: '매칭 완료', desc: '도우미가 출발 준비 중이에요', icon: '✅', color: '#00AA76' },
-   heading: { label: '이동 중', desc: '도우미가 픽업 장소로 오고 있어요', icon: icon('navigation',14,'#3182CE'), color: '#3182CE' },
-   arrived: { label: '도착', desc: '도우미가 도착했어요! 반려견을 전달해주세요', icon: icon('map-pin',14,'#F6A623'), color: '#F6A623' },
-   walking: { label: '산책 중', desc: '반려견이 산책 중이에요', icon: icon('paw-print',14,'#00AA76'), color: '#00AA76' }
+   heading: { label: '이동 중', desc: '도우미가 픽업 장소로 오고 있어요', icon: '🚶', color: '#3182CE' },
+   arrived: { label: '도착', desc: '도우미가 도착했어요! 반려견을 전달해주세요', icon: '📍', color: '#F6A623' },
+   walking: { label: '산책 중', desc: '반려견이 산책 중이에요', icon: '🐕', color: '#00AA76' }
  };
  const status = statusMap[req.status] || statusMap.accepted;
 
@@ -4667,7 +4766,7 @@ async function renderRequesterDashboard(user, myProfile) {
  <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
  <div class="match-walk-card__info">
  <div class="match-walk-card__name">${pName}</div>
- <div style="font-size:0.8rem;color:var(--color-text-muted);">${icon('clock',12)} 매칭 시각: ${relative} · ${time}</div>
+ <div style="font-size:0.8rem;color:var(--color-text-muted);">? 매칭 시각: ${relative} · ${time}</div>
  <span class="badge badge-info" style="margin-top:4px;">산책 진행 중</span>
  </div>
  </div>
@@ -4708,11 +4807,11 @@ async function renderRequesterDashboard(user, myProfile) {
    statusBorderColor = '#fcd34d';
    footerAction = `<button class="btn btn-ghost btn-sm" onclick="handleCancelSentRequest('${r.id}')" style="font-size:0.75rem;color:var(--color-text-muted);white-space:nowrap;">요청 취소</button>`;
  } else if (r.status === 'accepted') {
-   statusBadge = `<span style="padding:4px 10px;background:#d1fae5;color:#047857;border-radius:999px;font-size:0.72rem;font-weight:700;">${icon('check-circle',12)} 수락됨</span>`;
+   statusBadge = `<span style="padding:4px 10px;background:#d1fae5;color:#047857;border-radius:999px;font-size:0.72rem;font-weight:700;">? 수락됨</span>`;
    statusBgColor = '#f0fdf4';
    statusBorderColor = '#86efac';
  } else if (r.status === 'rejected') {
-   statusBadge = `<span style="padding:4px 10px;background:#fee2e2;color:#b91c1c;border-radius:999px;font-size:0.72rem;font-weight:700;">✕ 거절됨</span>`;
+   statusBadge = `<span style="padding:4px 10px;background:#fee2e2;color:#b91c1c;border-radius:999px;font-size:0.72rem;font-weight:700;">? 거절됨</span>`;
    statusBorderColor = '#fca5a5';
  } else if (r.status === 'walker_busy') {
    statusBadge = `<span style="padding:4px 10px;background:#fed7aa;color:#9a3412;border-radius:999px;font-size:0.72rem;font-weight:700;">다른 산책 수락됨</span>`;
@@ -4770,7 +4869,7 @@ async function renderRequesterDashboard(user, myProfile) {
 
  ${sentRequestsHtml ? `<div class="match-section">
    <h2 class="match-section__title" style="display:flex;align-items:center;gap:8px;">
-     ${icon('flag',16)} 내가 보낸 요청
+     ?? 내가 보낸 요청
      <span style="font-size:0.7rem;color:var(--color-text-muted);font-weight:500;">실시간 상태</span>
    </h2>
    ${sentRequestsHtml}
@@ -4791,7 +4890,10 @@ async function renderRequesterDashboard(user, myProfile) {
  </div>
  <div class="dw-map-wrap">
  <div id="dw-disc-map" class="dw-map"></div>
- <div class="dw-map-hint" id="dw-map-hint" style="flex-direction:column;gap:8px;background:rgba(250,250,248,0.95);backdrop-filter:blur(6px);">
+ <div class="dw-map-hint" id="dw-map-hint" style="flex-direction:column;gap:12px;background:rgba(250,250,248,0.92);backdrop-filter:blur(6px);">
+ <div class="spinner" style="width:32px;height:32px;"></div>
+ <div style="font-weight:700;font-size:0.95rem;color:var(--color-text);">내 위치를 찾고 있어요</div>
+ <div style="font-size:0.78rem;color:var(--color-text-muted);line-height:1.5;">GPS 신호를 잡는 중이에요.<br>위치 권한을 허용해주세요 🐾</div>
  </div>
  </div>
  </div>
@@ -4855,31 +4957,13 @@ function handleRemoveMatchProfile() {
  renderMatchingPage();
 }
 
-async function handleSwitchRole() {
+function handleSwitchRole() {
  const user = AuthService.getCurrentUser();
  if (!user) return;
  const myProfile = MatchingService.getMyProfile(user.id);
  const currentRole = myProfile?.role === 'walker' ? '산책 도우미' : '산책 요청자';
  const nextRole = myProfile?.role === 'walker' ? '산책 요청자' : '산책 도우미';
  if (!confirm(`현재 ${currentRole} 역할을 해제하고 ${nextRole}로 변경할까요?`)) return;
-
- // 워커였다면 서버에서도 가용 상태 OFF 처리 → 지도에서 즉시 사라짐
- if (myProfile?.role === 'walker') {
- try {
- const res = await fetch('/api/walkers');
- const walkers = await res.json();
- const serverWalker = walkers.find(w => w.userId === user.id);
- if (serverWalker?.isAvailable) {
- await fetch('/api/walkers/toggle', {
- method: 'PATCH',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ userId: user.id })
- });
- }
- } catch (e) { /* 서버 오류는 무시하고 로컬 처리 계속 */ }
- await MatchingService.refreshFromServer();
- }
-
  MatchingService.removeProfile(user.id);
  refreshDrawer();
  renderMatchingRoleSelect(myProfile?.role === 'walker' ? 'requester' : 'walker');
@@ -4986,7 +5070,7 @@ function startRequesterPolling(userId) {
  setTimeout(() => renderMatchingPage(), 1500);
  }
  } catch (e) {}
- }, 2000); // 2초 간격 (소켓 보조용)
+ }, 5000);
 }
 
 function stopRequesterPolling() {
@@ -5069,10 +5153,9 @@ async function _sendMatchRequestAfterPayment(toUserId, paymentResult) {
 
  const alertEl = document.getElementById('matching-alert');
 
- // GPS: 1초 내 못 받으면 저장된 좌표 사용 (결제 redirect 지연 최소화)
- let lat = myProfile.lat || null, lng = myProfile.lng || null;
+ let lat = null, lng = null;
  try {
-   const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 1000, maximumAge: 30000 }));
+   const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 }));
    lat = pos.coords.latitude; lng = pos.coords.longitude;
  } catch(e) {}
 
@@ -5093,16 +5176,11 @@ async function _sendMatchRequestAfterPayment(toUserId, paymentResult) {
 
  const result = await MatchingService.sendRequest(user.id, toUserId, requestData);
  if (result && result.success) {
-   renderMatchingPage(); // 배경 대시보드 먼저 렌더링
-   // 대기 오버레이 표시 (도우미 응답까지 블러 화면)
-   showWalkerWaitingOverlay(result.request?.id || '', 1);
-   // 도우미 수락 시 오버레이 닫기
-   const _onAccepted = () => {
-     document.getElementById('broadcast-waiting')?.remove();
-     clearInterval(_broadcastTimer);
-     RealtimeService.off('walk-request-accepted', _onAccepted);
-   };
-   RealtimeService.on('walk-request-accepted', _onAccepted);
+   if (alertEl) {
+     alertEl.innerHTML = '<div class="alert alert-success">결제 완료! 매칭 요청을 보냈습니다 💳</div>';
+     setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
+   }
+   renderMatchingPage();
  } else {
    if (alertEl) {
      alertEl.innerHTML = `<div class="alert alert-error">${result?.error || '요청 전송에 실패했습니다.'}</div>`;
@@ -5228,7 +5306,7 @@ function renderProfilePage() {
  </div>
  <div class="card" style="padding:24px; margin-bottom:16px;">
  <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
- <div style="width:60px;height:60px;border-radius:50%;background:var(--color-primary,#7C4DFF);color:#fff;display:flex;align-items:center;justify-content:center;">${icon('user',28,'#fff')}</div>
+ <div style="width:60px;height:60px;border-radius:50%;background:var(--color-primary,#7C4DFF);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;">?</div>
  <div>
  <h3 style="margin:0;">게스트</h3>
  <p style="color:var(--color-text-muted); font-size:0.85rem; margin:4px 0 0;">로그인하면 프로필을 설정할 수 있어요</p>
@@ -5290,7 +5368,7 @@ function renderProfilePage() {
  </div>
 
  <div class="card" style="padding:24px; margin-bottom:16px;">
- <h3 style="margin-bottom:16px;">${icon('users',18)} 추천인 코드</h3>
+ <h3 style="margin-bottom:16px;">추천인 코드</h3>
  <div style="background:var(--color-bg-warm); border-radius:10px; padding:12px 16px; margin-bottom:16px;">
  <span style="font-size:0.82rem; color:var(--color-text-light);">내 추천인 코드:</span>
  <span style="font-weight:900; color:var(--color-primary-dark); margin-left:6px; letter-spacing:1px;">${user.referralCode || '없음'}</span>
@@ -5310,7 +5388,10 @@ function renderProfilePage() {
  </div>
 
  <div class="card" style="padding:24px; margin-bottom:16px;">
- <h3 style="margin-bottom:12px;">내 반려견</h3>
+ <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+ <h3 style="margin:0;">내 반려견</h3>
+ <button class="btn btn-primary btn-sm" onclick="openDogRegisterFlow()">+ 등록</button>
+ </div>
  ${user.dogs && user.dogs.length > 0
  ? user.dogs.map((d, idx) => `
  <div style="padding:12px 0; ${idx < user.dogs.length - 1 ? 'border-bottom:1px solid var(--color-border);' : ''}">
@@ -5345,7 +5426,7 @@ function renderProfilePage() {
  </div>
 
  <div class="card" style="padding:24px; margin-bottom:16px;">
- <h3 style="margin-bottom:16px;">${icon('activity',18)} 건강 서류 관리</h3>
+ <h3 style="margin-bottom:16px;">건강 서류 관리</h3>
  <div id="upload-error"></div>
  <div style="display:flex; gap:8px; margin-bottom:16px;">
  <div style="flex:1;">
@@ -5365,16 +5446,11 @@ function renderProfilePage() {
  <div id="uploaded-files" style="margin-top:16px;"></div>
  </div>
 
- <div class="card" style="padding:24px;">
- <h3 style="margin-bottom:16px;">반려견 등록</h3>
- <button class="btn btn-primary" style="width:100%;" onclick="openDogRegisterFlow()">새 반려견 등록하기</button>
- </div>
-
  <!-- 토스 스타일 반려견 등록 모달 -->
  <div id="dog-reg-modal" style="display:none; position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
  <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
  <div id="dog-reg-card" style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:400px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
- <button onclick="closeDogRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
+ <button onclick="closeDogRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">?</button>
  <div id="dog-reg-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
  <div id="dog-reg-content" style="flex:1; display:flex; flex-direction:column;"></div>
  </div>
@@ -5390,6 +5466,7 @@ let _dogRegStep = 0;
 let _dogRegData = {};
 
 const _dogRegSteps = [
+ { key: 'photo', question: '반려견 사진을 올려주세요', sub: '프로필에 표시돼요 (건너뛰기 가능)', type: 'photo', required: false },
  { key: 'name', question: '반려견 이름이 뭐예요?', sub: '사랑하는 아이의 이름을 알려주세요', type: 'text', placeholder: '예: 초코', required: true },
  { key: 'breed', question: '품종을 알려주세요', sub: '검색해서 찾을 수 있어요', type: 'breed-search', required: true },
  { key: 'age', question: '나이가 어떻게 돼요?', sub: '대략적인 나이도 괜찮아요', type: 'number', placeholder: '예: 3', min: 0, max: 30, required: true },
@@ -5439,7 +5516,35 @@ function renderDogRegStep() {
  ).join('');
 
  let inputHtml = '';
- if (step.type === 'text') {
+ if (step.type === 'photo') {
+ const preview = _dogRegData.photoPreview || '';
+ const hasPhoto = !!preview;
+ inputHtml = `
+ <div style="text-align:center; margin-top:24px;">
+ ${hasPhoto ? `
+ <p style="font-size:0.82rem; color:#999; margin-bottom:12px;">드래그해서 위치를 조정하세요</p>
+ <div id="dog-photo-crop-area" style="width:160px; height:160px; border-radius:50%; margin:0 auto 16px; overflow:hidden; position:relative; cursor:grab; border:2px solid #e5e3e0; touch-action:none;">
+ <img id="dog-photo-crop-img" src="${preview}" style="position:absolute; user-select:none; -webkit-user-drag:none; pointer-events:none;" draggable="false">
+ </div>
+ <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:16px;">
+ <span style="font-size:0.8rem; color:#999;">-</span>
+ <input type="range" id="dog-photo-zoom" min="100" max="300" value="${_dogRegData._cropZoom || 150}" style="width:140px; accent-color:#1a1a1a;" oninput="handleDogPhotoZoom(this.value)">
+ <span style="font-size:0.8rem; color:#999;">+</span>
+ </div>
+ <button onclick="removeDogRegPhoto()" style="padding:8px 20px; border:1.5px solid #e5e3e0; border-radius:10px; background:#fff; font-size:0.82rem; color:#999; cursor:pointer;">사진 변경</button>
+ ` : `
+ <div id="dog-photo-dropzone" style="width:160px; height:160px; border-radius:50%; margin:0 auto 16px; background:#f5f3f0; display:flex; flex-direction:column; align-items:center; justify-content:center; border:2px dashed #d5d3d0; cursor:pointer; transition:border-color 0.2s, background 0.2s;"
+ onclick="document.getElementById('dog-reg-photo').click()"
+ ondragover="event.preventDefault(); this.style.borderColor='#1a1a1a'; this.style.background='#edecea';"
+ ondragleave="this.style.borderColor='#d5d3d0'; this.style.background='#f5f3f0';"
+ ondrop="event.preventDefault(); this.style.borderColor='#d5d3d0'; this.style.background='#f5f3f0'; handleDogPhotoDrop(event);">
+ <div style="font-size:1.5rem; color:#bbb; margin-bottom:4px;">+</div>
+ <div style="font-size:0.75rem; color:#999;">클릭 또는 드래그</div>
+ </div>
+ <input type="file" id="dog-reg-photo" accept="image/*" style="display:none;" onchange="handleDogPhotoSelect(this)">
+ `}
+ </div>`;
+ } else if (step.type === 'text') {
  inputHtml = `<input type="text" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; margin-top:24px;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()">`;
  } else if (step.type === 'number') {
  inputHtml = `<div style="display:flex; align-items:center; gap:8px; margin-top:24px;"><input type="number" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" min="${step.min || 0}" max="${step.max || 100}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; flex:1;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()"><span style="font-size:1rem; font-weight:600; color:var(--color-text-muted);">살</span></div>`;
@@ -5479,7 +5584,10 @@ function renderDogRegStep() {
  `;
 
  // 자동 포커스
- setTimeout(() => document.getElementById('dog-reg-input')?.focus(), 100);
+ setTimeout(() => {
+ document.getElementById('dog-reg-input')?.focus();
+ if (step.type === 'photo' && _dogRegData.photoPreview) initDogPhotoCrop();
+ }, 100);
 }
 
 function selectDogRegCard(key, value) {
@@ -5489,11 +5597,111 @@ function selectDogRegCard(key, value) {
  setTimeout(() => nextDogRegStep(), 300);
 }
 
+function handleDogPhotoSelect(input) {
+ if (!input.files || !input.files[0]) return;
+ const file = input.files[0];
+ if (file.size > 5 * 1024 * 1024) { alert('5MB 이하 사진만 업로드 가능해요.'); return; }
+ const reader = new FileReader();
+ reader.onload = (e) => {
+ _dogRegData.photoPreview = e.target.result;
+ _dogRegData._cropX = 0;
+ _dogRegData._cropY = 0;
+ _dogRegData._cropZoom = 150;
+ renderDogRegStep();
+ setTimeout(() => initDogPhotoCrop(), 50);
+ };
+ reader.readAsDataURL(file);
+}
+
+function handleDogPhotoDrop(event) {
+ const files = event.dataTransfer.files;
+ if (!files || !files[0]) return;
+ if (!files[0].type.startsWith('image/')) { alert('이미지 파일만 업로드 가능해요.'); return; }
+ handleDogPhotoSelect({ files });
+}
+
+function removeDogRegPhoto() {
+ _dogRegData.photo = '';
+ _dogRegData.photoPreview = '';
+ _dogRegData._cropX = 0;
+ _dogRegData._cropY = 0;
+ _dogRegData._cropZoom = 150;
+ renderDogRegStep();
+}
+
+function handleDogPhotoZoom(val) {
+ _dogRegData._cropZoom = Number(val);
+ applyDogPhotoCropPosition();
+}
+
+function initDogPhotoCrop() {
+ const area = document.getElementById('dog-photo-crop-area');
+ const img = document.getElementById('dog-photo-crop-img');
+ if (!area || !img) return;
+ img.onload = () => { applyDogPhotoCropPosition(); };
+ if (img.complete) applyDogPhotoCropPosition();
+ let dragging = false, startX = 0, startY = 0, origX = 0, origY = 0;
+ function onStart(x, y) { dragging = true; startX = x; startY = y; origX = _dogRegData._cropX || 0; origY = _dogRegData._cropY || 0; area.style.cursor = 'grabbing'; }
+ function onMove(x, y) { if (!dragging) return; _dogRegData._cropX = origX + (x - startX); _dogRegData._cropY = origY + (y - startY); applyDogPhotoCropPosition(); }
+ function onEnd() { dragging = false; area.style.cursor = 'grab'; clampCropPosition(); saveCroppedPhoto(); }
+ area.addEventListener('mousedown', (e) => { e.preventDefault(); onStart(e.clientX, e.clientY); });
+ window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+ window.addEventListener('mouseup', onEnd);
+ area.addEventListener('touchstart', (e) => { const t = e.touches[0]; onStart(t.clientX, t.clientY); }, { passive: true });
+ window.addEventListener('touchmove', (e) => { const t = e.touches[0]; onMove(t.clientX, t.clientY); }, { passive: true });
+ window.addEventListener('touchend', onEnd);
+}
+
+function applyDogPhotoCropPosition() {
+ const img = document.getElementById('dog-photo-crop-img');
+ if (!img || !img.naturalWidth) return;
+ const areaSize = 160, zoom = (_dogRegData._cropZoom || 150) / 100;
+ const ratio = img.naturalWidth / img.naturalHeight;
+ let w, h;
+ if (ratio > 1) { h = areaSize * zoom; w = h * ratio; } else { w = areaSize * zoom; h = w / ratio; }
+ const cx = _dogRegData._cropX || 0, cy = _dogRegData._cropY || 0;
+ img.style.width = w + 'px'; img.style.height = h + 'px';
+ img.style.left = ((areaSize - w) / 2 + cx) + 'px'; img.style.top = ((areaSize - h) / 2 + cy) + 'px';
+}
+
+function clampCropPosition() {
+ const img = document.getElementById('dog-photo-crop-img');
+ if (!img || !img.naturalWidth) return;
+ const areaSize = 160, zoom = (_dogRegData._cropZoom || 150) / 100;
+ const ratio = img.naturalWidth / img.naturalHeight;
+ let w, h;
+ if (ratio > 1) { h = areaSize * zoom; w = h * ratio; } else { w = areaSize * zoom; h = w / ratio; }
+ const maxX = Math.max(0, (w - areaSize) / 2), maxY = Math.max(0, (h - areaSize) / 2);
+ _dogRegData._cropX = Math.max(-maxX, Math.min(maxX, _dogRegData._cropX || 0));
+ _dogRegData._cropY = Math.max(-maxY, Math.min(maxY, _dogRegData._cropY || 0));
+ applyDogPhotoCropPosition();
+}
+
+function saveCroppedPhoto() {
+ const img = document.getElementById('dog-photo-crop-img');
+ if (!img || !img.naturalWidth) return;
+ const areaSize = 160, zoom = (_dogRegData._cropZoom || 150) / 100;
+ const ratio = img.naturalWidth / img.naturalHeight;
+ let w, h;
+ if (ratio > 1) { h = areaSize * zoom; w = h * ratio; } else { w = areaSize * zoom; h = w / ratio; }
+ const cx = _dogRegData._cropX || 0, cy = _dogRegData._cropY || 0;
+ const drawX = (areaSize - w) / 2 + cx, drawY = (areaSize - h) / 2 + cy;
+ const canvas = document.createElement('canvas');
+ const outputSize = 320;
+ canvas.width = outputSize; canvas.height = outputSize;
+ const ctx = canvas.getContext('2d');
+ const scale = outputSize / areaSize;
+ ctx.drawImage(img, drawX * scale, drawY * scale, w * scale, h * scale);
+ _dogRegData.photo = canvas.toDataURL('image/jpeg', 0.85);
+}
+
 function nextDogRegStep() {
  const step = _dogRegSteps[_dogRegStep];
+ if (step.type !== 'photo') {
  const input = document.getElementById('dog-reg-input');
  if (input) _dogRegData[step.key] = input.value.trim();
- if (step.required && !_dogRegData[step.key]) { if(input) input.style.borderColor='#e53e3e'; return; }
+ }
+ if (step.required && !_dogRegData[step.key]) { const input = document.getElementById('dog-reg-input'); if(input) input.style.borderColor='#e53e3e'; return; }
  if (_dogRegStep < _dogRegSteps.length - 1) { _dogRegStep++; renderDogRegStep(); }
 }
 
@@ -5652,7 +5860,7 @@ async function handleUploadFile() {
  formData.append('dogId', user.dogs?.[0]?.name || 'default');
 
  try {
- if (errEl) errEl.innerHTML = '<div class="alert alert-success">업로드 중...</div>';
+ if (errEl) errEl.innerHTML = '<div class="alert alert-success">업로드 중... ??</div>';
  const resp = await fetch('/api/upload', { method: 'POST', body: formData });
  const data = await resp.json();
  if (data.success) {
@@ -5679,11 +5887,11 @@ async function loadUploadedFiles(userId) {
  return;
  }
 
- const typeLabel = { vaccination: '예방접종 기록', diagnosis: '진단서', other: '기타' };
+ const typeLabel = { vaccination: '?? 예방접종 기록', diagnosis: '진단서', other: '?? 기타' };
  container.innerHTML = data.files.map(f => `
  <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--color-bg); border-radius:8px; margin-bottom:6px;">
  <div>
- <div style="font-weight:600; font-size:0.85rem;">${typeLabel[f.type] || '기타'}</div>
+ <div style="font-weight:600; font-size:0.85rem;">${typeLabel[f.type] || '?? 기타'}</div>
  <div style="font-size:0.78rem; color:var(--color-text-muted);">${f.originalName} · ${(f.size / 1024).toFixed(0)}KB · ${new Date(f.uploadedAt).toLocaleDateString('ko-KR')}</div>
  </div>
  <div style="display:flex; gap:6px;">
@@ -5847,31 +6055,25 @@ function handleSaveEditDog(idx) {
  return;
  }
 
- const updatedDog = {
- ...user.dogs[idx],
- name,
- breed,
- age: Number(age),
- size,
- gender: gender || null,
- weight: weight ? Number(weight) : null,
- neutered: neutered === 'yes' ? true : neutered === 'no' ? false : null,
- personality: personality || null,
- healthNote: healthNote || null
- };
-
- const updatedDogs = user.dogs.map((d, i) => i === idx ? updatedDog : d);
- const updatedUser = { ...user, dogs: updatedDogs };
- delete updatedUser.passwordHash;
- StorageService.set('currentUser', updatedUser);
-
- // 로컬 users 배열에도 동기화
  const users = StorageService.get('users', []);
  const userIdx = users.findIndex(u => u.id === user.id);
- if (userIdx !== -1) {
- users[userIdx].dogs = updatedDogs;
+ if (userIdx === -1) return;
+
+ const dog = users[userIdx].dogs[idx];
+ dog.name = name;
+ dog.breed = breed;
+ dog.age = Number(age);
+ dog.size = size;
+ dog.gender = gender || null;
+ dog.weight = weight ? Number(weight) : null;
+ dog.neutered = neutered === 'yes' ? true : neutered === 'no' ? false : null;
+ dog.personality = personality || null;
+ dog.healthNote = healthNote || null;
+
  StorageService.set('users', users);
- }
+ const updated = { ...users[userIdx] };
+ delete updated.passwordHash;
+ StorageService.set('currentUser', updated);
 
  renderProfilePage();
 }
@@ -6593,7 +6795,11 @@ function loadDWDiscovery() {
  // 로딩 상태 표시
  if (hint) {
    hint.style.display = 'flex';
-   _setHintVideo(hint, '내 위치를 찾고 있어요', 'GPS 신호를 잡는 중이에요.<br>위치 권한을 허용해주세요 🐾');
+   hint.innerHTML = `
+     <div class="spinner" style="width:32px;height:32px;"></div>
+     <div style="font-weight:700;font-size:0.95rem;color:var(--color-text);">내 위치를 찾고 있어요</div>
+     <div style="font-size:0.78rem;color:var(--color-text-muted);line-height:1.5;">GPS 신호를 잡는 중이에요.<br>위치 권한을 허용해주세요 🐾</div>
+   `;
  }
 
  if (!navigator.geolocation) {
@@ -6609,7 +6815,11 @@ function loadDWDiscovery() {
  if (btn) { btn.textContent = '내 위치로 찾기'; btn.disabled = false; }
  // hint는 지도 렌더링 완료 후 숨김 (아래 _renderDiscMap에서 처리)
  if (hint) {
-   _setHintVideo(hint, '지도를 불러오는 중이에요', '주변 도우미를 찾고 있어요 🐾');
+   hint.innerHTML = `
+     <div class="spinner" style="width:32px;height:32px;"></div>
+     <div style="font-weight:700;font-size:0.95rem;color:var(--color-text);">지도를 불러오는 중이에요</div>
+     <div style="font-size:0.78rem;color:var(--color-text-muted);">주변 도우미를 찾고 있어요 🐾</div>
+   `;
  }
  const radius = Number(document.getElementById('dw-radius-sel')?.value || 5);
  _renderDiscMap(_dwUserLat, _dwUserLng, radius);
@@ -6643,7 +6853,6 @@ async function _renderDiscMap(userLat, userLng, radiusKm) {
  tileLayer.on('load', () => {
    const hint = document.getElementById('dw-map-hint');
    if (hint) {
-     hint.querySelector('canvas')?._stopDraw?.();
      hint.style.transition = 'opacity 0.4s ease';
      hint.style.opacity = '0';
      setTimeout(() => { hint.style.display = 'none'; hint.style.opacity = '1'; }, 400);
@@ -6930,7 +7139,7 @@ function renderAIConsultPage() {
  </div>
  <div id="ai-chat" style="min-height:300px; max-height:500px; overflow-y:auto; margin-bottom:16px;">
  <div class="card" style="padding:20px; text-align:center; color:var(--color-text-light);">
- <div style="margin-bottom:8px;">${icon('bot', 40)}</div>
+ <div style="font-size:2.5rem; margin-bottom:8px;">???</div>
  <p style="font-weight:700;">안녕하세요! AI 행동 상담사예요~</p>
  <p style="font-size:0.85rem; margin-top:4px;">반려견 행동 문제나 훈련 방법에 대해 물어봐주세요!</p>
  </div>
@@ -7027,7 +7236,7 @@ async function handleAIConsultSend() {
  const botId = 'ai-bot-' + Date.now();
  _appendAIMsg('bot', '', chat, botId);
  const bubble = document.querySelector(`#${botId} .ai-msg__bubble`);
- if (bubble) bubble.innerHTML = '<span class="ai-typing">···</span>';
+ if (bubble) bubble.innerHTML = '<span class="ai-typing">?</span>';
 
  const user = AuthService.getCurrentUser();
  const dog = user?.dogs?.[0] || null;
@@ -7178,11 +7387,11 @@ function showWalkerAcceptedModal(req) {
  ${req.walkerIntro ? `<div style="font-size:0.82rem;color:#4A5568;font-style:italic;margin-bottom:8px;">"${req.walkerIntro}"</div>` : ''}
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.8rem;color:#4A5568;">
  ${req.walkerExperience ? `<span>경력 ${req.walkerExperience}</span>` : ''}
- ${req.walkerPrice ? `<span>${icon('wallet',12)} ${Number(req.walkerPrice).toLocaleString()}/시간</span>` : ''}
+ ${req.walkerPrice ? `<span>?? \${Number(req.walkerPrice).toLocaleString()}/시간</span>` : ''}
  ${req.walkerRating ? `<span> ${Number(req.walkerRating).toFixed(1)}점</span>` : ''}
  ${req.walkerReviewCount ? `<span>리뷰 ${req.walkerReviewCount}건</span>` : ''}
  </div>
- ${req.walkerPhone ? `<div style="margin-top:10px;padding:8px 12px;background:#EBF8FF;border-radius:8px;font-size:0.85rem;"><span style="font-weight:700;">${icon('bell',12)} 연락처:</span> ${req.walkerPhone}</div>` : ''}
+ ${req.walkerPhone ? `<div style="margin-top:10px;padding:8px 12px;background:#EBF8FF;border-radius:8px;font-size:0.85rem;"><span style="font-weight:700;">?? 연락처:</span> ${req.walkerPhone}</div>` : ''}
  </div>
 
  <button class="btn btn-primary" style="width:100%;margin-bottom:10px;padding:14px;font-size:1rem;" onclick="startWalkSessionByRequester('${req.id}','${req.walkerId}')">
@@ -7437,12 +7646,12 @@ function adminSendNotice() {
 }
 
 // --- GPS 산책 트래킹 페이지 ---
-async function renderWalkTrackingPage() {
+function renderWalkTrackingPage() {
  const user = AuthService.getCurrentUser();
  if (!user) {
  renderPage(`
  <div class="page-header">
- <h1>${icon('map',20)} 산책 트래킹</h1>
+ <h1>?? 산책 트래킹</h1>
  <p>GPS로 산책을 기록하고 건강 데이터를 수집해요</p>
  </div>
  <div class="card" style="padding:24px; margin-bottom:16px; text-align:center;">
@@ -7467,44 +7676,22 @@ async function renderWalkTrackingPage() {
  <div style="height:250px; border-radius:12px; background:#e8e8e8; display:flex; align-items:center; justify-content:center; color:#999; margin-bottom:16px;">
  산책 경로가 여기에 표시돼요
  </div>
- <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('GPS 산책 트래킹을 시작하려면 로그인이 필요해요!\\n산책 경로, 거리, 시간, 칼로리를 기록할 수 있어요.')">${icon('navigation',16)} 산책 시작하기</button>
+ <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('GPS 산책 트래킹을 시작하려면 로그인이 필요해요!\\n산책 경로, 거리, 시간, 칼로리를 기록할 수 있어요.')">?? 산책 시작하기</button>
  `);
  return;
  }
 
- // 요청자 역할 체크: 서버에서 진행 중인 세션 확인 후 분기
+ // 요청자 역할 체크: 요청자면 트래킹 시작 불가, 도우미의 실시간 위치 관측 화면으로 안내
  const myProfile = MatchingService.getMyProfile(user.id);
  if (myProfile && myProfile.role === 'requester') {
- // 서버에서 활성 walk-session 확인
- let activeSession = null;
- try {
- const sessRes = await fetch(`/api/walk-sessions?userId=${user.id}`);
- const sessData = await sessRes.json();
- activeSession = (sessData.sessions || []).find(s => ['heading','arrived','walking'].includes(s.status));
- } catch(e) {}
-
- // 활성 세션이 있으면 walk-session 페이지로 이동
- if (activeSession) {
- window._activeWalkRequestId = window._activeWalkRequestId || activeSession.requestId || activeSession.matchRequestId;
- _activeSessionId = activeSession.id;
- Router.navigate('/walk-session');
- return;
- }
-
- // 활성 세션 없음: 요청자의 매칭 요청에서 walkerId 가져와 실시간 지도 표시
- let activeWalkReq = null;
- try {
- const reqRes = await fetch(`/api/matching/requests?fromUserId=${user.id}`);
- const reqData = await reqRes.json();
- activeWalkReq = (reqData.requests || []).find(r => ['accepted','heading','arrived','walking'].includes(r.status));
- } catch(e) {}
-
+ // 진행 중인 스케줄 찾기
+ const activeSchedules = MatchingService.getScheduledWalks(user.id);
  renderPage(`
  <div class="page-header">
- <h1>${icon('map',20)} 실시간 산책 관찰</h1>
+ <h1>?? 실시간 산책 관찰</h1>
  <p>반려견의 산책은 도우미가 시작합니다. 이 화면에서는 실시간 위치와 경로만 확인할 수 있어요.</p>
  </div>
- ${!activeWalkReq ? `
+ ${activeSchedules.length === 0 ? `
    <div class="card" style="padding:32px 20px;text-align:center;">
      <div style="font-size:2.5rem;margin-bottom:12px;">📭</div>
      <div style="font-size:1rem;font-weight:700;margin-bottom:6px;">진행 중인 산책이 없어요</div>
@@ -7512,24 +7699,20 @@ async function renderWalkTrackingPage() {
      <button class="btn btn-primary" onclick="Router.navigate('/matching')">매칭 페이지로 가기</button>
    </div>
  ` : `
-   <div class="card" style="padding:0;overflow:hidden;">
-     <div id="requester-live-map" style="height:55vh;width:100%;"></div>
-   </div>
-   <div class="card" style="padding:16px;margin-top:12px;">
-     <div style="font-size:0.82rem;color:var(--color-text-muted);line-height:1.8;">
-       · 도우미가 이동 중이면 지도에 위치가 표시돼요<br>
-       · 산책 종료 시 알림과 함께 경로 기록이 저장됩니다<br>
-       · 산책 중에 도우미와 채팅으로 소통할 수 있어요
+   <div class="card" style="padding:20px;">
+     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+       <div class="spinner" style="width:18px;height:18px;"></div>
+       <span style="font-weight:700;">도우미의 위치를 받아오는 중...</span>
      </div>
-     <button class="btn btn-secondary" style="margin-top:12px;width:100%;" onclick="Router.navigate('/matching')">매칭 페이지에서 상세 보기</button>
+     <div style="font-size:0.82rem;color:var(--color-text-muted);line-height:1.6;">
+       ? 도우미가 '산책 시작' 버튼을 누르면 실시간 경로가 지도에 표시돼요<br>
+       ? 산책 종료 시 알림과 함께 경로 기록이 저장됩니다<br>
+       ? 산책 중에 도우미와 채팅으로 소통할 수 있어요
+     </div>
+     <button class="btn btn-secondary" style="margin-top:16px;width:100%;" onclick="Router.navigate('/matching')">매칭 페이지에서 상세 보기</button>
    </div>
  `}
  `);
-
- if (activeWalkReq) {
- setTimeout(() => _initRequesterLiveMap(activeWalkReq), 300);
- if (activeWalkReq.id) showChatButton(activeWalkReq.id);
- }
  return;
  }
 
@@ -7686,8 +7869,17 @@ let _trackingStartMarker = null;
 function handleStartTracking() {
  const result = GPSTrackingService.startTracking((data) => {
  document.getElementById('track-distance').textContent = data.distance.toFixed(2);
- const mins = data.duration;
- document.getElementById('track-duration').textContent = String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
+ const elapsed = data.startTime ? Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000) : 0;
+ if (elapsed >= 3600) {
+ const h = Math.floor(elapsed / 3600);
+ const m = Math.floor((elapsed % 3600) / 60);
+ const s = elapsed % 60;
+ document.getElementById('track-duration').textContent = String(h) + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+ } else {
+ const m = Math.floor(elapsed / 60);
+ const s = elapsed % 60;
+ document.getElementById('track-duration').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+ }
  document.getElementById('track-pace').textContent = data.avgPace.toFixed(1);
  document.getElementById('track-calories').textContent = data.calories;
 
@@ -7781,10 +7973,20 @@ function handleStartTracking() {
  }
 
  // 타이머 업데이트
+ const _walkStartedAt = Date.now();
  _trackingTimer = setInterval(() => {
- const data = GPSTrackingService.getCurrentData();
- document.getElementById('track-duration').textContent = data.duration + ' 분';
- }, 10000);
+ const elapsed = Math.floor((Date.now() - _walkStartedAt) / 1000);
+ if (elapsed >= 3600) {
+ const h = Math.floor(elapsed / 3600);
+ const m = Math.floor((elapsed % 3600) / 60);
+ const s = elapsed % 60;
+ document.getElementById('track-duration').textContent = String(h) + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+ } else {
+ const m = Math.floor(elapsed / 60);
+ const s = elapsed % 60;
+ document.getElementById('track-duration').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+ }
+ }, 1000);
 }
 
 async function handleStopTracking() {
@@ -7853,11 +8055,6 @@ function renderWalkCalendar() {
  if (!section) return;
  const filtered = _walkHistoryCache;
 
- if (filtered.length === 0) {
- section.innerHTML = `<div style="text-align:center; padding:24px; color:var(--color-text-muted); font-size:0.85rem;">아직 산책 기록이 없습니다</div>`;
- return;
- }
-
  const year = _walkCalYear;
  const month = _walkCalMonth;
  const now = new Date();
@@ -7897,8 +8094,10 @@ function renderWalkCalendar() {
  }
  listWalks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
- const listHtml = listWalks.length > 0 ? listWalks.map(w => `
- <div class="walk-history-item" id="walk-item-${w.id}">
+ const listHtml = listWalks.length > 0 ? listWalks.map(w => {
+ const hasRoute = w.coordinates && w.coordinates.length > 1;
+ return `
+ <div class="walk-history-item" id="walk-item-${w.id}" style="flex-wrap:wrap;">
  <div style="flex:1;">
  <div class="walk-history-item__date">${new Date(w.createdAt).toLocaleDateString('ko-KR')} ${new Date(w.createdAt).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}</div>
  <div class="walk-history-item__dog" id="walk-name-${w.id}">${w.title || w.dogName || '산책'}</div>
@@ -7911,8 +8110,10 @@ function renderWalkCalendar() {
  <button onclick="editWalkName('${w.id}')" style="background:none; border:none; font-size:0.75rem; color:var(--color-text-muted); cursor:pointer; padding:4px;">수정</button>
  <button onclick="deleteWalkRecord('${w.id}')" style="background:none; border:none; font-size:0.75rem; color:#e53e3e; cursor:pointer; padding:4px;">삭제</button>
  </div>
+ ${hasRoute ? `<div id="walk-route-${w.id}" style="width:100%; margin-top:10px; height:160px; border-radius:10px; overflow:hidden; border:1px solid var(--color-border);"></div>` : ''}
  </div>
- `).join('') : `<div style="text-align:center; padding:16px; color:var(--color-text-muted); font-size:0.82rem;">${_walkCalSelectedDate ? _walkCalSelectedDate + '일에 기록이 없습니다' : '이 달에 기록이 없습니다'}</div>`;
+ `;
+ }).join('') : `<div style="text-align:center; padding:16px; color:var(--color-text-muted); font-size:0.82rem;">${_walkCalSelectedDate ? _walkCalSelectedDate + '일에 기록이 없습니다' : '이 달에 기록이 없습니다'}</div>`;
 
  section.innerHTML = `
  <style>
@@ -7966,6 +8167,26 @@ function renderWalkCalendar() {
  <div class="walk-history__title">${_walkCalSelectedDate ? '' : '최근 기록'}</div>
  ${listHtml}
  `;
+
+ // 경로 지도 자동 초기화
+ setTimeout(() => {
+ listWalks.forEach(w => {
+ if (w.coordinates && w.coordinates.length > 1) {
+ const container = document.getElementById('walk-route-' + w.id);
+ if (container && !_walkRouteMaps[w.id]) {
+ const coords = w.coordinates.map(c => [c.lat, c.lng]);
+ const map = L.map(container, { zoomControl: false, attributionControl: false }).fitBounds(coords, { padding: [20, 20] });
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+ L.polyline(coords, { color: '#F59E0B', weight: 4, opacity: 0.9 }).addTo(map);
+ const startIcon = L.divIcon({ className: '', html: '<div style="width:10px;height:10px;background:#22C55E;border:2px solid #fff;border-radius:50%;"></div>', iconSize: [10, 10], iconAnchor: [5, 5] });
+ const endIcon = L.divIcon({ className: '', html: '<div style="width:10px;height:10px;background:#EF4444;border:2px solid #fff;border-radius:50%;"></div>', iconSize: [10, 10], iconAnchor: [5, 5] });
+ L.marker(coords[0], { icon: startIcon }).addTo(map);
+ L.marker(coords[coords.length - 1], { icon: endIcon }).addTo(map);
+ _walkRouteMaps[w.id] = map;
+ }
+ }
+ });
+ }, 200);
 }
 
 function changeWalkCalMonth(delta) {
@@ -7983,6 +8204,47 @@ function selectWalkCalDate(day) {
  _walkCalSelectedDate = day;
  }
  renderWalkCalendar();
+}
+
+let _walkRouteMaps = {};
+
+function toggleWalkRoute(walkId) {
+ const container = document.getElementById('walk-route-' + walkId);
+ if (!container) return;
+
+ if (container.style.display === 'none') {
+ container.style.display = 'block';
+
+ // 이미 지도가 있으면 무시
+ if (_walkRouteMaps[walkId]) {
+ _walkRouteMaps[walkId].invalidateSize();
+ return;
+ }
+
+ // 산책 데이터에서 좌표 찾기
+ const walk = _walkHistoryCache.find(w => w.id === walkId);
+ if (!walk || !walk.coordinates || walk.coordinates.length < 2) {
+ container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:0.82rem;">경로 데이터가 없습니다</div>';
+ return;
+ }
+
+ const coords = walk.coordinates.map(c => [c.lat, c.lng]);
+ const map = L.map(container, { zoomControl: false, attributionControl: false }).fitBounds(coords, { padding: [20, 20] });
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+ // 경로 선
+ L.polyline(coords, { color: '#F59E0B', weight: 4, opacity: 0.9 }).addTo(map);
+
+ // 출발/도착 마커
+ const startIcon = L.divIcon({ className: '', html: '<div style="width:12px;height:12px;background:#22C55E;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>', iconSize: [12, 12], iconAnchor: [6, 6] });
+ const endIcon = L.divIcon({ className: '', html: '<div style="width:12px;height:12px;background:#EF4444;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>', iconSize: [12, 12], iconAnchor: [6, 6] });
+ L.marker(coords[0], { icon: startIcon }).addTo(map);
+ L.marker(coords[coords.length - 1], { icon: endIcon }).addTo(map);
+
+ _walkRouteMaps[walkId] = map;
+ } else {
+ container.style.display = 'none';
+ }
 }
 
 async function deleteWalkRecord(walkId) {
@@ -8056,7 +8318,7 @@ async function renderHealthDashboardPage() {
  <p style="color:var(--color-text-muted);">아직 분석할 데이터가 없어요</p>
  </div>
  </div>
- <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('건강 분석을 이용하려면 로그인이 필요해요!\\n반려견의 산책 데이터를 기반으로 AI가 건강을 분석해드려요.')">${icon('activity',16)} 산책 시작하고 데이터 모으기</button>
+ <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('건강 분석을 이용하려면 로그인이 필요해요!\\n반려견의 산책 데이터를 기반으로 AI가 건강을 분석해드려요.')">?? 산책 시작하고 데이터 모으기</button>
  `);
  return;
  }
@@ -8373,17 +8635,16 @@ function initApp() {
  ensureAdminAccount();
  renderNavbar();
  registerRoutes();
- // 결제 redirect 먼저 처리 → 오버레이 즉시 표시 후 라우터 실행
- _handlePaymentRedirect();
  Router.init();
+ _handlePaymentRedirect(); // 결제 성공 redirect 처리
  console.log('[Pawsitive] 앱이 초기화되었습니다. ');
  }).catch(e => {
  console.error('[Pawsitive] 서버 동기화 실패, 로컬 모드로 시작:', e);
  ensureAdminAccount();
  renderNavbar();
  registerRoutes();
- _handlePaymentRedirect();
  Router.init();
+ _handlePaymentRedirect();
  });
 }
 
@@ -8392,7 +8653,7 @@ function _handlePaymentRedirect() {
  const hash = window.location.hash || '';
  if (!hash.includes('paymentSuccess=true')) return;
 
- // URL에서 파라미터 제거
+ // URL에서 파라미터 제거 (깔끔하게)
  const cleanHash = hash.split('?')[0];
  history.replaceState(null, '', cleanHash || '#/matching');
 
@@ -8407,12 +8668,7 @@ function _handlePaymentRedirect() {
  // 5분 이상 지난 결제 정보는 무시
  if (Date.now() - payment.timestamp > 5 * 60 * 1000) return;
 
- // ── 결제 감지 즉시 오버레이 표시 (Router.init()보다 먼저 실행) ──
- // 라우터가 대시보드를 렌더링하기 전에 오버레이를 body에 붙임
- showWalkerWaitingOverlay('__pending__', 0);
- // requestId는 실제 요청 후 업데이트됨 (cancel 버튼 비활성화)
- const cancelBtn = document.querySelector('#broadcast-waiting button');
- if (cancelBtn) cancelBtn.style.display = 'none';
+ showToast('결제 완료! 매칭 요청을 보내는 중...', 'success');
 
  const user = AuthService.getCurrentUser();
  if (!user) return;
@@ -8433,10 +8689,9 @@ function _handlePaymentRedirect() {
 
 /** 브로드캐스트 결제 후 실행 */
 async function _executeBroadcastAfterPayment(user, payment) {
- // GPS: 1초 안에 못 받으면 저장된 좌표 사용 (지연 최소화)
- let lat = payment.lat || null, lng = payment.lng || null;
+ let lat = null, lng = null;
  try {
-   const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 1000, maximumAge: 30000 }));
+   const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
    lat = pos.coords.latitude; lng = pos.coords.longitude;
  } catch(e) {}
 
@@ -8461,26 +8716,9 @@ async function _executeBroadcastAfterPayment(user, payment) {
      })
    });
    const data = await resp.json();
-   if (data.success && data.request) {
-     // 이미 오버레이가 표시 중이면 requestId와 sentCount만 업데이트
-     const existingOverlay = document.getElementById('broadcast-waiting');
-     if (existingOverlay) {
-       // 취소 버튼에 실제 requestId 반영
-       const cancelBtn = existingOverlay.querySelector('button');
-       if (cancelBtn) {
-         cancelBtn.style.display = 'block';
-         cancelBtn.onclick = () => cancelBroadcastRequest(data.request.id);
-       }
-       const sentEl = existingOverlay.querySelector('p:last-of-type');
-       if (sentEl && data.sentCount > 0) {
-         sentEl.innerHTML = `주변 <b style="color:#00AA76">${data.sentCount}명</b>의 도우미에게 알림이 전달됐어요`;
-       }
-     } else {
-       showBroadcastWaitingScreen(data.request.id, data.sentCount || 0);
-     }
+   if (data.success && data.sentCount > 0) {
+     showBroadcastWaitingScreen(data.request.id, data.sentCount);
    } else {
-     document.getElementById('broadcast-waiting')?.remove();
-     clearInterval(_broadcastTimer); _broadcastTimer = null;
      showToast(data.error || '도우미를 찾지 못했어요.', 'error');
    }
  } catch(e) {
@@ -8491,9 +8729,9 @@ async function _executeBroadcastAfterPayment(user, payment) {
 /** GPS 지도 요청 결제 후 실행 */
 async function _executeMapRequestAfterPayment(user, payment) {
  if (!payment.walkerId) return;
- let lat = payment.lat || null, lng = payment.lng || null;
+ let lat = null, lng = null;
  try {
-   const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 1000, maximumAge: 30000 }));
+   const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 }));
    lat = pos.coords.latitude; lng = pos.coords.longitude;
  } catch(e) {}
 
@@ -8529,40 +8767,7 @@ async function _executeMapRequestAfterPayment(user, payment) {
 }
 
 // DOM 로드 후 앱 초기화
-// ── 브라우저 푸시 알림 ────────────────────────────────────────
-async function _initPushNotifications() {
-  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
-  try {
-    await navigator.serviceWorker.register('/sw.js');
-  } catch(e) { return; }
-}
-
-/** 브라우저 네이티브 알림 표시 (앱이 백그라운드/다른 탭일 때도 동작) */
-function _pushNotify(title, body, url) {
-  if (!('Notification' in window)) return;
-  const doShow = () => {
-    try {
-      navigator.serviceWorker.ready.then(reg => {
-        reg.showNotification(title, {
-          body, icon: '/pawsitive_logo_transparent.png',
-          badge: '/pawsitive_logo_transparent.png',
-          tag: 'pawsitive-' + Date.now(),
-          data: url || '/', vibrate: [200, 100, 200]
-        });
-      }).catch(() => new Notification(title, { body, icon: '/pawsitive_logo_transparent.png' }));
-    } catch(e) { try { new Notification(title, { body }); } catch(_) {} }
-  };
-
-  if (Notification.permission === 'granted') {
-    doShow();
-  } else if (Notification.permission !== 'denied') {
-    Notification.requestPermission().then(p => { if (p === 'granted') doShow(); });
-  }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
- _preloadHintVideo();
- _initPushNotifications();
  initApp();
  initRealtimeListeners();
 });
@@ -8586,14 +8791,12 @@ function initRealtimeListeners() {
 
  // 요청 수락됨 (요청자용)
  RealtimeService.on('walk-request-accepted', (data) => {
-   _pushNotify('✅ 매칭 성공!', `${data.walkerName || '도우미'}님이 요청을 수락했어요.`, '/#/matching');
    showWalkerAcceptedModal(data);
  });
 
  // 요청 거절됨 (요청자용)
  RealtimeService.on('walk-request-rejected', () => {
  showToast('산책 도우미가 요청을 거절했습니다.', 'error');
- _pushNotify('산책 요청 거절', '도우미가 요청을 거절했어요. 다른 도우미에게 요청해보세요.', '/#/matching');
  });
 
  // 요청 취소됨 (도우미용 — 요청자가 취소했을 때)
@@ -8622,57 +8825,38 @@ function initRealtimeListeners() {
  }, 500);
  });
 
- // 요청자 전용 헬퍼: 현재 페이지 무관하게 walk-session으로 이동
- const _requesterGoToSession = (sessionId, requestId) => {
-   const curUser = AuthService.getCurrentUser();
-   const profile = curUser ? MatchingService.getMyProfile(curUser.id) : null;
-   if (!curUser || profile?.role !== 'requester') return;
-   if (sessionId) _activeSessionId = sessionId;
-   if (requestId) window._activeWalkRequestId = requestId;
-   // /walk-session에 이미 있으면 지도만 갱신
-   const curPath = Router.getPath ? Router.getPath() : '';
-   if (curPath === '/walk-session') {
-     renderWalkSessionPage();
-   } else {
-     Router.navigate('/walk-session');
-   }
- };
-
- // 1단계: 도우미 출발 → 요청자 즉시 walk-session 이동
+ // 1단계: 도우미 수락 → 이동 중 오버레이 표시
  RealtimeService.on('walk-started', (data) => {
-   _activeSessionId = data.sessionId;
-   window._activeWalkRequestId = data.requestId || window._activeWalkRequestId;
-   showToast('도우미가 출발했어요! 이동 상황을 확인하세요.', 'success');
-   _pushNotify('🐾 도우미 출발!', '도우미가 픽업 장소로 이동 중이에요.', '/#/walk-session');
-   _requesterGoToSession(data.sessionId, data.requestId);
+ _activeSessionId = data.sessionId;
+ showLiveTrackingOverlay(data.sessionId, data.walkerId);
  });
 
  // 2단계: 도우미 도착
  RealtimeService.on('walker-arrived', (data) => {
-   showToast('도우미가 도착했습니다! 반려견을 전달해주세요.', 'success');
-   _pushNotify('🐾 도우미 도착!', '도우미가 도착했어요. 반려견을 전달해주세요.', '/#/walk-session');
-   _requesterGoToSession(data.sessionId, null);
+ showToast('도우미가 도착했습니다! 반려견을 전달해주세요.', 'success');
+ // 요청자 active walk 화면 자동 갱신
+ const curUser = AuthService.getCurrentUser();
+ const profile = curUser ? MatchingService.getMyProfile(curUser.id) : null;
+ if (profile && profile.role === 'requester' && Router.getPath && Router.getPath() === '/matching') {
+   renderMatchingPage();
+ }
  });
 
- // 3단계: 산책 실제 시작 → 요청자 walk-session 갱신 (경로 그리기 시작)
- // 도우미: 요청자가 전달 완료를 눌렀을 때 → 산책 시작 버튼 활성화
- RealtimeService.on('handoff-confirmed', (data) => {
-   showToast('요청자가 반려견 전달을 확인했어요! 산책을 시작해주세요.', 'success');
-   _pushNotify('🐾 전달 완료!', '요청자가 확인했어요. 산책을 시작해주세요.', '/#/walk-session');
-   const curPath = Router.getPath ? Router.getPath() : '';
-   if (curPath === '/walk-session') renderWalkSessionPage();
- });
-
+ // 3단계: 산책 실제 시작
  RealtimeService.on('walk-tracking-started', (data) => {
-   showToast('산책이 시작되었어요! 실시간 경로를 확인하세요.', 'success');
-   _requesterGoToSession(data.sessionId, null);
+ showToast('산책이 시작되었어요! 실시간 경로를 확인하세요.', 'success');
+ // 요청자 active walk 화면 자동 갱신
+ const curUser = AuthService.getCurrentUser();
+ const profile = curUser ? MatchingService.getMyProfile(curUser.id) : null;
+ if (profile && profile.role === 'requester' && Router.getPath && Router.getPath() === '/matching') {
+   renderMatchingPage();
+ }
  });
 
  // 4단계: 산책 종료
  RealtimeService.on('walk-ended', (data) => {
    stopWalkRouteWatcher();
    hideChatButton();
-   _pushNotify('🐾 산책 완료!', `총 ${data.totalDistanceKm ?? 0} km 산책했어요. 리뷰를 남겨보세요.`, '/#/matching');
    const overlay = document.getElementById('live-tracking-overlay');
    if (overlay) {
      const statusEl = document.getElementById('lt-status');
@@ -8703,9 +8887,8 @@ function initRealtimeListeners() {
 
  // ── 브로드캐스트 매칭 이벤트 ──────────────────────────────
 
- // 도우미: 브로드캐스트 요청 수신 → 알림 팝업 + 푸시
+ // 도우미: 브로드캐스트 요청 수신 → 알림 팝업
  RealtimeService.on('broadcast-walk-request', (data) => {
- _pushNotify('🐾 새 산책 요청!', `${data.requesterName || '요청자'}님이 산책을 요청했어요.`, '/#/matching');
  showBroadcastNotification(data);
  });
 
@@ -8723,7 +8906,7 @@ function initRealtimeListeners() {
 
  // 요청자: 매칭 성공
  RealtimeService.on('broadcast-matched', (data) => {
- clearInterval(_broadcastTimer); _broadcastTimer = null;
+ clearInterval(_broadcastTimer);
  document.getElementById('broadcast-waiting')?.remove();
  _broadcastRequestId = null;
  showToast(` ${data.walkerName}님이 수락했어요! 잠시 후 출발할 거예요.`, 'success');
@@ -9067,11 +9250,7 @@ let _walkRouteMap = null;
 let _walkPolyline = null;
 let _walkLiveMarker = null;
 let _walkRoutePoints = [];
-let _walkPositionHandler = null;
-let _walkNavWatchId = null;      // 도우미 GPS watchPosition ID
-let _walkNavLine = null;         // 도우미→픽업 방향선
-let _walkNavMyMarker = null;     // 도우미 본인 실시간 마커
-let _walkSessionPollTimer = null; // 요청자 도우미 마커 폴링 타이머
+let _walkPositionHandler = null; // off() 시 참조 보관
 
 /** 도우미: 산책 시작 */
 async function startWalkSession(requestId, requesterId, dogName) {
@@ -9124,31 +9303,6 @@ function _stopWalkerLocationSharing() {
 }
 
 /** 도우미: 픽업 장소 도착 */
-/** 도우미: 수락 후 취소 (heading/arrived/handoff 상태) */
-async function cancelWalkSession(sessionId) {
- const reason = prompt('취소 사유를 입력해주세요 (요청자에게 전달됩니다):');
- if (reason === null) return; // 취소 버튼
- if (!confirm('정말 취소하시겠습니까? 요청자에게 알림이 전달됩니다.')) return;
- try {
-   const res = await fetch(`/api/walk-sessions/${sessionId}/cancel`, {
-     method: 'PATCH',
-     headers: { 'Content-Type': 'application/json' },
-     body: JSON.stringify({ reason: reason.trim() || '도우미 사정으로 취소' })
-   });
-   const result = await res.json();
-   if (!result.success) { showToast(result.error || '취소 실패', 'error'); return; }
-   RealtimeService.stopRouteTracking();
-   _stopWalkerLocationSharing();
-   _activeSessionId = null;
-   window._activeWalkRequestId = null;
-   showToast('취소 처리됐습니다. 요청자에게 알림이 전달됐어요.', 'info');
-   const user = AuthService.getCurrentUser();
-   const profile = user ? MatchingService.getMyProfile(user.id) : null;
-   if (profile) renderWalkerDashboard(user, profile);
-   else renderMatchingPage();
- } catch(e) { showToast('오류가 발생했습니다.', 'error'); }
-}
-
 async function arriveAtPickup(sessionId) {
  const user = AuthService.getCurrentUser();
  if (!user) return;
@@ -9165,20 +9319,6 @@ async function arriveAtPickup(sessionId) {
  } catch(e) {
  showToast('오류가 발생했습니다.', 'error');
  }
-}
-
-/** 요청자: 반려견 전달 완료 확인 버튼 */
-async function confirmHandoff(sessionId) {
- if (!confirm('반려견을 도우미에게 전달하셨나요?')) return;
- try {
-   const res = await fetch(`/api/walk-sessions/${sessionId}/confirm-handoff`, {
-     method: 'PATCH', headers: { 'Content-Type': 'application/json' }
-   });
-   const result = await res.json();
-   if (!result.success) { showToast(result.error || '오류가 발생했습니다.', 'error'); return; }
-   showToast('전달 완료! 도우미가 곧 산책을 시작해요.', 'success');
-   renderWalkSessionPage(sessionId);
- } catch(e) { showToast('오류가 발생했습니다.', 'error'); }
 }
 
 /** 도우미: 산책 실제 시작 (반려견 픽업 완료 후) */
@@ -9202,6 +9342,7 @@ async function startActualWalk(sessionId) {
  }
 }
 
+/** 도우미: 산책 종료 */
 async function endWalkSession(sessionId) {
   if (!confirm('산책을 종료하시겠습니까?')) return;
   try {
@@ -9257,12 +9398,7 @@ function showWalkCompletionScreen(session, distKm) {
 
     </div>
 
-    <div style="padding:16px 24px 32px;display:flex;flex-direction:column;gap:10px;">
-      ${session?.id ? `
-      <button onclick="showWalkRouteModal('${session.id}','도우미','${distKm ?? '?'} km','')"
-        style="width:100%;padding:13px;background:#f0fdf4;color:#00AA76;border:2px solid #00AA76;border-radius:14px;font-size:0.9rem;font-weight:700;cursor:pointer;">
-        ${icon('map',16,'#00AA76')} 산책 경로 확인하기
-      </button>` : ''}
+    <div style="padding:16px 24px 32px;">
       <button onclick="document.getElementById('walk-completion-screen').remove();Router.navigate('/matching')"
         style="width:100%;padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:14px;font-size:0.95rem;font-weight:700;cursor:pointer;">
         확인
@@ -9417,28 +9553,18 @@ async function renderWalkSessionPage(sessionId) {
  const isWalker = session && session.walkerId === user.id;
 
  const statusLabel = {
- heading:  '이동 중 · 픽업 장소로 이동하고 있어요',
- arrived:  '도착 · 요청자가 반려견을 전달 중이에요',
- handoff:  '전달 완료 · 산책을 시작해주세요',
- walking:  '산책 중',
+ heading: '이동 중 · 픽업 장소로 이동하고 있어요',
+ arrived: '도착 · 반려견을 픽업 중이에요',
+ walking: '산책 중',
  completed: '산책 완료'
  }[session?.status] || '진행 중';
 
  // 도우미 단계별 액션 버튼
  let walkerActionBtn = '';
- // 요청자 단계별 액션 버튼
- let requesterActionBtn = '';
- if (!isWalker && session?.status === 'arrived') {
-   requesterActionBtn = `<button class="btn btn-primary" style="background:#F6A623;" onclick="confirmHandoff('${sid}')">반려견 전달 완료</button>`;
- }
-
  if (isWalker) {
- const _cancelBtn = `<button class="btn btn-sm" style="background:#fff;color:#b91c1c;border:1px solid #fca5a5;font-size:0.75rem;" onclick="cancelWalkSession('${sid}')">취소</button>`;
  if (session?.status === 'heading') {
- walkerActionBtn = `<div style="display:flex;gap:8px;align-items:center;">${_cancelBtn}<button class="btn btn-primary" onclick="arriveAtPickup('${sid}')">도착했어요</button></div>`;
+ walkerActionBtn = `<button class="btn btn-primary" onclick="arriveAtPickup('${sid}')">도착했어요</button>`;
  } else if (session?.status === 'arrived') {
- walkerActionBtn = `<div style="display:flex;gap:8px;align-items:center;">${_cancelBtn}<div style="font-size:0.82rem;color:#718096;">요청자 전달 확인 대기 중...</div></div>`;
- } else if (session?.status === 'handoff') {
  walkerActionBtn = `<button class="btn btn-primary" style="background:#00AA76;" onclick="startActualWalk('${sid}')">산책 시작</button>`;
  } else if (session?.status === 'walking') {
  walkerActionBtn = `<button class="btn btn-danger" onclick="endWalkSession('${sid}')">산책 종료</button>`;
@@ -9457,15 +9583,15 @@ async function renderWalkSessionPage(sessionId) {
  ${session.dogName || '반려견'} · 시작: ${new Date(session.startedAt).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'})}
  </p>` : ''}
  </div>
- ${walkerActionBtn}${requesterActionBtn}
+ ${walkerActionBtn}
  </div>
 
  <div id="walk-session-map" style="height:55vh;width:100%;"></div>
 
  <div style="padding:14px 20px;">
- <div id="walk-route-stats" style="display:${session?.status === 'walking' || session?.status === 'completed' ? 'flex' : 'none'};gap:24px;font-size:0.85rem;color:#4A5568;align-items:center;">
- <span>${icon('clock',14)} <b id="route-elapsed">00:00</b></span>
- <span>${icon('navigation',14)} <b id="route-distance">0.00</b> km</span>
+ <div id="walk-route-stats" style="display:${session?.status === 'walking' || session?.status === 'completed' ? 'flex' : 'none'};gap:20px;font-size:0.85rem;color:#4A5568;">
+ <span><b id="route-point-count">0</b> 포인트</span>
+ <span><b id="route-distance">0.00</b> km</span>
  </div>
  ${session?.status === 'completed' ? `
  <button class="btn btn-secondary" style="margin-top:12px;" onclick="Router.navigate('/matching')">← 돌아가기</button>
@@ -9475,42 +9601,21 @@ async function renderWalkSessionPage(sessionId) {
  <style>@keyframes ltPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}</style>
  `);
 
- // requestId 폴백 (walker/requester 모두 동작)
- const resolvedReqId = window._activeWalkRequestId
-   || session?.requestId
-   || session?.matchRequestId
-   || session?.walkRequestId;
- if (resolvedReqId) window._activeWalkRequestId = resolvedReqId;
+ // 지도 초기화 — heading/arrived 는 실시간 위치만, walking 은 경로 트래킹
+ setTimeout(() => _initWalkSessionMap(sid, isWalker && session?.status === 'walking'), 100);
 
- // 지도 초기화
- setTimeout(() => _initWalkSessionMap(sid, isWalker && session?.status === 'walking', {
-   isWalker,
-   sessionStatus: session?.status,
-   requestId: resolvedReqId
- }), 100);
-
- // 산책 중이면 경과 시간 타이머 시작
- if (session?.status === 'walking' || session?.status === 'completed') {
-   _startElapsedTimer(session?.startedAt || session?.walkingStartedAt);
- }
-
- // 채팅 버튼 — 도우미·요청자 모두 표시
- if (resolvedReqId) showChatButton(resolvedReqId);
+ // 채팅 플로팅 버튼 표시 (페이지 이동 시 DOM 재생성되므로 다시 호출)
+ const activeReqId = window._activeWalkRequestId;
+ if (activeReqId) showChatButton(activeReqId);
 }
 
-async function _initWalkSessionMap(sessionId, isLive, opts = {}) {
- const { isWalker = false, sessionStatus = '', requestId = null } = opts;
+async function _initWalkSessionMap(sessionId, isLive) {
  const container = document.getElementById('walk-session-map');
  if (!container) return;
 
- // 기존 지도·타이머·GPS 감시 정리
- if (_walkNavWatchId !== null) { navigator.geolocation.clearWatch(_walkNavWatchId); _walkNavWatchId = null; }
- if (_walkSessionPollTimer) { clearInterval(_walkSessionPollTimer); _walkSessionPollTimer = null; }
  if (_walkRouteMap) { try { _walkRouteMap.remove(); } catch(e) {} _walkRouteMap = null; }
  _walkPolyline = null;
  _walkLiveMarker = null;
- _walkNavLine = null;
- _walkNavMyMarker = null;
  _walkRoutePoints = [];
 
  // 기본 위치 (서울) — 나중에 GPS로 덮어씀
@@ -9528,159 +9633,27 @@ async function _initWalkSessionMap(sessionId, isLive, opts = {}) {
  attribution: 'ⓒ OpenStreetMap'
  }).addTo(_walkRouteMap);
 
- // 요청자는 본인 위치 마커 표시, 도우미는 네비/라이브 마커가 대신함
- if (!isWalker) {
-   const myIcon = L.divIcon({ html: '<div style="width:14px;height:14px;background:#3182CE;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>', className: '', iconSize: [14,14], iconAnchor: [7,7] });
-   L.marker([initLat, initLng], { icon: myIcon }).bindPopup('내 위치').addTo(_walkRouteMap);
- }
+ // 내 위치 마커 (도우미 본인)
+ const myIcon = L.divIcon({ html: '<div style="width:16px;height:16px;background:#3182CE;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>', className: '', iconSize: [16,16], iconAnchor: [8,8] });
+ L.marker([initLat, initLng], { icon: myIcon }).bindPopup('내 위치').addTo(_walkRouteMap);
 
- // 픽업 위치 마커 + 도우미 네비게이션 / 요청자 도우미 마커
- const _haversineM = (la1,lo1,la2,lo2) => {
-   const R=6371000, r=Math.PI/180;
-   const dLa=(la2-la1)*r, dLo=(lo2-lo1)*r;
-   const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
-   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
- };
-
- let pickupLat = null, pickupLng = null, pickupReqName = '';
- const fetchReqKey = isWalker
-   ? `/api/walk-requests?walkerId=${AuthService.getCurrentUser()?.id}`
-   : (requestId ? `/api/walk-requests/${requestId}` : null);
-
- if (fetchReqKey) {
+ // 요청자 픽업 위치 마커 (walk-request에서 가져옴)
+ const reqId = window._activeWalkRequestId;
+ if (reqId) {
    try {
-     const reqRes = await fetch(fetchReqKey);
+     const reqRes = await fetch(`/api/walk-requests?walkerId=${AuthService.getCurrentUser()?.id}`);
      const reqData = await reqRes.json();
-     const req = isWalker
-       ? (reqData.requests || []).find(r => r.id === requestId || ['accepted','heading','arrived','walking'].includes(r.status))
-       : (reqData.request || reqData);
-     if (req && req.pickupLatitude && req.pickupLongitude) {
-       pickupLat = req.pickupLatitude;
-       pickupLng = req.pickupLongitude;
-       pickupReqName = req.requesterName || '요청자';
+     const activeReq = (reqData.requests || []).find(r => r.id === reqId || ['accepted','heading','arrived','walking'].includes(r.status));
+     if (activeReq && activeReq.pickupLatitude && activeReq.pickupLongitude) {
+       const pickupIcon = L.divIcon({ html: '<div style="width:24px;height:24px;background:#E53E3E;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.7rem;font-weight:800;">P</div>', className: '', iconSize: [24,24], iconAnchor: [12,12] });
+       L.marker([activeReq.pickupLatitude, activeReq.pickupLongitude], { icon: pickupIcon })
+         .bindPopup(`<b>${activeReq.requesterName || '요청자'}</b><br>픽업 장소`)
+         .addTo(_walkRouteMap);
+       // 두 마커가 모두 보이도록 줌 조정
+       const bounds = L.latLngBounds([[initLat, initLng], [activeReq.pickupLatitude, activeReq.pickupLongitude]]);
+       _walkRouteMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
      }
    } catch(e) {}
- }
-
- if (pickupLat && pickupLng) {
-   const pickupIcon = L.divIcon({
-     html: '<div style="width:28px;height:28px;background:#E53E3E;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.75rem;font-weight:900;">P</div>',
-     className: '', iconSize: [28,28], iconAnchor: [14,14]
-   });
-   L.marker([pickupLat, pickupLng], { icon: pickupIcon })
-     .bindPopup(`<b>${pickupReqName}</b><br>픽업 장소`).addTo(_walkRouteMap);
-   _walkRouteMap.fitBounds(L.latLngBounds([[initLat,initLng],[pickupLat,pickupLng]]), { padding:[50,50], maxZoom:16 });
- }
-
- // ── 도우미 뷰: 픽업 장소까지 네비게이션 ──
- if (isWalker && pickupLat && pickupLng && (sessionStatus==='heading'||sessionStatus==='arrived')) {
-   // 방향 점선
-   _walkNavLine = L.polyline([[initLat,initLng],[pickupLat,pickupLng]], {
-     color:'#3182CE', weight:3, dashArray:'10 7', opacity:0.85
-   }).addTo(_walkRouteMap);
-
-   // 내 위치 실시간 마커 (파란 점 → 움직임)
-   const myNavIcon = L.divIcon({ html:'<div style="width:18px;height:18px;background:#3182CE;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(49,130,206,0.5);animation:ltPulse 1.5s ease infinite;"></div>', className:'', iconSize:[18,18], iconAnchor:[9,9] });
-   _walkNavMyMarker = L.marker([initLat,initLng],{icon:myNavIcon}).bindPopup('내 위치').addTo(_walkRouteMap);
-
-   // 거리 배너
-   const _navBanner = document.createElement('div');
-   _navBanner.id = 'walk-nav-banner';
-   _navBanner.style.cssText = 'position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:999;background:rgba(0,0,0,0.75);color:#fff;padding:6px 16px;border-radius:20px;font-size:0.82rem;font-weight:700;pointer-events:none;white-space:nowrap;';
-   container.style.position = 'relative';
-   container.appendChild(_navBanner);
-   const _updateNavBanner = (myLa,myLo) => {
-     const m = _haversineM(myLa,myLo,pickupLat,pickupLng);
-     const distText = m < 1000 ? `${Math.round(m)}m` : `${(m/1000).toFixed(1)}km`;
-     // ETA: 도보 속도 1.3m/s 기준
-     const etaSec = Math.round(m / 1.3);
-     const etaText = etaSec < 60 ? `${etaSec}초` : `약 ${Math.ceil(etaSec/60)}분`;
-     _navBanner.textContent = `픽업 장소까지 ${distText} · ${etaText} 소요`;
-   };
-   _updateNavBanner(initLat,initLng);
-
-   // GPS 실시간 추적
-   if (navigator.geolocation) {
-     _walkNavWatchId = navigator.geolocation.watchPosition(pos => {
-       const la = pos.coords.latitude, lo = pos.coords.longitude;
-       if (_walkNavMyMarker) _walkNavMyMarker.setLatLng([la,lo]);
-       if (_walkNavLine) _walkNavLine.setLatLngs([[la,lo],[pickupLat,pickupLng]]);
-       _updateNavBanner(la,lo);
-       _walkRouteMap?.panTo([la,lo]);
-       // 서버에 위치 공유
-       if (requestId) fetch(`/api/walk-requests/${requestId}/walker-location`,{
-         method:'PATCH', headers:{'Content-Type':'application/json'},
-         body:JSON.stringify({lat:la,lng:lo})
-       }).catch(()=>{});
-     }, null, { enableHighAccuracy:true, timeout:5000, maximumAge:3000 });
-   }
- }
-
- // ── 요청자 뷰: 도우미 실시간 마커 + 산책 중 경로 폴리라인 ──
- if (!isWalker && requestId) {
-   const walkerNavIcon = L.divIcon({
-     html:'<div style="width:30px;height:30px;background:#F59E0B;border:3px solid #fff;border-radius:50%;box-shadow:0 3px 12px rgba(245,158,11,0.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.75rem;font-weight:800;">도</div>',
-     className:'', iconSize:[30,30], iconAnchor:[15,15]
-   });
-   let walkerNavMarker = null;
-
-   // 도우미 마커 위치 업데이트 (폴링 + 소켓 공용)
-   const _updateWalkerMarker = (lat, lng) => {
-     if (!_walkRouteMap) return;
-     if (!walkerNavMarker) {
-       walkerNavMarker = L.marker([lat,lng],{icon:walkerNavIcon})
-         .bindPopup('도우미 이동 중').addTo(_walkRouteMap);
-     } else {
-       walkerNavMarker.setLatLng([lat,lng]);
-     }
-   };
-
-   // 4초 폴링 (소켓 보조)
-   const _fetchWalkerPos = async () => {
-     try {
-       const res = await fetch(`/api/walk-requests/${requestId}/walker-location`);
-       const d = await res.json();
-       if (d.lat && d.lng) _updateWalkerMarker(d.lat, d.lng);
-     } catch(e) {}
-   };
-   _fetchWalkerPos();
-   _walkSessionPollTimer = setInterval(_fetchWalkerPos, 4000);
-
-   // 소켓 위치 업데이트 (즉시 반영)
-   RealtimeService.on('walker-location-updated', d => { if(d.lat&&d.lng) _updateWalkerMarker(d.lat,d.lng); });
-
-   // ── 산책 중(walking): walker-position 이벤트로 경로 폴리라인 실시간 표시 ──
-   if (sessionStatus === 'walking') {
-     _walkPositionHandler = (data) => {
-       if (data.sessionId !== sessionId) return;
-       const latlng = [data.latitude, data.longitude];
-
-       // 마커 이동
-       _updateWalkerMarker(data.latitude, data.longitude);
-
-       // 경로 폴리라인 연장
-       _walkRoutePoints.push(latlng);
-       if (!_walkPolyline) {
-         _walkPolyline = L.polyline([latlng], { color:'#00AA76', weight:4, opacity:0.8 }).addTo(_walkRouteMap);
-       } else {
-         _walkPolyline.addLatLng(latlng);
-       }
-       _walkRouteMap.panTo(latlng);
-
-       // 거리 업데이트
-       const distEl = document.getElementById('route-distance');
-       if (distEl && _walkRoutePoints.length > 1) {
-         const last2 = _walkRoutePoints.slice(-2);
-         const dLa = (last2[1][0]-last2[0][0])*Math.PI/180;
-         const dLo = (last2[1][1]-last2[0][1])*Math.PI/180;
-         const a = Math.sin(dLa/2)**2 + Math.cos(last2[0][0]*Math.PI/180)*Math.cos(last2[1][0]*Math.PI/180)*Math.sin(dLo/2)**2;
-         const addM = 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-         const prevKm = parseFloat(distEl.textContent)||0;
-         distEl.textContent = (prevKm + addM/1000).toFixed(2);
-       }
-     };
-     RealtimeService.on('walker-position', _walkPositionHandler);
-   }
  }
 
  // 저장된 경로 로드
@@ -9692,12 +9665,10 @@ async function _initWalkSessionMap(sessionId, isLive, opts = {}) {
  _walkPolyline = L.polyline(_walkRoutePoints, { color: '#00AA76', weight: 4, opacity: 0.8 }).addTo(_walkRouteMap);
  _walkRouteMap.fitBounds(_walkPolyline.getBounds(), { padding: [40, 40] });
 
- // 마지막 위치 마커 — 도우미 뷰에서만 (요청자는 주황 폴링 마커로 표시)
- if (isWalker) {
-   const last = _walkRoutePoints[_walkRoutePoints.length - 1];
-   const liveIcon = L.divIcon({ html: '<div class="dw-map-walker dw-map-walker--on"></div>', className: '', iconSize: [38, 38], iconAnchor: [19, 19] });
-   _walkLiveMarker = L.marker(last, { icon: liveIcon }).addTo(_walkRouteMap);
- }
+ // 마지막 위치 마커
+ const last = _walkRoutePoints[_walkRoutePoints.length - 1];
+ const liveIcon = L.divIcon({ html: '<div class="dw-map-walker dw-map-walker--on"></div>', className: '', iconSize: [38, 38], iconAnchor: [19, 19] });
+ _walkLiveMarker = L.marker(last, { icon: liveIcon }).addTo(_walkRouteMap);
 
  _updateRouteStats(data.points.length, data.totalDistanceKm);
  }
@@ -9726,24 +9697,10 @@ async function _initWalkSessionMap(sessionId, isLive, opts = {}) {
  }
 }
 
-let _walkElapsedTimer = null;
-function _startElapsedTimer(startedAt) {
- if (_walkElapsedTimer) clearInterval(_walkElapsedTimer);
- const startMs = startedAt ? new Date(startedAt).getTime() : Date.now();
- const tick = () => {
-   const el = document.getElementById('route-elapsed');
-   if (!el) { clearInterval(_walkElapsedTimer); return; }
-   const s = Math.floor((Date.now() - startMs) / 1000);
-   const mm = String(Math.floor(s / 60)).padStart(2, '0');
-   const ss = String(s % 60).padStart(2, '0');
-   el.textContent = `${mm}:${ss}`;
- };
- tick();
- _walkElapsedTimer = setInterval(tick, 1000);
-}
-
 function _updateRouteStats(pointCount, distKm) {
+ const pcEl = document.getElementById('route-point-count');
  const distEl = document.getElementById('route-distance');
+ if (pcEl) pcEl.textContent = pointCount;
  if (distEl && distKm !== null) distEl.textContent = distKm.toFixed(2);
 }
 
@@ -9757,18 +9714,6 @@ function stopWalkRouteWatcher() {
  if (_walkPositionHandler) {
  RealtimeService.off('walker-position', _walkPositionHandler);
  _walkPositionHandler = null;
- }
- if (_walkNavWatchId !== null) {
- navigator.geolocation.clearWatch(_walkNavWatchId);
- _walkNavWatchId = null;
- }
- if (_walkSessionPollTimer) {
- clearInterval(_walkSessionPollTimer);
- _walkSessionPollTimer = null;
- }
- if (_walkElapsedTimer) {
- clearInterval(_walkElapsedTimer);
- _walkElapsedTimer = null;
  }
 }
 
@@ -9893,91 +9838,44 @@ let _broadcastRequestId = null;
 let _broadcastTimer = null;
 
 function showBroadcastWaitingScreen(requestId, sentCount) {
- showWalkerWaitingOverlay(requestId, sentCount);
-}
-
-/** 도우미 응답 대기 블러 오버레이 (브로드캐스트 + 직접 요청 공용) */
-function showWalkerWaitingOverlay(requestId, sentCount) {
- // 기존 타이머 + 오버레이 반드시 정리 (중복 방지)
- if (_broadcastTimer) { clearInterval(_broadcastTimer); _broadcastTimer = null; }
  document.getElementById('broadcast-waiting')?.remove();
-
  const el = document.createElement('div');
  el.id = 'broadcast-waiting';
- el.style.cssText = [
-   'position:fixed;inset:0;z-index:8500',
-   'background:rgba(0,0,0,0.45)',
-   'backdrop-filter:blur(12px)',
-   '-webkit-backdrop-filter:blur(12px)',
-   'display:flex;flex-direction:column;align-items:center;justify-content:center',
-   'padding:32px;animation:ltFadeIn 0.4s ease'
- ].join(';');
+ el.style.cssText = 'position:fixed;inset:0;z-index:8500;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;';
 
  el.innerHTML = `
  <style>
-   @keyframes pawBounce {
-     0%,100%{transform:translateY(0) scale(1);opacity:1}
-     40%{transform:translateY(-14px) scale(1.12);opacity:0.9}
-   }
-   @keyframes dot1{0%,80%,100%{opacity:0.2}40%{opacity:1}}
-   @keyframes dot2{0%,20%,80%,100%{opacity:0.2}60%{opacity:1}}
-   @keyframes dot3{0%,40%,80%,100%{opacity:0.2}80%{opacity:1}}
+ @keyframes bwPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:0.7}}
+ @keyframes bwSpin{to{transform:rotate(360deg)}}
  </style>
-
- <div style="background:rgba(255,255,255,0.97);border-radius:28px;padding:40px 32px;max-width:340px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.22);">
-
-   <!-- 발바닥 애니메이션 -->
-   <div style="font-size:3.2rem;margin-bottom:20px;display:inline-block;animation:pawBounce 1.6s ease-in-out infinite;">🐾</div>
-
-   <h2 style="font-size:1.25rem;font-weight:800;color:#1a1a1a;margin-bottom:10px;line-height:1.4;">
-     조금만 기다려주세요!
-   </h2>
-   <p style="font-size:0.9rem;color:#4A5568;margin-bottom:6px;font-weight:600;">
-     도우미분의 응답을 기다리고 있어요
-   </p>
-   <p style="font-size:0.8rem;color:#A0AEC0;margin-bottom:20px;">
-     ${sentCount > 0 ? `주변 <b style="color:#00AA76">${sentCount}명</b>의 도우미에게 알림이 전달됐어요` : '근처 도우미들이 알림을 확인하면 연결돼요'}
-   </p>
-
-   <!-- 로딩 점 -->
-   <div style="display:flex;justify-content:center;gap:8px;margin-bottom:24px;">
-     <span style="width:10px;height:10px;background:#00AA76;border-radius:50%;animation:dot1 1.4s ease infinite;"></span>
-     <span style="width:10px;height:10px;background:#00AA76;border-radius:50%;animation:dot2 1.4s ease infinite;"></span>
-     <span style="width:10px;height:10px;background:#00AA76;border-radius:50%;animation:dot3 1.4s ease infinite;"></span>
-   </div>
-
-   <!-- 타이머 -->
-   <div style="font-size:0.8rem;color:#A0AEC0;margin-bottom:6px;">요청 만료까지</div>
-   <div style="font-size:2rem;font-weight:800;color:#00AA76;margin-bottom:16px;" id="bw-timer">5:00</div>
-   <div style="width:100%;height:5px;background:#f0f0ee;border-radius:3px;overflow:hidden;margin-bottom:24px;">
-     <div id="bw-progress" style="height:100%;background:linear-gradient(90deg,#00AA76,#34D399);border-radius:3px;width:100%;transition:width 1s linear;"></div>
-   </div>
-
-   <button onclick="cancelBroadcastRequest('${requestId}')"
-     style="width:100%;padding:12px;background:none;border:1.5px solid #e0e0e0;border-radius:999px;color:#A0AEC0;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;"
-     onmouseover="this.style.borderColor='#b91c1c';this.style.color='#b91c1c'"
-     onmouseout="this.style.borderColor='#e0e0e0';this.style.color='#A0AEC0'">
-     요청 취소
-   </button>
- </div>`;
-
+ <div style="width:80px;height:80px;border-radius:50%;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin-bottom:24px;animation:bwPulse 1.8s ease-in-out infinite;"></div>
+ <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:8px;text-align:center;">도우미를 찾고 있어요</h2>
+ <p style="font-size:0.88rem;color:#718096;text-align:center;margin-bottom:8px;">
+ ${sentCount > 0 ? `주변 <b>${sentCount}명</b>의 도우미에게 알림 전송됨` : '온라인 도우미에게 알림 전송 중...'}
+ </p>
+ <div style="font-size:1.6rem;font-weight:800;color:#00AA76;margin-bottom:32px;" id="bw-timer">5:00</div>
+ <div style="width:200px;height:4px;background:#f0f0f0;border-radius:2px;overflow:hidden;margin-bottom:32px;">
+ <div id="bw-progress" style="height:100%;background:#00AA76;border-radius:2px;width:100%;transition:width 1s linear;"></div>
+ </div>
+ <button onclick="cancelBroadcastRequest('${requestId}')" style="padding:12px 32px;background:none;border:1.5px solid #e0e0e0;border-radius:999px;color:#718096;font-size:0.88rem;font-weight:600;cursor:pointer;">요청 취소</button>
+ `;
  document.body.appendChild(el);
 
  // 5분 카운트다운
  let remaining = 300;
  _broadcastTimer = setInterval(() => {
-   remaining--;
-   const m = Math.floor(remaining / 60);
-   const s = remaining % 60;
-   const timerEl = document.getElementById('bw-timer');
-   const progressEl = document.getElementById('bw-progress');
-   if (timerEl) timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
-   if (progressEl) progressEl.style.width = `${(remaining / 300) * 100}%`;
-   if (remaining <= 0) {
-     clearInterval(_broadcastTimer);
-     el.remove();
-     showToast('주변에 응답 가능한 도우미가 없어요. 잠시 후 다시 시도해주세요.', 'error');
-   }
+ remaining--;
+ const m = Math.floor(remaining / 60);
+ const s = remaining % 60;
+ const timerEl = document.getElementById('bw-timer');
+ const progressEl = document.getElementById('bw-progress');
+ if (timerEl) timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+ if (progressEl) progressEl.style.width = `${(remaining / 300) * 100}%`;
+ if (remaining <= 0) {
+ clearInterval(_broadcastTimer);
+ el.remove();
+ showToast('주변에 응답 가능한 도우미가 없어요. 잠시 후 다시 시도해주세요.', 'error');
+ }
  }, 1000);
 }
 
@@ -10170,7 +10068,7 @@ function showBroadcastMatchedScreen(data) {
  el.id = 'broadcast-matched-screen';
  el.style.cssText = 'position:fixed;inset:0;z-index:8500;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;animation:ltFadeIn 0.3s ease;';
  el.innerHTML = `
- <div style="width:80px;height:80px;border-radius:50%;background:#00AA76;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">${icon('check-circle',40,'#fff')}</div>
+ <div style="width:80px;height:80px;border-radius:50%;background:#00AA76;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;margin-bottom:20px;">?</div>
  <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:8px;text-align:center;">매칭 완료!</h2>
  <p style="font-size:0.95rem;color:#444;text-align:center;margin-bottom:6px;"><b>${data.walkerName}</b>님이 수락했어요</p>
  <p style="font-size:0.82rem;color:#718096;text-align:center;margin-bottom:32px;">도우미가 픽업하러 이동 중이에요 </p>

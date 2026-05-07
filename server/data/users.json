@@ -31,8 +31,22 @@
     "email": "jaejun0128@naver.com",
     "name": "이재준",
     "nickname": "대둔",
+    "passwordHash": "hash_6wvhvw",
     "referralCode": "PAW-WY82TF",
-    "dogs": [],
+    "dogs": [
+      {
+        "id": "id-mov441c2-l24oog8",
+        "name": "초코",
+        "breed": "골든 리트리버",
+        "age": 3,
+        "size": "medium",
+        "gender": "male",
+        "weight": null,
+        "neutered": true,
+        "personality": "온순함",
+        "healthNote": null
+      }
+    ],
     "pawCoins": 3000,
     "createdAt": "2026-04-17T10:46:25.872Z",
     "nicknameChangedAt": "2026-04-17T10:46:32.708Z"

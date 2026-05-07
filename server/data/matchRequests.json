@@ -138,5 +138,35 @@
     "toUserId": "id-mo2r9f31-nmcx76f",
     "status": "pending",
     "createdAt": "2026-05-01T02:47:16.611Z"
+  },
+  {
+    "id": "id-movjvmmu-krax8zn",
+    "fromUserId": "id-mo2s9e1c-2pg3r3v",
+    "toUserId": "dummy-walker-006",
+    "fromUserName": "대둔",
+    "requestData": {
+      "dogId": "id-mov441c2-l24oog8",
+      "dogName": "초코",
+      "dogBreed": "골든 리트리버",
+      "dogSize": "medium",
+      "dogs": [
+        {
+          "name": "초코",
+          "size": "medium",
+          "price": 15000
+        }
+      ],
+      "location": "현재 위치",
+      "lat": 37.67291478807168,
+      "lng": 126.73371997912967,
+      "desiredTime": "지금 (즉시 매칭)",
+      "notes": "",
+      "paymentOrderId": "walk_movjvic4_vtpn7b",
+      "paymentAmount": 15000,
+      "duration": 40
+    },
+    "status": "pending",
+    "createdAt": "2026-05-07T13:57:06.006Z",
+    "updatedAt": "2026-05-07T13:57:06.006Z"
   }
 ]
