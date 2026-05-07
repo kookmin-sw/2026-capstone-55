@@ -4,27 +4,26 @@
     "name": "김민준",
     "nickname": "민준워커",
     "intro": "강아지를 정말 사랑하는 산책 도우미입니다 🐶",
-    "location": "ㅇㄴ",
-    "experience": "ㅇㄴㅇㄴ",
+    "location": "서울 성북구",
+    "experience": "없음",
     "price": 0,
     "rating": 5,
     "reviewCount": 0,
     "isAvailable": true,
-    "registeredAt": "2026-05-05T10:36:13.436Z",
-    "lat": 37.60346052949397,
-    "lng": 127.03231863701363,
-    "lastLocationUpdatedAt": "2026-05-05T10:36:33.409Z",
+    "registeredAt": "2026-05-06T10:50:40.811Z",
+    "lat": 37.60346603541297,
+    "lng": 127.03231069522309,
+    "lastLocationUpdatedAt": "2026-05-06T10:53:27.708Z",
     "preferredTime": "오전 (9-11시)",
-    "message": "ㅇㄴㅇㄴ",
+    "message": "없음",
     "acceptedSizes": [
       "small",
-      "medium",
-      "large"
+      "medium"
     ],
-    "lastSeenAt": "2026-05-06T10:06:49.721Z",
+    "lastSeenAt": "2026-05-06T18:32:57.194Z",
     "careerYears": "under6m",
     "largeDogExp": "some",
-    "aggressionHandle": "some",
+    "aggressionHandle": "yes",
     "ownPetExp": "current"
   },
   {
@@ -71,7 +70,7 @@
     "reviewCount": 0,
     "rating": 5,
     "registeredAt": "2026-05-01T05:05:13.608Z",
-    "lastSeenAt": "2026-05-06T10:09:56.718Z"
+    "lastSeenAt": "2026-05-06T18:32:57.804Z"
   },
   {
     "userId": "dummy-walker-001",

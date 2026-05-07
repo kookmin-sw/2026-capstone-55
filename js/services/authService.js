@@ -220,7 +220,12 @@ const AuthService = (() => {
       name: dogData.name.trim(),
       breed: dogData.breed,
       age: Number(dogData.age),
-      size: dogData.size
+      size: dogData.size,
+      gender: dogData.gender || null,
+      weight: dogData.weight ? Number(dogData.weight) : null,
+      neutered: dogData.neutered != null ? Boolean(dogData.neutered) : null,
+      personality: dogData.personality || null,
+      healthNote: dogData.healthNote || null
     };
 
     if (!users[index].dogs) {

@@ -414,7 +414,7 @@
     "location": "현재 위치",
     "lat": null,
     "lng": null,
-    "dogSize": "medium",
+    "dogSize": "small",
     "preferredTime": "즉시 매칭",
     "message": "",
     "price": 0,
@@ -428,29 +428,28 @@
     "isAvailable": true,
     "rating": 5,
     "reviewCount": 0,
-    "createdAt": "2026-05-05T06:33:35.815Z"
+    "createdAt": "2026-05-06T10:38:35.860Z"
   },
   {
     "userId": "test-walker-001",
     "userName": "김민준",
     "role": "walker",
-    "location": "ㅇㄴ",
-    "lat": 37.60346052949397,
-    "lng": 127.03231863701363,
+    "location": "서울 성북구",
+    "lat": 37.60346603541297,
+    "lng": 127.03231069522309,
     "dogSize": "medium",
     "preferredTime": "오전 (9-11시)",
-    "message": "ㅇㄴㅇㄴ",
+    "message": "없음",
     "price": 0,
-    "experience": "ㅇㄴㅇㄴ",
+    "experience": "없음",
     "acceptedSizes": [
       "small",
-      "medium",
-      "large"
+      "medium"
     ],
     "specialty": "",
     "isAvailable": true,
     "rating": 5,
     "reviewCount": 0,
-    "createdAt": "2026-05-05T10:36:13.431Z"
+    "createdAt": "2026-05-06T10:50:40.797Z"
   }
 ]
