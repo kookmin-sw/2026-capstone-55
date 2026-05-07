@@ -79,9 +79,35 @@ router.post('/', (req, res) => {
   }
 
   const emitToUser = req.app.get('emitToUser');
-  if (emitToUser) emitToUser(requesterId, 'walk-started', { sessionId: session.id, walkerId });
+  if (emitToUser) emitToUser(requesterId, 'walk-started', { sessionId: session.id, walkerId, requestId });
 
   res.json({ success: true, session });
+});
+
+// 도우미 취소 (heading/arrived/handoff 상태에서만)
+router.patch('/:id/cancel', (req, res) => {
+  const { reason } = req.body;
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (!['heading', 'arrived', 'handoff'].includes(sessions[idx].status)) {
+    return res.json({ success: false, error: '산책 중에는 취소할 수 없습니다.' });
+  }
+
+  sessions[idx].status     = 'cancelled';
+  sessions[idx].cancelledAt = db.now();
+  sessions[idx].cancelReason = reason || '';
+  db.set('walkSessions', sessions);
+
+  const s = sessions[idx];
+  const requests = db.get('walkRequests', []);
+  const ri = requests.findIndex(r => r.id === s.requestId);
+  if (ri !== -1) { requests[ri].status = 'cancelled'; requests[ri].updatedAt = db.now(); db.set('walkRequests', requests); }
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) emitToUser(s.requesterId, 'walk-request-cancelled', { requestId: s.requestId, cancelledBy: 'walker', reason });
+
+  res.json({ success: true });
 });
 
 // 세션 종료
@@ -138,12 +164,31 @@ router.patch('/:id/arrive', (req, res) => {
   res.json({ success: true, session: sessions[idx] });
 });
 
-// 산책 실제 시작 (arrived → walking) — 도우미가 반려견 픽업 후 누름
-router.patch('/:id/start-walk', (req, res) => {
+// 요청자가 반려견 전달 완료 확인 (arrived → handoff)
+router.patch('/:id/confirm-handoff', (req, res) => {
   const sessions = db.get('walkSessions', []);
   const idx = sessions.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false });
   if (sessions[idx].status !== 'arrived') {
+    return res.json({ success: false, error: '도우미가 도착한 후 전달 확인이 가능합니다.' });
+  }
+  sessions[idx].status    = 'handoff';
+  sessions[idx].handoffAt = db.now();
+  db.set('walkSessions', sessions);
+
+  const s = sessions[idx];
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) emitToUser(s.walkerId, 'handoff-confirmed', { sessionId: s.id });
+
+  res.json({ success: true, session: sessions[idx] });
+});
+
+// 산책 실제 시작 (handoff → walking) — 도우미가 반려견 픽업 후 누름
+router.patch('/:id/start-walk', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (!['arrived', 'handoff'].includes(sessions[idx].status)) {
     return res.json({ success: false, error: '도착 확인 후 산책을 시작할 수 있습니다.' });
   }
   sessions[idx].status        = 'walking';

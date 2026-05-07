@@ -119,7 +119,7 @@ const RealtimeService = (() => {
     if (_gpsInterval) { clearInterval(_gpsInterval); _gpsInterval = null; }
   }
 
-  function startRouteTracking(sessionId, intervalMs = 7000) {
+  function startRouteTracking(sessionId, intervalMs = 3000) {
     stopRouteTracking();
     _sessionRouteInterval = _startGeoPolling(
       `/api/walk-sessions/${sessionId}/route`,

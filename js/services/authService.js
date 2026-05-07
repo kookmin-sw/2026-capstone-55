@@ -60,8 +60,12 @@ const AuthService = (() => {
       const newUser = result.user;
       createAuthToken(newUser.id);
       setCurrentUser(newUser);
-      // 서버에 이미 저장됨 — 로컬 캐시 덮어쓰기 방지를 위해 syncFromServer 호출
-      try { await StorageService.syncFromServer(); } catch(e) {}
+      // 로컬에도 캐시
+      const users = getUsers();
+      if (!users.find(u => u.id === newUser.id)) {
+        users.push(newUser);
+        saveUsers(users);
+      }
       return { success: true, user: newUser };
     } catch(e) {
       // 서버 연결 실패 시 로컬 fallback
@@ -151,9 +155,7 @@ const AuthService = (() => {
    */
   function getCurrentUser() {
     const token = StorageService.get(AUTH_TOKEN_KEY);
-    if (!token) {
-      return null;
-    }
+    if (!token) return null;
 
     // 토큰 만료 확인
     if (new Date(token.expiresAt) < new Date()) {
@@ -221,7 +223,7 @@ const AuthService = (() => {
       size: dogData.size,
       gender: dogData.gender || null,
       weight: dogData.weight ? Number(dogData.weight) : null,
-      neutered: dogData.neutered != null ? dogData.neutered : null,
+      neutered: dogData.neutered != null ? Boolean(dogData.neutered) : null,
       personality: dogData.personality || null,
       healthNote: dogData.healthNote || null
     };

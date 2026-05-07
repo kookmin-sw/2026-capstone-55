@@ -101,18 +101,28 @@
     "referralCode": "PAW-R49XVD",
     "dogs": [
       {
-        "id": "id-mol2jyay-78rppym",
-        "name": "댕댕이",
+        "id": "id-motxbdfb-9r1w6sq",
+        "name": "초코",
         "breed": "골든 리트리버",
         "age": 3,
-        "size": "medium"
+        "size": "small",
+        "gender": "male",
+        "weight": null,
+        "neutered": true,
+        "personality": "온순함",
+        "healthNote": null
       },
       {
-        "id": "id-mosfig0p-6ovtcit",
-        "name": "초코",
+        "id": "id-motxbyf3-7ithoib",
+        "name": "바비",
         "breed": "포메라니안",
-        "age": 5,
-        "size": "small"
+        "age": 3,
+        "size": "small",
+        "gender": "male",
+        "weight": null,
+        "neutered": true,
+        "personality": "온순함",
+        "healthNote": null
       }
     ],
     "pawCoins": 3000,
