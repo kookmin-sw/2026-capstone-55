@@ -710,7 +710,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .dw-map-controls { display: flex; align-items: center; gap: 8px; }
 .dw-map-wrap { position: relative; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--color-border); box-shadow: var(--shadow-sm); }
 .dw-map { width: 100%; height: 400px; z-index: 0; }
-.dw-map-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--color-bg); font-size: 0.9rem; color: var(--color-text-light); font-weight: 500; text-align: center; padding: 24px; z-index: 10; pointer-events: none; }
+.dw-map-hint { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(250,250,248,0.92); backdrop-filter: blur(6px); font-size: 0.9rem; color: var(--color-text-light); font-weight: 500; text-align: center; padding: 24px; z-index: 10; pointer-events: none; transition: opacity 0.4s ease; }
 
 .dw-gps-section { background: var(--color-bg); border: 1.5px dashed var(--color-border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 18px; }
 .dw-gps-section__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
@@ -718,33 +718,33 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .dw-gps-section__sub { font-size: 0.78rem; color: var(--color-text-light); margin-top: 3px; }
 .dw-gps-status { margin-top: 10px; min-height: 20px; }
 
-.dw-map-me { width: 16px; height: 16px; border-radius: 50%; background: #3182CE; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(49,130,206,0.5); }
-.dw-map-walker { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 2.5px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.15s; }
+.dw-map-me { width: 14px; height: 14px; border-radius: 50%; background: #3182CE; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(49,130,206,0.4); }
+.dw-map-walker { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.15s; }
 .dw-map-walker:hover { transform: scale(1.15); }
-.dw-map-walker--on  { background: #00AA76; }
+.dw-map-walker--on  { background: #1a1a1a; }
 .dw-map-walker--off { background: #A0AEC0; }
 
 /* 워커 핀 마커 */
 .dw-map-walker-pin {
   display: flex; flex-direction: column; align-items: center; cursor: pointer;
-  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
   transition: transform 0.15s;
 }
 .dw-map-walker-pin:hover { transform: scale(1.1) translateY(-2px); }
 .dw-map-walker-pin__avatar {
-  width: 40px; height: 40px;
+  width: 36px; height: 36px;
   border-radius: 50%;
-  background: #FF8FAB;
+  background: #1a1a1a;
   border: 3px solid #fff;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1rem; font-weight: 800; color: #fff;
-  box-shadow: 0 2px 8px rgba(255,143,171,0.5);
+  font-size: 0.9rem; font-weight: 800; color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 .dw-map-walker-pin__tail {
   width: 0; height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-top: 10px solid #FF8FAB;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #1a1a1a;
   margin-top: -1px;
 }
 #dw-reg-map-wrap .dw-map { height: 280px; }
@@ -1281,4 +1281,94 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 
 @media (max-width: 480px) {
   .auth-card { padding: 28px 20px; }
+}
+
+
+/* ===== AI 추천 도우미 카드 — AI 점수 계산 중 블러/오버레이 ===== */
+.walker-card-item { position: relative; transition: filter 0.4s ease, transform 0.3s ease; }
+
+/* 계산 중인 카드: 내용 블러 + 살짝 채도 낮춤 */
+.walker-card-item--pending > .dw-card__avatar,
+.walker-card-item--pending > .dw-card__body,
+.walker-card-item--pending > .dw-card__action {
+  filter: blur(4px) saturate(0.6);
+  opacity: 0.55;
+  transition: filter 0.4s ease, opacity 0.4s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+.walker-card-item--pending .dw-card__action button { pointer-events: none; }
+
+/* 점수 도착 후 드러나는 전환 애니메이션 */
+.walker-card-item--revealed { animation: walkerCardReveal 0.5s ease-out; }
+@keyframes walkerCardReveal {
+  0%   { filter: blur(3px); opacity: 0.7; transform: translateY(2px); }
+  100% { filter: blur(0);   opacity: 1;   transform: translateY(0);   }
+}
+
+/* AI 분석 오버레이 */
+.walker-card__ai-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255,255,255,0.65) 0%, rgba(245,245,243,0.75) 100%);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-radius: inherit;
+  z-index: 5;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.walker-card__ai-overlay-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(26, 26, 26, 0.92);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  animation: aiOverlayFloat 2.4s ease-in-out infinite;
+}
+
+@keyframes aiOverlayFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+.walker-card__ai-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #00AA76;
+  border-radius: 50%;
+  animation: aiOverlaySpin 0.9s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes aiOverlaySpin {
+  to { transform: rotate(360deg); }
+}
+
+.walker-card__ai-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.35;
+}
+
+.walker-card__ai-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.walker-card__ai-sub {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
 }

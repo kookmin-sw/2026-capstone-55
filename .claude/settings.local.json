@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node \"C:/Users/cndqj/AppData/Local/Temp/fix_all_icons2.js\")",
+      "Bash(node -e \"require\\('C:/Users/cndqj/OneDrive/바탕 화면/새홀리기/js/app.js'\\)\")"
+    ]
+  }
+}

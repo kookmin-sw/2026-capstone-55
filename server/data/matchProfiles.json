@@ -45,29 +45,6 @@
     "createdAt": "2026-04-24T04:56:13.791Z"
   },
   {
-    "userId": "id-mol2g5lb-rvnvuvi",
-    "userName": "Peter Lee",
-    "role": "requester",
-    "location": "ㅇㅇㅇ",
-    "lat": null,
-    "lng": null,
-    "dogSize": "medium",
-    "preferredTime": "오전 (9-11시)",
-    "message": "",
-    "price": 0,
-    "experience": "없음",
-    "acceptedSizes": [
-      "small",
-      "medium",
-      "large"
-    ],
-    "specialty": "",
-    "isAvailable": true,
-    "rating": 5,
-    "reviewCount": 0,
-    "createdAt": "2026-04-30T06:48:29.313Z"
-  },
-  {
     "userId": "id-mo2r9f31-nmcx76f",
     "userName": "‍하준서(학부생-인공지능전공)",
     "role": "walker",
@@ -91,12 +68,375 @@
     "createdAt": "2026-05-01T02:46:50.443Z"
   },
   {
+    "userId": "dummy-walker-001",
+    "userName": "김민서",
+    "role": "walker",
+    "location": "서울 마포구 합정동",
+    "lat": 37.5495,
+    "lng": 126.9136,
+    "preferredTime": "오전 (9-11시)",
+    "isAvailable": true,
+    "rating": 4.9,
+    "reviewCount": 24,
+    "price": 15000,
+    "careerYears": "over3y",
+    "largeDogExp": "lots",
+    "aggressionHandle": "yes",
+    "ownPetExp": "current",
+    "breedExp": [
+      "리트리버",
+      "허스키",
+      "진돗개"
+    ],
+    "problemBehavior": [
+      "공격성",
+      "줄 당김",
+      "다른 강아지에게 예민함"
+    ],
+    "message": "5년간 대형견 전문 도우미. 공격성 있는 강아지도 OK.",
+    "specialty": "대형견 전문",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "dummy-walker-002",
+    "userName": "박지훈",
+    "role": "walker",
+    "location": "서울 서초구 반포동",
+    "lat": 37.501,
+    "lng": 127.0064,
+    "preferredTime": "오전 (7-9시)",
+    "isAvailable": true,
+    "rating": 4.7,
+    "reviewCount": 11,
+    "price": 12000,
+    "careerYears": "1y3y",
+    "largeDogExp": "some",
+    "aggressionHandle": "some",
+    "ownPetExp": "past",
+    "breedExp": [
+      "푸들",
+      "말티즈",
+      "포메라니안"
+    ],
+    "problemBehavior": [
+      "짖음",
+      "분리불안"
+    ],
+    "message": "소형견 전문 도우미. 불안이 많은 강아지를 잘 달래줘요.",
+    "specialty": "소형견 전문",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "dummy-walker-003",
+    "userName": "이수연",
+    "role": "walker",
+    "location": "서울 강남구 역삼동",
+    "lat": 37.5012,
+    "lng": 127.0367,
+    "preferredTime": "오전 (9-11시)",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 38,
+    "price": 18000,
+    "careerYears": "over3y",
+    "largeDogExp": "lots",
+    "aggressionHandle": "yes",
+    "ownPetExp": "current",
+    "breedExp": [
+      "리트리버",
+      "진돗개",
+      "허스키",
+      "시바견"
+    ],
+    "problemBehavior": [
+      "공격성",
+      "줄 당김",
+      "낯선 사람 경계",
+      "다른 강아지에게 예민함"
+    ],
+    "message": "공격성 강아지 전문 핸들러. 어떤 강아지도 안전하게.",
+    "specialty": "문제행동 전문",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "dummy-walker-004",
+    "userName": "최현우",
+    "role": "walker",
+    "location": "서울 송파구 잠실동",
+    "lat": 37.5133,
+    "lng": 127.1028,
+    "preferredTime": "오후 (2-4시)",
+    "isAvailable": true,
+    "rating": 4.5,
+    "reviewCount": 3,
+    "price": 8000,
+    "careerYears": "6m1y",
+    "largeDogExp": "none",
+    "aggressionHandle": "no",
+    "ownPetExp": "none",
+    "breedExp": [
+      "말티즈",
+      "푸들"
+    ],
+    "problemBehavior": [],
+    "message": "대학생 도우미. 온순한 소형견과 함께 즐겁게 산책해요.",
+    "specialty": "",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "dummy-walker-005",
+    "userName": "정다은",
+    "role": "walker",
+    "location": "서울 용산구 이태원동",
+    "lat": 37.5347,
+    "lng": 126.9942,
+    "preferredTime": "오후 (5-7시)",
+    "isAvailable": true,
+    "rating": 4.8,
+    "reviewCount": 16,
+    "price": 13000,
+    "careerYears": "1y3y",
+    "largeDogExp": "some",
+    "aggressionHandle": "some",
+    "ownPetExp": "current",
+    "breedExp": [
+      "코커스패니얼",
+      "비글",
+      "푸들",
+      "말티즈"
+    ],
+    "problemBehavior": [
+      "짖음",
+      "줄 당김"
+    ],
+    "message": "3년 경력, 2마리 반려견 보유. 활발한 강아지를 잘 다뤄요.",
+    "specialty": "다중 산책 가능",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "dummy-walker-006",
+    "userName": "강동현",
+    "role": "walker",
+    "location": "서울 마포구 서교동",
+    "lat": 37.5519,
+    "lng": 126.9218,
+    "preferredTime": "오전 (7-9시)",
+    "isAvailable": true,
+    "rating": 4.9,
+    "reviewCount": 29,
+    "price": 16000,
+    "careerYears": "over3y",
+    "largeDogExp": "lots",
+    "aggressionHandle": "yes",
+    "ownPetExp": "current",
+    "breedExp": [
+      "허스키",
+      "리트리버",
+      "진돗개",
+      "시바견"
+    ],
+    "problemBehavior": [
+      "공격성",
+      "줄 당김",
+      "낯선 사람 경계"
+    ],
+    "message": "전직 반려견 훈련사 출신. 어려운 강아지도 문제없어요.",
+    "specialty": "훈련사 출신",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "dummy-walker-007",
+    "userName": "윤서희",
+    "role": "walker",
+    "location": "서울 성동구 성수동",
+    "lat": 37.5446,
+    "lng": 127.0557,
+    "preferredTime": "오전 (9-11시)",
+    "isAvailable": true,
+    "rating": 4.6,
+    "reviewCount": 5,
+    "price": 9000,
+    "careerYears": "6m1y",
+    "largeDogExp": "none",
+    "aggressionHandle": "no",
+    "ownPetExp": "past",
+    "breedExp": [
+      "포메라니안",
+      "말티즈"
+    ],
+    "problemBehavior": [
+      "분리불안"
+    ],
+    "message": "소형견과 함께 성수동 공원 산책 전문이에요.",
+    "specialty": "",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "dummy-walker-008",
+    "userName": "임준혁",
+    "role": "walker",
+    "location": "서울 광진구 구의동",
+    "lat": 37.5439,
+    "lng": 127.0796,
+    "preferredTime": "저녁 (7-9시)",
+    "isAvailable": true,
+    "rating": 4.7,
+    "reviewCount": 8,
+    "price": 11000,
+    "careerYears": "1y3y",
+    "largeDogExp": "lots",
+    "aggressionHandle": "some",
+    "ownPetExp": "current",
+    "breedExp": [
+      "리트리버",
+      "비글",
+      "코커스패니얼"
+    ],
+    "problemBehavior": [
+      "줄 당김",
+      "다른 강아지에게 예민함"
+    ],
+    "message": "퇴근 후 저녁 산책 전문. 활발한 중대형견 환영.",
+    "specialty": "저녁 전문",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "dummy-walker-009",
+    "userName": "오지민",
+    "role": "walker",
+    "location": "서울 은평구 불광동",
+    "lat": 37.6121,
+    "lng": 126.933,
+    "preferredTime": "상시 가능",
+    "isAvailable": true,
+    "rating": 4.8,
+    "reviewCount": 20,
+    "price": 14000,
+    "careerYears": "over3y",
+    "largeDogExp": "some",
+    "aggressionHandle": "some",
+    "ownPetExp": "current",
+    "breedExp": [
+      "푸들",
+      "말티즈",
+      "포메라니안",
+      "비글"
+    ],
+    "problemBehavior": [
+      "짖음",
+      "분리불안",
+      "낯선 사람 경계"
+    ],
+    "message": "5년 경력 전업 도우미. 불안이 많은 강아지 케어 전문.",
+    "specialty": "불안견 케어",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "dummy-walker-010",
+    "userName": "한수빈",
+    "role": "walker",
+    "location": "서울 강서구 화곡동",
+    "lat": 37.5477,
+    "lng": 126.8495,
+    "preferredTime": "오후 (2-4시)",
+    "isAvailable": true,
+    "rating": 4.4,
+    "reviewCount": 2,
+    "price": 7000,
+    "careerYears": "1y3y",
+    "largeDogExp": "none",
+    "aggressionHandle": "no",
+    "ownPetExp": "none",
+    "breedExp": [
+      "말티즈",
+      "푸들",
+      "포메라니안"
+    ],
+    "problemBehavior": [],
+    "message": "온순한 소형견 산책 전문. 꼼꼼하게 돌봐드려요.",
+    "specialty": "",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "createdAt": "2026-05-05T05:29:44.603Z"
+  },
+  {
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "userName": "Peter Lee",
+    "role": "requester",
+    "location": "현재 위치",
+    "lat": null,
+    "lng": null,
+    "dogSize": "medium",
+    "preferredTime": "즉시 매칭",
+    "message": "",
+    "price": 0,
+    "experience": "없음",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "specialty": "",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 0,
+    "createdAt": "2026-05-05T06:33:35.815Z"
+  },
+  {
     "userId": "test-walker-001",
     "userName": "김민준",
     "role": "walker",
     "location": "ㅇㄴ",
-    "lat": 37.603462635408604,
-    "lng": 127.03231281985907,
+    "lat": 37.60346052949397,
+    "lng": 127.03231863701363,
     "dogSize": "medium",
     "preferredTime": "오전 (9-11시)",
     "message": "ㅇㄴㅇㄴ",
@@ -111,29 +451,6 @@
     "isAvailable": true,
     "rating": 5,
     "reviewCount": 0,
-    "createdAt": "2026-05-03T12:22:13.613Z"
-  },
-  {
-    "userId": "test-user",
-    "userName": "알 수 없음",
-    "role": "requester",
-    "location": "마포구 합정동",
-    "lat": null,
-    "lng": null,
-    "dogSize": "medium",
-    "preferredTime": "오후 (5-7시)",
-    "message": "",
-    "price": 0,
-    "experience": "없음",
-    "acceptedSizes": [
-      "small",
-      "medium",
-      "large"
-    ],
-    "specialty": "",
-    "isAvailable": true,
-    "rating": 5,
-    "reviewCount": 0,
-    "createdAt": "2026-05-04T00:40:20.045Z"
+    "createdAt": "2026-05-05T10:36:13.431Z"
   }
 ]
