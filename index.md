@@ -1,37 +1,59 @@
-## Welcome to GitHub Pages
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/Lvs6kcL8)
 
-You can use the [editor on GitHub](https://github.com/kookmin-sw/cap-template/edit/master/index.md) to maintain and preview the content for your website in Markdown files.
+<div align="center">
+  <h1>🐾 Pawsitive</h1>
+  <p><strong>반려견과 함께하는 더 나은 일상</strong></p>
+  <p>AI 건강 상담부터 산책 매칭까지, 당신과 반려견을 위한 공간.</p>
+</div>
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+### 🐾 Pawsitive 한 줄 소개
+- **Pawsitive**는 반려견 보호자와 전문 산책 도우미를 연결하고, AI 기반 건강 관리·교육·커뮤니티를 제공하는 **반려견 종합 케어 플랫폼**입니다!
 
-### Markdown
+### 🌐 Pawsitive 웹사이트 주소
+- [클릭하여 Pawsitive를 체험해보세요!](https://competent-famished-leatrice.ngrok-free.dev)
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+### 🎥 Pawsitive 소개 영상
+- [클릭하여 Pawsitive 소개 영상을 시청해보세요!](https://youtu.be/)
 
-```markdown
-Syntax highlighted code block
+### 💡 Pawsitive 주요 기능
+- 🤝 **산책 매칭** — 위치 기반으로 근처 산책 도우미와 실시간 매칭
+- 🗺️ **GPS 산책 추적** — 실시간 산책 경로 기록 및 공유
+- 🤖 **AI 건강 분석** — Gemini AI 기반 반려견 건강 상담 및 분석
+- 📚 **교육 콘텐츠** — 산책 자세, 리드줄 사용법, 안전 교육
+- 💬 **커뮤니티** — 반려견 보호자 간 소통 및 정보 공유
+- 💰 **PAW 코인** — 플랫폼 내 리워드 시스템
 
-# Header 1
-## Header 2
-### Header 3
+### 🛠️ 기술 스택
+| 구분 | 기술 |
+|------|------|
+| Frontend | HTML, CSS, JavaScript (Vanilla) |
+| Backend | Node.js, Express |
+| AI | Google Gemini API |
+| 실시간 통신 | Socket.IO |
+| 인증 | Passport.js (Google, Kakao, Naver OAuth) |
+| 결제 | 토스페이먼츠 |
 
-- Bulleted
-- List
+### 👥 팀 소개
 
-1. Numbered
-2. List
+| 이름 | 역할 | 기여 내용 |
+|------|------|-----------|
+| 조현찬 | 팀장, 풀스택 개발 | 프로젝트 총괄, 서버 아키텍처 설계 및 핵심 기능 구현 |
+| 하준서 | 풀스택 개발 | 프로필·반려견 관리, AI 건강 분석, 커뮤니티 기능 구현 |
+| 이재준 | 풀스택 개발 | 산책 매칭·GPS 추적, 실시간 채팅, 결제 시스템 구현 |
+| 이충범 | 풀스택 개발 | 교육 콘텐츠, 워커 대시보드, 리뷰·평점 시스템 구현 |
 
-**Bold** and _Italic_ and `Code` text
+### 4. 사용법
 
-[Link](url) and ![Image](src)
+```bash
+# 설치
+git clone https://github.com/kookmin-sw/2026-capstone-55.git
+cd 2026-capstone-55
+npm install
+
+# 실행
+npm start
+# http://localhost:3000 에서 확인
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/kookmin-sw/cap-template/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+### 5. 기타
+- 팀페이지: https://kookmin-sw.github.io/2026-capstone-55/
