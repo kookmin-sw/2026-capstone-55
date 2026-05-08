@@ -1,77 +1,57 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/Lvs6kcL8)
-# Welcome to GitHub
 
-캡스톤 팀 생성을 축하합니다.
+<div align="center">
+  <img src="pawsitive_logo_transparent.png" alt="Pawsitive 로고" width="500">
+</div>
 
-## 팀소개 및 페이지를 꾸며주세요.
+### 🐾 Pawsitive 한 줄 소개
+- **Pawsitive**는 반려견 보호자와 전문 산책 도우미를 연결하고, AI 기반 건강 관리·교육·커뮤니티를 제공하는 **반려견 종합 케어 플랫폼**입니다!
 
-- 프로젝트 소개
-  - 프로젝트 설치방법 및 데모, 사용방법, 프리뷰등을 readme.md에 작성.
-  - Api나 사용방법등 내용이 많을경우 wiki에 꾸미고 링크 추가.
+### 🌐 Pawsitive 웹사이트 주소
+- [클릭하여 Pawsitive를 체험해보세요!](https://pawsitive-web.vercel.app)
 
-- 팀페이지 꾸미기
-  - 프로젝트 소개 및 팀원 소개
-  - index.md 예시보고 수정.
+### 🎥 Pawsitive 소개 영상
+- [클릭하여 Pawsitive 소개 영상을 시청해보세요!](https://youtu.be/)
 
-- GitHub Pages 리파지토리 Settings > Options > GitHub Pages 
-  - Source를 marster branch
-  - Theme Chooser에서 태마선택
-  - 수정후 팀페이지 확인하여 점검.
+### 💡 Pawsitive 주요 기능
+- 🤝 **산책 매칭** — 위치 기반으로 근처 산책 도우미와 실시간 매칭
+- 🗺️ **GPS 산책 추적** — 실시간 산책 경로 기록 및 공유
+- 🤖 **AI 건강 분석** — Gemini AI 기반 반려견 건강 상담 및 분석
+- 📚 **교육 콘텐츠** — 산책 자세, 리드줄 사용법, 안전 교육
+- 💬 **커뮤니티** — 반려견 보호자 간 소통 및 정보 공유
+- 💰 **PAW 코인** — 플랫폼 내 리워드 시스템
 
-**팀페이지 주소** -> https://kookmin-sw.github.io/ '{{자신의 리파지토리 아이디}}'
+### 🛠️ 기술 스택
+| 구분 | 기술 |
+|------|------|
+| Frontend | HTML, CSS, JavaScript (Vanilla) |
+| Backend | Node.js, Express |
+| AI | Google Gemini API |
+| 실시간 통신 | Socket.IO |
+| 인증 | Passport.js (Google, Kakao, Naver OAuth) |
+| 결제 | 토스페이먼츠 |
 
-**예시)** 2023년 0조  https://kookmin-sw.github.io/capstone-2023-00/
+### 👥 팀 소개
 
-
-## 내용에 아래와 같은 내용들을 추가하세요.
-
-### 1. 프로잭트 소개
-
-프로젝트
-
-### 2. 소개 영상
-
-프로젝트 소개하는 영상을 추가하세요
-
-### 3. 팀 소개
-
-팀을 소개하세요.
-
-팀원정보 및 담당이나 사진 및 SNS를 이용하여 소개하세요.
+| 이름 | 역할 | 기여 내용 |
+|------|------|-----------|
+| 조현찬 | 팀장, 풀스택 개발 | 프로젝트 총괄, 서버 아키텍처 설계 및 핵심 기능 구현 |
+| 하준서 | 풀스택 개발 | 프로필·반려견 관리, AI 건강 분석, 커뮤니티 기능 구현 |
+| 이재준 | 풀스택 개발 | 산책 매칭·GPS 추적, 실시간 채팅, 결제 시스템 구현 |
+| 이충범 | 풀스택 개발 | 교육 콘텐츠, 워커 대시보드, 리뷰·평점 시스템 구현 |
 
 ### 4. 사용법
 
-소스코드제출시 설치법이나 사용법을 작성하세요.
+```bash
+# 설치
+git clone https://github.com/kookmin-sw/2026-capstone-55.git
+cd 2026-capstone-55
+npm install
 
-### 5. 기타
-
-추가적인 내용은 자유롭게 작성하세요.
-
-
-## Markdown을 사용하여 내용꾸미기
-
-Markdown은 작문을 스타일링하기위한 가볍고 사용하기 쉬운 구문입니다. 여기에는 다음을위한 규칙이 포함됩니다.
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+# 실행
+npm start
+# http://localhost:3000 에서 확인
 ```
 
-자세한 내용은 [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Support or Contact
-
-readme 파일 생성에 추가적인 도움이 필요하면 [도움말](https://help.github.com/articles/about-readmes/) 이나 [contact support](https://github.com/contact) 을 이용하세요.
+### 5. 기타
+- 팀페이지: https://kookmin-sw.github.io/2026-capstone-55/
