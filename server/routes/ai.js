@@ -103,6 +103,11 @@ const SYNONYM_MAP = {
   '예방접종': ['백신', '접종', '예방접종스케줄'],
   '중성화': ['중성화', '수술', '불임', '거세'],
   '보험': ['반려동물보험', '의료비', '보장'],
+  // 견종 별칭 관련
+  '시바견': ['시바이누', '시바', 'shiba'],
+  '시바': ['시바이누', '시바견', 'shiba'],
+  '코커': ['코카스파니엘', '코커스패니얼', '코카', 'cocker'],
+  '코카': ['코커스패니얼', '코카스파니엘', '코커', 'cocker'],
 };
 
 /**
@@ -294,7 +299,7 @@ router.post('/symptom', async (req, res) => {
       return res.status(503).json({ success: false, error: 'AI 서비스가 일시적으로 불안정해요.' });
     }
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: SYSTEM_PROMPTS.symptom,
       messages: [{ role: 'user', content: `[반려견 정보]\n품종: ${breed || '미상'}\n나이: ${age || '미상'}\n\n[증상]\n${symptoms}${ragContext}` }]
@@ -322,7 +327,7 @@ async function consultWithClaude(message, history, systemPrompt) {
   userContent += message;
 
   const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 1024,
     system: systemPrompt || SYSTEM_PROMPTS.consult,
     messages: [{ role: 'user', content: userContent }]
@@ -468,7 +473,7 @@ router.post('/consult-with-image', async (req, res) => {
     content.push({ type: 'text', text: message || '이 이미지를 분석해주세요.' });
 
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: systemPrompt,
       messages: [{ role: 'user', content }]
@@ -587,7 +592,7 @@ router.post('/pet-consult', async (req, res) => {
     res.flushHeaders?.();
 
     const stream = client.messages.stream({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: systemPrompt,
       messages: messages.map(m => ({ role: m.role, content: m.content }))
