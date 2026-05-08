@@ -11,16 +11,16 @@
     "reviewCount": 0,
     "isAvailable": true,
     "registeredAt": "2026-05-06T10:50:40.811Z",
-    "lat": 37.60346603541297,
-    "lng": 127.03231069522309,
-    "lastLocationUpdatedAt": "2026-05-06T10:53:27.708Z",
+    "lat": 37.60341321870016,
+    "lng": 127.0323479477822,
+    "lastLocationUpdatedAt": "2026-05-08T06:56:40.329Z",
     "preferredTime": "오전 (9-11시)",
     "message": "없음",
     "acceptedSizes": [
       "small",
       "medium"
     ],
-    "lastSeenAt": "2026-05-06T18:32:57.194Z",
+    "lastSeenAt": "2026-05-08T06:56:40.329Z",
     "careerYears": "under6m",
     "largeDogExp": "some",
     "aggressionHandle": "yes",
@@ -70,7 +70,7 @@
     "reviewCount": 0,
     "rating": 5,
     "registeredAt": "2026-05-01T05:05:13.608Z",
-    "lastSeenAt": "2026-05-06T18:32:57.804Z"
+    "lastSeenAt": "2026-05-08T06:55:22.966Z"
   },
   {
     "userId": "dummy-walker-001",
