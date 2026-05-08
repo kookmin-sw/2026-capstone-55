@@ -1,14 +1,16 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/Lvs6kcL8)
 
 <div align="center">
-  <img src="pawsitive_logo_transparent.png" alt="Pawsitive 로고" width="500">
+  <h1>🐾 Pawsitive</h1>
+  <p><strong>반려견과 함께하는 더 나은 일상</strong></p>
+  <p>AI 건강 상담부터 산책 매칭까지, 당신과 반려견을 위한 공간.</p>
 </div>
 
 ### 🐾 Pawsitive 한 줄 소개
 - **Pawsitive**는 반려견 보호자와 전문 산책 도우미를 연결하고, AI 기반 건강 관리·교육·커뮤니티를 제공하는 **반려견 종합 케어 플랫폼**입니다!
 
 ### 🌐 Pawsitive 웹사이트 주소
-- [클릭하여 Pawsitive를 체험해보세요!](https://pawsitive-web.vercel.app)
+- [클릭하여 Pawsitive를 체험해보세요!](https://competent-famished-leatrice.ngrok-free.dev)
 
 ### 🎥 Pawsitive 소개 영상
 - [클릭하여 Pawsitive 소개 영상을 시청해보세요!](https://youtu.be/)
