@@ -35,7 +35,7 @@ const RealtimeService = (() => {
       // broadcast
       'broadcast-walk-request', 'broadcast-matched', 'broadcast-cancelled',
       // 산책 진행 단계
-      'walker-arrived', 'walk-tracking-started',
+      'walker-arrived', 'walk-tracking-started', 'handoff-confirmed',
       // 채팅
       'walk-chat-message'
     ];
@@ -104,13 +104,13 @@ const RealtimeService = (() => {
     return setInterval(send, intervalMs);
   }
 
-  function startGpsUpdates(userId, intervalMs = 8000) {
+  function startGpsUpdates(userId, intervalMs = 6000) {
     stopGpsUpdates();
     _gpsInterval = _startGeoPolling(
       `/api/walkers/${userId}/location`,
       'PATCH',
       coords => ({ lat: coords.latitude, lng: coords.longitude }),
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 3000 },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
       intervalMs
     );
   }
