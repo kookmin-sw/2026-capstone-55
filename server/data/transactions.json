@@ -61,5 +61,14 @@
     "reason": "교육 콘텐츠 완료",
     "createdAt": "2026-04-17T10:43:13.078Z",
     "balanceAfter": 20
+  },
+  {
+    "id": "id-momgpnqe-0115wul",
+    "userId": "id-momgpnqa-1jk1m8l",
+    "type": "earn",
+    "amount": 3000,
+    "reason": "회원가입 축하 보상 🎉",
+    "createdAt": "2026-05-01T05:18:33.062Z",
+    "balanceAfter": 3000
   }
 ]

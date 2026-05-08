@@ -9,7 +9,8 @@
     "isAdmin": true,
     "dogs": [],
     "pawCoins": 20,
-    "createdAt": "2026-04-10T07:54:18.464Z"
+    "createdAt": "2026-04-10T07:54:18.464Z",
+    "aiName": "호두"
   },
   {
     "id": "id-mo2r9f31-nmcx76f",
@@ -54,5 +55,20 @@
     ],
     "pawCoins": 3000,
     "createdAt": "2026-04-29T14:38:47.205Z"
+  },
+  {
+    "id": "id-momgpnqa-1jk1m8l",
+    "email": "richponywill@gmail.com",
+    "name": "부자될래",
+    "nickname": "부자될래",
+    "passwordHash": "",
+    "socialKey": "google_112747055347649699329",
+    "provider": "google",
+    "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocJB1dNohtq6FlHVjEZOomOk1-mPDVQAVR24SkKjye5Vk55-=s96-c",
+    "referralCode": "PAW-3NUJAB",
+    "dogs": [],
+    "pawCoins": 3000,
+    "createdAt": "2026-05-01T05:18:33.058Z",
+    "nicknameChangedAt": "2026-05-01T05:18:37.373Z"
   }
 ]
