@@ -28,7 +28,7 @@
         "gender": "male",
         "weight": 9,
         "neutered": true,
-        "personality": "사교적",
+        "personality": "활발함",
         "healthNote": "탈구"
       },
       {
@@ -41,7 +41,7 @@
         "weight": 28,
         "neutered": true,
         "personality": "사교적",
-        "healthNote": null
+        "healthNote": "소고기 알레르기가 있어요"
       }
     ],
     "pawCoins": 3000,

@@ -59,10 +59,26 @@ router.post('/analyze', async (req, res) => {
       if (fs.existsSync(metaFile)) {
         const allDocs = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
         uploadedDocs = allDocs.filter(d => d.userId === userId);
+        // 특정 반려견 선택 시 해당 반려견 서류만 필터
+        if (dogInfo?.name && !dogInfo?.allDogs && dogInfo?.healthDocuments) {
+          const dogId = uploadedDocs.length > 0 ? uploadedDocs[0]?.dogId : null;
+          if (dogInfo.healthDocuments.length > 0) {
+            // 프론트에서 전달된 dogId 기반 필터링
+            const frontDogIds = dogInfo.healthDocuments.map(d => d.dogId).filter(Boolean);
+            if (frontDogIds.length > 0) {
+              uploadedDocs = uploadedDocs.filter(d => frontDogIds.includes(d.dogId));
+            }
+          }
+        }
       }
     } catch(e) {}
 
     const vaccinationDocs = uploadedDocs.filter(d => d.type === 'vaccination');
+    const checkupDocs = uploadedDocs.filter(d => d.type === 'checkup');
+    const treatmentDocs = uploadedDocs.filter(d => d.type === 'treatment');
+    const surgeryDocs = uploadedDocs.filter(d => d.type === 'surgery');
+    const allergyDocs = uploadedDocs.filter(d => d.type === 'allergy');
+    const medicationDocs = uploadedDocs.filter(d => d.type === 'medication');
     const diagnosisDocs = uploadedDocs.filter(d => d.type === 'diagnosis');
 
     // 산책 데이터 요약
@@ -101,8 +117,13 @@ ${dogInfo?.allDogs ? dogInfo.allDogs.map((d, i) => `### 반려견 ${i+1}: ${d.na
 - 건강 특이사항: ${dogInfo?.healthNote || '없음'}`}
 
 ## 건강 서류 현황
-- 예방접종 기록: ${vaccinationDocs.length > 0 ? vaccinationDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
-- 진단서: ${diagnosisDocs.length > 0 ? diagnosisDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
+- 예방접종 증명서: ${vaccinationDocs.length > 0 ? vaccinationDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
+- 건강검진 결과지: ${checkupDocs.length > 0 ? checkupDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
+- 진료 기록 / 처방전: ${treatmentDocs.length > 0 ? treatmentDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
+- 수술 / 시술 기록: ${surgeryDocs.length > 0 ? surgeryDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
+- 알러지 / 질병 진단서: ${allergyDocs.length > 0 ? allergyDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
+- 복용 약 / 투약 기록: ${medicationDocs.length > 0 ? medicationDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
+- 진단서(기타): ${diagnosisDocs.length > 0 ? diagnosisDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
 
 ## 최근 산책 데이터 (최대 30일)
 - 총 산책 횟수: ${recentWalks.length}회
