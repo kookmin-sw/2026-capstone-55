@@ -1,0 +1,17 @@
+# 줄바꿈 자동 변환 (모든 텍스트 파일을 LF로 통일)
+* text=auto eol=lf
+
+# JS/CSS/HTML은 항상 LF
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# 이미지/바이너리는 변환하지 않음
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.mp4 binary
+*.ico binary
