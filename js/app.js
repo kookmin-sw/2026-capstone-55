@@ -768,8 +768,10 @@ function updateNavAuth() {
  const profileIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
  if (user) {
  const isAdmin = user.isAdmin === true;
+ const bellIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`;
  navAuth.innerHTML = `
  ${isAdmin ? `<button class="nav-icon-btn" onclick="Router.navigate('/admin')" title="관리자"><span class="nav-admin-badge">관리자</span></button>` : ''}
+ <button class="nav-icon-btn nav-bell-btn" onclick="toggleNotificationPanel()" title="알림" style="position:relative;">${bellIcon}<span id="nav-bell-badge" class="nav-bell-badge" style="display:none;"></span></button>
  <button class="nav-icon-btn" onclick="Router.navigate('/profile')" title="${user.nickname || user.name}님 · 프로필">${profileIcon}</button>
  `;
  } else {
@@ -6655,6 +6657,7 @@ async function handleUploadFile() {
 
  const fileInput = document.getElementById('upload-file');
  const type = document.getElementById('upload-type')?.value;
+ const dogSelect = document.getElementById('upload-dog-select');
  const errEl = document.getElementById('upload-error');
 
  if (!fileInput?.files[0]) {
@@ -6662,20 +6665,24 @@ async function handleUploadFile() {
  return;
  }
 
+ const selectedDogId = dogSelect?.value || 'default';
+ const selectedDog = user.dogs?.find(d => d.id === selectedDogId);
+
  const formData = new FormData();
  formData.append('file', fileInput.files[0]);
  formData.append('userId', user.id);
  formData.append('type', type);
- formData.append('dogId', user.dogs?.[0]?.name || 'default');
+ formData.append('dogId', selectedDogId);
+ formData.append('dogName', selectedDog?.name || 'default');
 
  try {
- if (errEl) errEl.innerHTML = '<div class="alert alert-success">업로드 중... ??</div>';
+ if (errEl) errEl.innerHTML = '<div class="alert alert-success">업로드 중... 📤</div>';
  const resp = await fetch('/api/upload', { method: 'POST', body: formData });
  const data = await resp.json();
  if (data.success) {
- if (errEl) errEl.innerHTML = '<div class="alert alert-success">업로드 완료! </div>';
+ if (errEl) errEl.innerHTML = '<div class="alert alert-success">업로드 완료! ✅</div>';
  fileInput.value = '';
- loadUploadedFiles(user.id);
+ loadUploadedFiles(null);
  } else {
  if (errEl) errEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
  }
@@ -6688,19 +6695,36 @@ async function loadUploadedFiles(userId) {
  const container = document.getElementById('uploaded-files');
  if (!container) return;
 
+ const user = AuthService.getCurrentUser();
+ if (!user) return;
+
+ const dogSelect = document.getElementById('upload-dog-select');
+ const selectedDogId = dogSelect?.value || '';
+ const selectedDog = user.dogs?.find(d => d.id === selectedDogId);
+
  try {
- const resp = await fetch(`/api/upload/list/${userId}`);
+ const resp = await fetch(`/api/upload/list/${user.id}`);
  const data = await resp.json();
  if (!data.success || data.files.length === 0) {
- container.innerHTML = '<p style="font-size:0.85rem; color:var(--color-text-muted);">업로드된 서류가 없습니다.</p>';
+ container.innerHTML = `<p style="font-size:0.85rem; color:var(--color-text-muted);">${selectedDog ? selectedDog.name + '의' : ''} 업로드된 서류가 없습니다.</p>`;
  return;
  }
 
- const typeLabel = { vaccination: '?? 예방접종 기록', diagnosis: '진단서', other: '?? 기타' };
- container.innerHTML = data.files.map(f => `
+ // 선택된 반려견의 서류만 필터링
+ const filteredFiles = selectedDogId
+   ? data.files.filter(f => f.dogId === selectedDogId || f.dogName === selectedDog?.name)
+   : data.files;
+
+ if (filteredFiles.length === 0) {
+   container.innerHTML = `<p style="font-size:0.85rem; color:var(--color-text-muted);">${selectedDog ? selectedDog.name + '의' : ''} 업로드된 서류가 없습니다.</p>`;
+   return;
+ }
+
+ const typeLabel = { vaccination: '💉 예방접종 증명서', checkup: '🩺 건강검진 결과지', treatment: '📝 진료 기록 / 처방전', surgery: '🏥 수술 / 시술 기록', allergy: '⚠️ 알러지 / 질병 진단서', medication: '💊 복용 약 / 투약 기록', diagnosis: '🏥 진단서', other: '📄 기타' };
+ container.innerHTML = filteredFiles.map(f => `
  <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--color-bg); border-radius:8px; margin-bottom:6px;">
  <div>
- <div style="font-weight:600; font-size:0.85rem;">${typeLabel[f.type] || '?? 기타'}</div>
+ <div style="font-weight:600; font-size:0.85rem;">${typeLabel[f.type] || '📄 기타'}</div>
  <div style="font-size:0.78rem; color:var(--color-text-muted);">${f.originalName} · ${(f.size / 1024).toFixed(0)}KB · ${new Date(f.uploadedAt).toLocaleDateString('ko-KR')}</div>
  </div>
  <div style="display:flex; gap:6px;">
@@ -6711,6 +6735,74 @@ async function loadUploadedFiles(userId) {
  `).join('');
  } catch (e) {
  container.innerHTML = '<p style="font-size:0.85rem; color:var(--color-text-muted);">서류 목록을 불러올 수 없습니다.</p>';
+ }
+}
+
+async function handleUploadDogFile(idx, inputEl) {
+ const user = AuthService.getCurrentUser();
+ if (!user || !user.dogs[idx]) return;
+
+ const dog = user.dogs[idx];
+ const file = inputEl.files[0];
+ if (!file) return;
+
+ const type = document.getElementById(`upload-type-${idx}`)?.value || 'other';
+ const msgEl = document.getElementById(`upload-msg-${idx}`);
+
+ const formData = new FormData();
+ formData.append('file', file);
+ formData.append('userId', user.id);
+ formData.append('type', type);
+ formData.append('dogId', dog.id);
+ formData.append('dogName', dog.name);
+
+ try {
+ if (msgEl) msgEl.innerHTML = '<span style="font-size:0.75rem;color:var(--color-text-muted);">업로드 중...</span>';
+ const resp = await fetch('/api/upload', { method: 'POST', body: formData });
+ const data = await resp.json();
+ if (data.success) {
+ if (msgEl) msgEl.innerHTML = '<span style="font-size:0.75rem;color:#2D8B5E;">✅ 업로드 완료</span>';
+ inputEl.value = '';
+ loadDogFiles(idx, dog.id, user.id);
+ setTimeout(() => { if (msgEl) msgEl.innerHTML = ''; }, 2000);
+ } else {
+ if (msgEl) msgEl.innerHTML = `<span style="font-size:0.75rem;color:#D32F2F;">${data.error}</span>`;
+ }
+ } catch (e) {
+ if (msgEl) msgEl.innerHTML = '<span style="font-size:0.75rem;color:#D32F2F;">업로드 실패</span>';
+ }
+}
+
+async function loadDogFiles(idx, dogId, userId) {
+ const container = document.getElementById(`dog-files-${idx}`);
+ if (!container) return;
+
+ try {
+ const resp = await fetch(`/api/upload/list/${userId}`);
+ const data = await resp.json();
+ if (!data.success) { container.innerHTML = ''; return; }
+
+ const files = data.files.filter(f => f.dogId === dogId);
+ if (files.length === 0) {
+ container.innerHTML = '<p style="font-size:0.75rem;color:var(--color-text-muted);margin:4px 0;">등록된 서류 없음</p>';
+ return;
+ }
+
+ const typeLabel = { vaccination: '💉 예방접종', checkup: '🩺 건강검진', treatment: '📝 진료/처방', surgery: '🏥 수술/시술', allergy: '⚠️ 알러지/질병', medication: '💊 투약기록', diagnosis: '🏥 진단서', other: '📄 기타' };
+ container.innerHTML = files.map(f => `
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--color-bg-section);border-radius:6px;margin-bottom:4px;">
+ <div style="font-size:0.75rem;">
+ <span style="font-weight:600;">${typeLabel[f.type] || '📄'}</span>
+ <span style="color:var(--color-text-muted);margin-left:4px;">${f.originalName}</span>
+ </div>
+ <div style="display:flex;gap:4px;">
+ <a href="/api/upload/download/${f.filename}" style="font-size:0.68rem;color:var(--color-mint);text-decoration:none;">다운</a>
+ <button style="font-size:0.68rem;color:#D32F2F;background:none;border:none;cursor:pointer;" onclick="handleDeleteFile('${f.id}')">삭제</button>
+ </div>
+ </div>
+ `).join('');
+ } catch (e) {
+ container.innerHTML = '';
  }
 }
 
@@ -9305,17 +9397,56 @@ async function handleRunHealthAnalysis() {
  }
 
  try {
- const analysis = await HealthAnalysisService.analyzeHealth(user.id, dog ? {
- name: dog.name,
- breed: dog.breed,
- age: dog.age,
- weight: dog.weight || null,
- size: dog.size,
- gender: dog.gender || null,
- neutered: dog.neutered != null ? dog.neutered : null,
- personality: dog.personality || null,
- healthNote: dog.healthNote || null
- } : {}, selectedDogId);
+ // 반려견 건강 서류 정보 로드
+ let healthDocuments = [];
+ try {
+   const resp = await fetch(`/api/upload/list/${user.id}`);
+   const fileData = await resp.json();
+   if (fileData.success && fileData.files.length > 0) {
+     if (dog) {
+       healthDocuments = fileData.files.filter(f => f.dogId === dog.id);
+     } else {
+       healthDocuments = fileData.files;
+     }
+   }
+ } catch(e) { /* 서류 로드 실패해도 분석은 계속 */ }
+
+ let dogInfo = {};
+ if (dog) {
+   dogInfo = {
+     name: dog.name,
+     breed: dog.breed,
+     age: dog.age,
+     weight: dog.weight || null,
+     size: dog.size,
+     gender: dog.gender || null,
+     neutered: dog.neutered != null ? dog.neutered : null,
+     personality: dog.personality || null,
+     healthNote: dog.healthNote || null,
+     healthDocuments: healthDocuments.map(f => ({
+       type: f.type,
+       name: f.originalName,
+       uploadedAt: f.uploadedAt
+     }))
+   };
+ } else if (dogs.length > 0) {
+   dogInfo = {
+     name: '전체 (' + dogs.map(d => d.name).join(', ') + ')',
+     allDogs: dogs.map(d => ({
+       name: d.name, breed: d.breed, age: d.age, weight: d.weight,
+       size: d.size, gender: d.gender, neutered: d.neutered,
+       personality: d.personality, healthNote: d.healthNote
+     })),
+     healthDocuments: healthDocuments.map(f => ({
+       type: f.type,
+       name: f.originalName,
+       dogId: f.dogId,
+       dogName: f.dogName,
+       uploadedAt: f.uploadedAt
+     }))
+   };
+ }
+ const analysis = await HealthAnalysisService.analyzeHealth(user.id, dogInfo, selectedDogId);
 
  if (section) renderHealthAnalysisResult(analysis, section, selectedDogId);
  } catch (e) {
@@ -9585,6 +9716,7 @@ async function _executeMapRequestAfterPayment(user, payment) {
 document.addEventListener('DOMContentLoaded', () => {
  initApp();
  initRealtimeListeners();
+ getNotifications(); updateBellBadge();
 });
 
 // ============================================================
@@ -11689,4 +11821,112 @@ async function renderDirectWalkHistory(userId, role) {
  }).join('');
 
  return { html, hasRecords: true };
+}
+
+// ============================================================
+// 알림 시스템
+// ============================================================
+
+let _notifications = [];
+
+function getNotifications() {
+  const user = AuthService.getCurrentUser();
+  if (!user) return [];
+  const stored = localStorage.getItem('pawsitive_notifications_' + user.id);
+  if (stored) {
+    try { _notifications = JSON.parse(stored); } catch(e) { _notifications = []; }
+  }
+  return _notifications;
+}
+
+function saveNotifications() {
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+  localStorage.setItem('pawsitive_notifications_' + user.id, JSON.stringify(_notifications));
+}
+
+function addNotification(message, type = 'info') {
+  _notifications.unshift({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    message,
+    type,
+    read: false,
+    createdAt: new Date().toISOString()
+  });
+  if (_notifications.length > 50) _notifications = _notifications.slice(0, 50);
+  saveNotifications();
+  updateBellBadge();
+}
+
+function updateBellBadge() {
+  const badge = document.getElementById('nav-bell-badge');
+  if (!badge) return;
+  const unread = _notifications.filter(n => !n.read).length;
+  if (unread > 0) {
+    badge.textContent = unread > 99 ? '99+' : unread;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function toggleNotificationPanel() {
+  let panel = document.getElementById('notification-panel');
+  if (panel) {
+    panel.remove();
+    return;
+  }
+
+  getNotifications();
+
+  const html = _notifications.length === 0
+    ? '<div style="padding:32px 16px;text-align:center;color:var(--color-text-muted);font-size:0.85rem;">알림이 없어요</div>'
+    : _notifications.map(n => `
+      <div class="notif-item ${n.read ? '' : 'notif-item--unread'}" onclick="markNotifRead('${n.id}')">
+        <div class="notif-item__dot" style="background:${n.read ? 'transparent' : '#FF6B35'};"></div>
+        <div class="notif-item__content">
+          <div class="notif-item__msg">${n.message}</div>
+          <div class="notif-item__time">${formatRelativeTime(n.createdAt)}</div>
+        </div>
+      </div>
+    `).join('');
+
+  const panelHtml = `
+    <div id="notification-panel" class="notification-panel">
+      <div class="notification-panel__header">
+        <span style="font-weight:800;font-size:1rem;">알림</span>
+        <button onclick="clearAllNotifications()" style="background:none;border:none;color:var(--color-text-muted);font-size:0.78rem;cursor:pointer;">모두 읽음</button>
+      </div>
+      <div class="notification-panel__list">${html}</div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', panelHtml);
+
+  setTimeout(() => {
+    document.addEventListener('click', closeNotifPanelOutside);
+  }, 100);
+}
+
+function closeNotifPanelOutside(e) {
+  const panel = document.getElementById('notification-panel');
+  const bellBtn = document.querySelector('.nav-bell-btn');
+  if (panel && !panel.contains(e.target) && !bellBtn?.contains(e.target)) {
+    panel.remove();
+    document.removeEventListener('click', closeNotifPanelOutside);
+  }
+}
+
+function markNotifRead(id) {
+  const n = _notifications.find(x => x.id === id);
+  if (n) { n.read = true; saveNotifications(); updateBellBadge(); }
+  const panel = document.getElementById('notification-panel');
+  if (panel) { panel.remove(); toggleNotificationPanel(); }
+}
+
+function clearAllNotifications() {
+  _notifications.forEach(n => n.read = true);
+  saveNotifications();
+  updateBellBadge();
+  const panel = document.getElementById('notification-panel');
+  if (panel) { panel.remove(); toggleNotificationPanel(); }
 }
