@@ -1140,6 +1140,14 @@ function renderEducationPage() {
     <div class="tabs" style="flex-wrap:wrap; gap:4px;">
       ${categories.map(c => `<button class="tab${c.key === 'all' ? ' active' : ''}" onclick="filterEducation('${c.key}', this)" style="font-size:0.82rem; padding:8px 12px;">${c.icon} ${c.label}</button>`).join('')}
     </div>
+    <div style="display:flex; justify-content:flex-end; margin-top:10px; margin-bottom:6px;">
+      <select id="edu-level-filter" onchange="filterEducationLevel(this.value)" style="padding:6px 12px; border-radius:8px; border:1.5px solid var(--color-border, #e5e5e5); font-size:0.85rem; background:#fff; cursor:pointer;">
+        <option value="all">📊 난이도: 전체</option>
+        <option value="beginner">🟢 입문</option>
+        <option value="intermediate">🟡 중급</option>
+        <option value="advanced">🔴 심화</option>
+      </select>
+    </div>
     <div class="grid-2" id="education-list">
       ${renderEducationCards(EducationService.getByCategory('all'), progress.completedIds)}
     </div>
@@ -1185,7 +1193,32 @@ function renderEducationCards(items, completedIds) {
 function filterEducation(category, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  const filtered = EducationService.getByCategory(category);
+  // 난이도 필터도 함께 적용
+  const levelFilter = document.getElementById('edu-level-filter');
+  const level = levelFilter ? levelFilter.value : 'all';
+  let filtered = EducationService.getByCategory(category);
+  if (level !== 'all') {
+    filtered = filtered.filter(item => item.level === level);
+  }
+  const user = AuthService.getCurrentUser();
+  const progress = user ? EducationService.getProgress(user.id) : { completedIds: [] };
+  const list = document.getElementById('education-list');
+  if (list) list.innerHTML = renderEducationCards(filtered, progress.completedIds);
+}
+
+function filterEducationLevel(level) {
+  // 현재 활성 카테고리 탭 확인
+  const activeTab = document.querySelector('.tab.active');
+  let category = 'all';
+  if (activeTab) {
+    const onclickAttr = activeTab.getAttribute('onclick') || '';
+    const match = onclickAttr.match(/filterEducation\('([^']+)'/);
+    if (match) category = match[1];
+  }
+  let filtered = EducationService.getByCategory(category);
+  if (level !== 'all') {
+    filtered = filtered.filter(item => item.level === level);
+  }
   const user = AuthService.getCurrentUser();
   const progress = user ? EducationService.getProgress(user.id) : { completedIds: [] };
   const list = document.getElementById('education-list');
@@ -1229,27 +1262,34 @@ function renderEducationDetailPage(params) {
   } else if (hasQuiz) {
     completeButtonHtml = `
       <div id="edu-quiz-section" style="margin-top:24px;">
-        <div class="card" style="padding:24px;">
+        <div class="card" style="padding:24px; text-align:center;">
           <h3 style="margin-bottom:4px;">📝 학습 확인 퀴즈</h3>
-          <p style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:20px;">5문제 중 3문제 이상 맞추면 수료!</p>
-          ${content.quiz.map((q, qi) => `
-            <div class="quiz-question" style="margin-bottom:20px; padding:16px; background:var(--color-bg-warm); border-radius:12px;">
-              <p style="font-weight:700; margin-bottom:10px;">Q${qi + 1}. ${q.question}</p>
-              <div style="display:grid; gap:8px;">
-                ${q.options.map((opt, oi) => `
-                  <label class="quiz-option" id="quiz-opt-${qi}-${oi}" style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fff; border:2px solid var(--color-border, #e5e5e5); border-radius:10px; cursor:pointer; transition:all 0.2s; font-size:0.9rem;" onclick="selectQuizOption(${qi}, ${oi})">
-                    <input type="radio" name="quiz-${qi}" value="${oi}" style="display:none;">
-                    <span class="quiz-radio" style="width:20px; height:20px; border:2px solid #ccc; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;"></span>
-                    <span>${opt}</span>
-                  </label>
-                `).join('')}
-              </div>
-            </div>
-          `).join('')}
-          <div id="quiz-result" style="display:none; margin-bottom:16px;"></div>
-          <button class="btn btn-primary" id="quiz-submit-btn" onclick="submitEducationQuiz('${content.id}')" style="width:100%; padding:14px; font-size:1rem;">
-            🎯 정답 확인하기
+          <p style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:16px;">5문제 중 3문제 이상 맞추면 수료!</p>
+          <button class="btn btn-primary" id="quiz-start-btn" onclick="startEducationQuiz('${content.id}')" style="padding:14px 32px; font-size:1rem;">
+            📝 퀴즈 풀기
           </button>
+        </div>
+        <div id="quiz-questions-area" style="display:none; margin-top:16px;">
+          <div class="card" style="padding:24px;">
+            ${content.quiz.map((q, qi) => `
+              <div class="quiz-question" style="margin-bottom:20px; padding:16px; background:var(--color-bg-warm); border-radius:12px;">
+                <p style="font-weight:700; margin-bottom:10px;">Q${qi + 1}. ${q.question}</p>
+                <div style="display:grid; gap:8px;">
+                  ${q.options.map((opt, oi) => `
+                    <label class="quiz-option" id="quiz-opt-${qi}-${oi}" style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fff; border:2px solid var(--color-border, #e5e5e5); border-radius:10px; cursor:pointer; transition:all 0.2s; font-size:0.9rem;" onclick="selectQuizOption(${qi}, ${oi})">
+                      <input type="radio" name="quiz-${qi}" value="${oi}" style="display:none;">
+                      <span class="quiz-radio" style="width:20px; height:20px; border:2px solid #ccc; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;"></span>
+                      <span>${opt}</span>
+                    </label>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('')}
+            <div id="quiz-result" style="display:none; margin-bottom:16px;"></div>
+            <button class="btn btn-primary" id="quiz-submit-btn" onclick="submitEducationQuiz('${content.id}')" style="width:100%; padding:14px; font-size:1rem;">
+              🎯 정답 확인하기
+            </button>
+          </div>
         </div>
       </div>`;
   } else {
@@ -1269,20 +1309,56 @@ function renderEducationDetailPage(params) {
 
   const lvMap2 = { beginner: { label: '입문', color: '#e0f2fe', text: '#0369a1' }, intermediate: { label: '중급', color: '#fef9c3', text: '#854d0e' }, advanced: { label: '심화', color: '#fce7f3', text: '#9d174d' } };
   const lvInfo = content.level ? lvMap2[content.level] : null;
+  const lvEmoji = content.level === 'beginner' ? '🟢' : content.level === 'intermediate' ? '🟡' : '🔴';
   renderPage(`
     <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/education')" style="margin-bottom:16px;">← 목록으로</button>
-    <div class="detail-header">
-      <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:8px;">
-        <span class="badge badge-primary">${catMap[content.category]}</span>
-        ${lvInfo ? `<span class="badge" style="background:${lvInfo.color}; color:${lvInfo.text};">${lvInfo.label}</span>` : ''}
+    <div style="background:linear-gradient(135deg, #fefce8 0%, #fff7ed 50%, #fef2f2 100%); border-radius:16px; padding:28px 24px 20px; margin-bottom:20px; border:1px solid #fde68a; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:12px; right:16px; opacity:0.15; font-size:4rem; pointer-events:none;">📖</div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:12px;">
+        <span class="badge badge-primary" style="font-size:0.8rem;">${catMap[content.category]}</span>
+        ${lvInfo ? `<span class="badge" style="background:${lvInfo.color}; color:${lvInfo.text}; font-size:0.8rem;">${lvEmoji} ${lvInfo.label}</span>` : ''}
       </div>
-      <h1 style="margin-top:4px;">${content.title}</h1>
+      <h1 style="margin:0; font-size:1.5rem; line-height:1.4;">${content.title}</h1>
+      <div style="margin-top:10px; font-size:0.8rem; color:#78716c; display:flex; gap:12px; align-items:center;">
+        <span>📄 학습 자료</span>
+        <span>⏱️ 약 ${Math.max(3, Math.ceil(content.body.length / 500))}분 소요</span>
+        ${hasQuiz ? '<span>📝 퀴즈 포함</span>' : ''}
+      </div>
     </div>
-    <div class="detail-section">
-      <div style="white-space:pre-line; line-height:1.8; font-size:0.95rem;">${content.body}</div>
+    <div class="detail-section" style="background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:28px 24px; box-shadow:0 1px 3px rgba(0,0,0,0.04); position:relative;">
+      <div style="position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg, #7C4DFF, #FF8FAB); border-radius:14px 14px 0 0;"></div>
+      <div style="white-space:pre-line; line-height:2; font-size:0.95rem; color:#1f2937;">${content.body}</div>
     </div>
     ${completeButtonHtml}
   `);
+}
+
+/**
+ * 퀴즈 시작 (퀴즈 문제 영역 표시)
+ */
+function startEducationQuiz(contentId) {
+  const startBtn = document.getElementById('quiz-start-btn');
+  if (startBtn) startBtn.style.display = 'none';
+
+  // 학습 내용 숨기기 (컨닝 방지)
+  const detailSection = document.querySelector('.detail-section');
+  if (detailSection) {
+    detailSection.style.display = 'none';
+  }
+
+  // 퀴즈 모드 안내 표시
+  const quizSection = document.getElementById('edu-quiz-section');
+  const notice = document.createElement('div');
+  notice.id = 'quiz-mode-notice';
+  notice.style.cssText = 'margin-bottom:12px; padding:12px 16px; background:#fef3c7; border-radius:10px; text-align:center; font-size:0.85rem; color:#92400e;';
+  notice.innerHTML = '🔒 퀴즈 모드 — 학습 내용이 숨겨졌습니다. 풀이가 끝나면 다시 볼 수 있어요!';
+  quizSection.insertBefore(notice, quizSection.firstChild);
+
+  const questionsArea = document.getElementById('quiz-questions-area');
+  if (questionsArea) {
+    questionsArea.style.display = 'block';
+    questionsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 /**
@@ -1294,7 +1370,7 @@ function selectQuizOption(questionIdx, optionIdx) {
     el.style.borderColor = 'var(--color-border, #e5e5e5)';
     el.style.background = '#fff';
     const radio = el.querySelector('.quiz-radio');
-    if (radio) { radio.style.borderColor = '#ccc'; radio.innerHTML = ''; }
+    if (radio) { radio.style.borderColor = '#ccc'; radio.style.background = 'transparent'; radio.innerHTML = ''; }
   });
   // 선택된 옵션 하이라이트
   const selected = document.getElementById(`quiz-opt-${questionIdx}-${optionIdx}`);
@@ -1386,9 +1462,68 @@ function submitEducationQuiz(contentId) {
         </div>`;
       if (btn) {
         btn.textContent = '🔄 다시 도전하기';
-        btn.onclick = () => Router.navigate('/education/' + contentId);
+        btn.onclick = () => resetEducationQuiz(contentId);
       }
     }
+  }
+
+  // 퀴즈 제출 후 학습 내용 다시 표시
+  const detailSection = document.querySelector('.detail-section');
+  if (detailSection) detailSection.style.display = '';
+  const quizNotice = document.getElementById('quiz-mode-notice');
+  if (quizNotice) quizNotice.remove();
+}
+
+/**
+ * 퀴즈 리셋 (다시 도전하기)
+ */
+function resetEducationQuiz(contentId) {
+  const content = EducationService.getById(contentId);
+  if (!content || !content.quiz) return;
+
+  const quiz = content.quiz;
+
+  // 모든 옵션 초기화
+  quiz.forEach((q, qi) => {
+    q.options.forEach((_, oi) => {
+      const optEl = document.getElementById(`quiz-opt-${qi}-${oi}`);
+      if (!optEl) return;
+      optEl.style.borderColor = 'var(--color-border, #e5e5e5)';
+      optEl.style.background = '#fff';
+      optEl.style.cursor = 'pointer';
+      optEl.onclick = () => selectQuizOption(qi, oi);
+      const radio = optEl.querySelector('input[type="radio"]');
+      if (radio) radio.checked = false;
+      const radioSpan = optEl.querySelector('.quiz-radio');
+      if (radioSpan) {
+        radioSpan.style.borderColor = '#ccc';
+        radioSpan.style.background = 'transparent';
+        radioSpan.innerHTML = '';
+      }
+    });
+  });
+
+  // 결과 영역 숨기기
+  const resultEl = document.getElementById('quiz-result');
+  if (resultEl) { resultEl.style.display = 'none'; resultEl.innerHTML = ''; }
+
+  // 버튼 복원
+  const btn = document.getElementById('quiz-submit-btn');
+  if (btn) {
+    btn.textContent = '🎯 정답 확인하기';
+    btn.onclick = () => submitEducationQuiz(contentId);
+  }
+
+  // 학습 내용 다시 숨기기 (재시험 컨닝 방지)
+  const detailSection = document.querySelector('.detail-section');
+  if (detailSection) detailSection.style.display = 'none';
+  const quizSection = document.getElementById('edu-quiz-section');
+  if (quizSection && !document.getElementById('quiz-mode-notice')) {
+    const notice = document.createElement('div');
+    notice.id = 'quiz-mode-notice';
+    notice.style.cssText = 'margin-bottom:12px; padding:12px 16px; background:#fef3c7; border-radius:10px; text-align:center; font-size:0.85rem; color:#92400e;';
+    notice.innerHTML = '🔒 퀴즈 모드 — 학습 내용이 숨겨졌습니다. 풀이가 끝나면 다시 볼 수 있어요!';
+    quizSection.insertBefore(notice, quizSection.firstChild);
   }
 }
 
