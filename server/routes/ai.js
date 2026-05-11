@@ -19,6 +19,107 @@ try {
   console.warn('[RAG] 지식 데이터 로드 실패:', e.message);
 }
 
+// ===== RAG: 벡터 임베딩 로드 =====
+let embeddingMap = new Map(); // id → Float32Array
+let embeddingsLoaded = false;
+try {
+  const embPath = path.join(__dirname, '..', 'data', 'knowledge-embeddings.json');
+  if (fs.existsSync(embPath)) {
+    const raw = JSON.parse(fs.readFileSync(embPath, 'utf8'));
+    raw.forEach(e => embeddingMap.set(e.id, new Float32Array(e.embedding)));
+    embeddingsLoaded = embeddingMap.size > 0;
+    console.log(`[RAG] 벡터 임베딩 ${embeddingMap.size}개 로드 완료 → 하이브리드 검색 활성화`);
+  } else {
+    console.log('[RAG] knowledge-embeddings.json 없음 → 키워드 검색만 사용');
+  }
+} catch (e) {
+  console.warn('[RAG] 임베딩 로드 실패:', e.message);
+}
+
+// ===== 벡터 검색 유틸 =====
+function cosineSimilarity(a, b) {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+async function getQueryEmbedding(query) {
+  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes('여기에')) return null;
+  try {
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-embedding-2' });
+    const result = await model.embedContent(query);
+    return new Float32Array(result.embedding.values);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 하이브리드 검색: 벡터(코사인 유사도) + 키워드 가중치 결합
+ * 임베딩 없으면 키워드 검색으로 자동 폴백
+ */
+async function searchKnowledgeHybrid(query, maxResults = 5) {
+  if (knowledgeBase.length === 0) return [];
+
+  // 키워드 검색 점수 계산
+  const rawWords = query.toLowerCase().replace(/[?!.,~\-()]/g, '').split(/\s+/).filter(w => w.length >= 2);
+  const expandedWords = expandWithSynonyms(rawWords);
+
+  const keywordScored = knowledgeBase.map(item => {
+    const text = (item.title + ' ' + item.content + ' ' + item.category).toLowerCase();
+    let score = 0;
+    rawWords.forEach(word => { if (text.includes(word)) score += 2; });
+    expandedWords.forEach(word => { if (!rawWords.includes(word) && text.includes(word)) score += 1; });
+    const titleText = item.title.toLowerCase();
+    rawWords.forEach(word => { if (titleText.includes(word)) score += 3; });
+    return { item, keywordScore: score };
+  });
+
+  // 임베딩 없으면 키워드만 사용
+  if (!embeddingsLoaded) {
+    return keywordScored
+      .filter(x => x.keywordScore > 0)
+      .sort((a, b) => b.keywordScore - a.keywordScore)
+      .slice(0, maxResults)
+      .map(x => x.item);
+  }
+
+  // 벡터 검색
+  const queryVec = await getQueryEmbedding(query);
+  if (!queryVec) {
+    // 임베딩 API 실패 시 키워드 폴백
+    return keywordScored
+      .filter(x => x.keywordScore > 0)
+      .sort((a, b) => b.keywordScore - a.keywordScore)
+      .slice(0, maxResults)
+      .map(x => x.item);
+  }
+
+  // 키워드 최대값 계산 (정규화용)
+  const maxKw = Math.max(...keywordScored.map(x => x.keywordScore), 1);
+
+  // 하이브리드 점수: 벡터 70% + 키워드 30%
+  const hybridScored = keywordScored.map(({ item, keywordScore }) => {
+    const vec = embeddingMap.get(item.id);
+    const vectorScore = vec ? cosineSimilarity(queryVec, vec) : 0;
+    const normalizedKw = keywordScore / maxKw;
+    const hybridScore = vectorScore * 0.7 + normalizedKw * 0.3;
+    return { ...item, hybridScore, vectorScore, keywordScore };
+  });
+
+  return hybridScored
+    .filter(x => x.hybridScore > 0.1) // 너무 관련 없는 항목 제외
+    .sort((a, b) => b.hybridScore - a.hybridScore)
+    .slice(0, maxResults);
+}
+
 /**
  * 동의어 사전 - 일상 표현 ↔ 전문 용어 매핑
  */
@@ -272,7 +373,7 @@ router.post('/symptom', async (req, res) => {
     return res.status(400).json({ success: false, error: '증상을 입력해주세요.' });
   }
 
-  const ragResults = searchKnowledge(symptoms + ' ' + (breed || ''));
+  const ragResults = await searchKnowledgeHybrid(symptoms + ' ' + (breed || ''));
   let ragContext = '';
   if (ragResults.length > 0) {
     ragContext = '\n\n[참고 자료]\n' + ragResults.map(r => `- ${r.title}: ${r.content}`).join('\n');
@@ -355,7 +456,7 @@ router.post('/consult', async (req, res) => {
       let prompt = systemPrompt + '\n\n';
 
       // RAG: 모드에 따라 검색 범위 조정
-      const ragResults = searchKnowledge(message);
+      const ragResults = await searchKnowledgeHybrid(message);
       if (ragResults.length > 0) {
         prompt += '[참고 자료 - 이 내용을 바탕으로 답변해주세요]\n';
         ragResults.forEach(r => { prompt += `- ${r.title}: ${r.content}\n`; });
@@ -417,7 +518,7 @@ router.post('/consult-with-image', async (req, res) => {
       // 프롬프트 구성
       let textPrompt = systemPrompt + '\n\n';
 
-      const ragResults = searchKnowledge(message || '');
+      const ragResults = await searchKnowledgeHybrid(message || '');
       if (ragResults.length > 0) {
         textPrompt += '[참고 자료]\n';
         ragResults.forEach(r => { textPrompt += `- ${r.title}: ${r.content}\n`; });
