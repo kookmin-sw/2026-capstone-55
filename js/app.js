@@ -2537,7 +2537,7 @@ function renderAiConsultPage() {
 
  <div id="consult-chat" style="margin-bottom:16px;">
  <div class="card" style="padding:20px; text-align:center; color:var(--color-text-light);">
- <div style="font-size:2.5rem; margin-bottom:8px;">???</div>
+ <div style="font-size:2.5rem; margin-bottom:8px;">🐕</div>
  <p style="font-weight:700;">안녕하세요! AI 훈련사예요~</p>
  <p style="font-size:0.85rem; margin-top:4px;">반려견 행동 문제나 훈련 방법에 대해 물어봐주세요!</p>
  </div>
@@ -3102,7 +3102,7 @@ function renderWalletPage() {
  renderPage(`
  <div class="page-header">
  <h1>Paw 지갑</h1>
- <p>활동으로 코인을 모으고 사용해봐요~ ??</p>
+ <p>활동으로 코인을 모으고 사용해봐요~</p>
  </div>
  <div class="wallet-balance">
  <div class="balance-label">보유 Paw 코인</div>
@@ -3119,7 +3119,7 @@ function renderWalletPage() {
  </div>
  </div>
  <div style="margin-top:16px; text-align:center;">
- <button class="btn btn-primary" onclick="showLoginModal('Paw 코인을 적립하고 사용하려면 로그인이 필요해요!\\n산책, 커뮤니티 활동으로 코인을 모을 수 있어요.')">?? 코인 적립 시작하기</button>
+ <button class="btn btn-primary" onclick="showLoginModal('Paw 코인을 적립하고 사용하려면 로그인이 필요해요!\\n산책, 커뮤니티 활동으로 코인을 모을 수 있어요.')">${icon("wallet",16)} 코인 적립 시작하기</button>
  </div>
  `);
  return;
@@ -3163,7 +3163,7 @@ function renderWalletPage() {
  renderPage(`
  <div class="page-header">
  <h1>Paw 지갑</h1>
- <p>활동으로 코인을 모으고 사용해봐요~ ??</p>
+ <p>활동으로 코인을 모으고 사용해봐요~</p>
  </div>
  <div class="wallet-balance">
  <div class="balance-label">보유 Paw 코인</div>
@@ -3875,7 +3875,7 @@ function renderMatchingRoleSelect(selectedRole) {
  return `<div class="form-group" style="margin-bottom:16px;">
  <label>함께할 반려견</label>
  <div style="padding:12px 14px;border:1px solid var(--color-border);border-radius:10px;background:#fafaf8;display:flex;align-items:center;gap:10px;">
- <span style="font-size:1.2rem;">??</span>
+ <span style="font-size:1.2rem;">🐕</span>
  <div>
  <div style="font-weight:700;font-size:0.9rem;">${d.name}</div>
  <div style="font-size:0.75rem;color:var(--color-text-muted);">${d.breed || ''}${d.size ? ' · ' + (sizeLabel[d.size] || d.size) : ''}</div>
@@ -3887,7 +3887,7 @@ function renderMatchingRoleSelect(selectedRole) {
  const checkboxes = dogs.map(d =>
  `<label class="match-dog-check" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--color-border);border-radius:10px;cursor:pointer;transition:all 0.15s;margin-bottom:8px;">
    <input type="checkbox" class="match-dog-checkbox" value="${d.id}" style="width:18px;height:18px;accent-color:#1a1a1a;cursor:pointer;">
-   <span style="font-size:1.2rem;">??</span>
+   <span style="font-size:1.2rem;">🐕</span>
    <div style="flex:1;min-width:0;">
      <div style="font-weight:700;font-size:0.88rem;">${d.name}</div>
      <div style="font-size:0.72rem;color:var(--color-text-muted);">${d.breed || ''}${d.size ? ' · ' + (sizeLabel[d.size] || d.size) : ''}</div>
@@ -4490,7 +4490,7 @@ async function renderWalkerDashboard(user, myProfile) {
  <div class="match-request-card__body">
  ${(rd.dogs && rd.dogs.length > 1) ? `
  <div class="match-request-card__dog" style="align-items:flex-start;">
- <span style="font-size:1.3rem;">?????</span>
+ <span style="font-size:1.3rem;">🟢</span>
  <div style="flex:1;">
  <div style="font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
  반려견 ${rd.dogs.length}마리 동시 산책
@@ -4502,7 +4502,7 @@ async function renderWalkerDashboard(user, myProfile) {
  </div>
  </div>` : (rd.dogName || dogSizeText) ? `
  <div class="match-request-card__dog">
- <span style="font-size:1.3rem;">??</span>
+ <span style="font-size:1.3rem;">⭕</span>
  <div>
  <div style="font-weight:700;">${rd.dogName || '반려견'}${dogSizeText ? ` <span class="dw-size-tag">${dogSizeText}</span>` : ''}</div>
  ${rd.dogBreed ? `<div style="font-size:0.8rem;color:var(--color-text-muted);">${rd.dogBreed}</div>` : ''}
@@ -5459,7 +5459,7 @@ async function renderRequesterDashboard(user, myProfile) {
 
  ${sentRequestsHtml ? `<div class="match-section">
    <h2 class="match-section__title" style="display:flex;align-items:center;gap:8px;">
-     ?? 내가 보낸 요청
+     ${icon("flag",16)} 내가 보낸 요청
      <span style="font-size:0.7rem;color:var(--color-text-muted);font-weight:500;">실시간 상태</span>
    </h2>
    ${sentRequestsHtml}
@@ -7413,7 +7413,7 @@ async function handleSendVerificationCode() {
  // SMTP 미설정 → 테스트 모드: 코드를 화면에 표시
  if (msgEl) msgEl.innerHTML = `<div class="alert alert-success">테스트 모드: 인증코드는 <strong>${data.testCode}</strong> 입니다</div>`;
  } else {
- if (msgEl) msgEl.innerHTML = '<div class="alert alert-success">인증코드가 이메일로 발송되었어요! ??</div>';
+ if (msgEl) msgEl.innerHTML = '<div class="alert alert-success">인증코드가 이메일로 발송되었어요! 📧</div>';
  }
 
  if (btn) { btn.textContent = '재발송'; btn.disabled = false; }
@@ -7999,7 +7999,7 @@ async function handleAIRecommend() {
  const walkerMap = {};
  walkers.forEach(w => { walkerMap[w.userName] = w; });
 
- const medals = ['', '??', '??'];
+ const medals = ['🥇', '🥈', '🥉'];
  if (resultEl) resultEl.innerHTML = `
  <div class="ai-rec-wrap">
  <div class="ai-rec-header">
@@ -8012,7 +8012,7 @@ async function handleAIRecommend() {
  const scoreColor = rec.score >= 90 ? '#00AA76' : rec.score >= 75 ? '#D69E2E' : '#718096';
  return `
  <div class="ai-rec-card">
- <div class="ai-rec-rank">${medals[i] || '??'}</div>
+ <div class="ai-rec-rank">${medals[i] || ''}</div>
  <div class="ai-rec-avatar">${rec.walkerName.charAt(0)}</div>
  <div class="ai-rec-body">
  <div class="ai-rec-name">
@@ -8050,7 +8050,7 @@ function renderAIConsultPage() {
  </div>
  <div id="ai-chat" style="min-height:300px; max-height:500px; overflow-y:auto; margin-bottom:16px;">
  <div class="card" style="padding:20px; text-align:center; color:var(--color-text-light);">
- <div style="font-size:2.5rem; margin-bottom:8px;">???</div>
+ <div style="font-size:2.5rem; margin-bottom:8px;">🐕</div>
  <p style="font-weight:700;">안녕하세요! AI 행동 상담사예요~</p>
  <p style="font-size:0.85rem; margin-top:4px;">반려견 행동 문제나 훈련 방법에 대해 물어봐주세요!</p>
  </div>
@@ -8298,11 +8298,11 @@ function showWalkerAcceptedModal(req) {
  ${req.walkerIntro ? `<div style="font-size:0.82rem;color:#4A5568;font-style:italic;margin-bottom:8px;">"${req.walkerIntro}"</div>` : ''}
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.8rem;color:#4A5568;">
  ${req.walkerExperience ? `<span>경력 ${req.walkerExperience}</span>` : ''}
- ${req.walkerPrice ? `<span>?? \${Number(req.walkerPrice).toLocaleString()}/시간</span>` : ''}
+ ${req.walkerPrice ? `<span>${icon("wallet",12)} \${Number(req.walkerPrice).toLocaleString()}/시간</span>` : ''}
  ${req.walkerRating ? `<span> ${Number(req.walkerRating).toFixed(1)}점</span>` : ''}
  ${req.walkerReviewCount ? `<span>리뷰 ${req.walkerReviewCount}건</span>` : ''}
  </div>
- ${req.walkerPhone ? `<div style="margin-top:10px;padding:8px 12px;background:#EBF8FF;border-radius:8px;font-size:0.85rem;"><span style="font-weight:700;">?? 연락처:</span> ${req.walkerPhone}</div>` : ''}
+ ${req.walkerPhone ? `<div style="margin-top:10px;padding:8px 12px;background:#EBF8FF;border-radius:8px;font-size:0.85rem;"><span style="font-weight:700;">${icon("bell",12)} 연락처:</span> ${req.walkerPhone}</div>` : ''}
  </div>
 
  <button class="btn btn-primary" style="width:100%;margin-bottom:10px;padding:14px;font-size:1rem;" onclick="startWalkSessionByRequester('${req.id}','${req.walkerId}')">
@@ -8562,7 +8562,7 @@ function renderWalkTrackingPage() {
  if (!user) {
  renderPage(`
  <div class="page-header">
- <h1>?? 산책 트래킹</h1>
+ <h1>${icon("map",20)} 산책 트래킹</h1>
  <p>GPS로 산책을 기록하고 건강 데이터를 수집해요</p>
  </div>
  <div class="card" style="padding:24px; margin-bottom:16px; text-align:center;">
@@ -8587,7 +8587,7 @@ function renderWalkTrackingPage() {
  <div style="height:250px; border-radius:12px; background:#e8e8e8; display:flex; align-items:center; justify-content:center; color:#999; margin-bottom:16px;">
  산책 경로가 여기에 표시돼요
  </div>
- <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('GPS 산책 트래킹을 시작하려면 로그인이 필요해요!\\n산책 경로, 거리, 시간, 칼로리를 기록할 수 있어요.')">?? 산책 시작하기</button>
+ <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('GPS 산책 트래킹을 시작하려면 로그인이 필요해요!\\n산책 경로, 거리, 시간, 칼로리를 기록할 수 있어요.')">${icon("navigation",16)} 산책 시작하기</button>
  `);
  return;
  }
@@ -8599,7 +8599,7 @@ function renderWalkTrackingPage() {
  const activeSchedules = MatchingService.getScheduledWalks(user.id);
  renderPage(`
  <div class="page-header">
- <h1>?? 실시간 산책 관찰</h1>
+ <h1>${icon("map",20)} 실시간 산책 관찰</h1>
  <p>반려견의 산책은 도우미가 시작합니다. 이 화면에서는 실시간 위치와 경로만 확인할 수 있어요.</p>
  </div>
  ${activeSchedules.length === 0 ? `
@@ -9234,7 +9234,7 @@ async function renderHealthDashboardPage() {
  <p style="color:var(--color-text-muted);">아직 분석할 데이터가 없어요</p>
  </div>
  </div>
- <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('건강 분석을 이용하려면 로그인이 필요해요!\\n반려견의 산책 데이터를 기반으로 AI가 건강을 분석해드려요.')">?? 산책 시작하고 데이터 모으기</button>
+ <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('건강 분석을 이용하려면 로그인이 필요해요!\\n반려견의 산책 데이터를 기반으로 AI가 건강을 분석해드려요.')">${icon("navigation",16)} 산책 시작하고 데이터 모으기</button>
  `);
  return;
  }
