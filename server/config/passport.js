@@ -8,6 +8,16 @@ const KakaoStrategy = require('passport-kakao').Strategy;
 const NaverStrategy = require('passport-naver-v2').Strategy;
 
 module.exports = function(passport) {
+  // BASE_URL은 OAuth 콜백에서 동적으로 결정 (로컬이면 localhost, ngrok이면 ngrok)
+  // passport 전략에서는 callbackURL을 상대 경로로 설정하고,
+  // 카카오/네이버는 라우트에서 요청 호스트 기반으로 동적 생성
+
+  function getBaseUrl(req) {
+    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    return `${proto}://${host}`;
+  }
+
   const base = process.env.BASE_URL || '';
 
   // --- 구글 (로그인용) ---
@@ -15,7 +25,8 @@ module.exports = function(passport) {
     passport.use('google', new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${base}/auth/google/callback`
+      callbackURL: '/auth/google/callback',
+      proxy: true
     }, (accessToken, refreshToken, profile, done) => {
       const user = {
         provider: 'google',
@@ -31,7 +42,8 @@ module.exports = function(passport) {
     passport.use('google-register', new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${base}/auth/google/register/callback`
+      callbackURL: '/auth/google/register/callback',
+      proxy: true
     }, (accessToken, refreshToken, profile, done) => {
       const user = {
         provider: 'google',
@@ -49,7 +61,7 @@ module.exports = function(passport) {
     passport.use('kakao', new KakaoStrategy({
       clientID: process.env.KAKAO_CLIENT_ID,
       clientSecret: process.env.KAKAO_CLIENT_SECRET || '',
-      callbackURL: `${base}/auth/kakao/callback`
+      callbackURL: '/auth/kakao/callback'
     }, (accessToken, refreshToken, profile, done) => {
       console.log('[카카오 로그인] profile:', JSON.stringify(profile, null, 2));
       const kakaoAccount = profile._json?.kakao_account || {};
@@ -68,7 +80,7 @@ module.exports = function(passport) {
     passport.use('kakao-register', new KakaoStrategy({
       clientID: process.env.KAKAO_CLIENT_ID,
       clientSecret: process.env.KAKAO_CLIENT_SECRET || '',
-      callbackURL: `${base}/auth/kakao/register/callback`
+      callbackURL: '/auth/kakao/register/callback'
     }, (accessToken, refreshToken, profile, done) => {
       const kakaoAccount = profile._json?.kakao_account || {};
       const properties = profile._json?.properties || {};
@@ -88,7 +100,7 @@ module.exports = function(passport) {
     passport.use('naver', new NaverStrategy({
       clientID: process.env.NAVER_CLIENT_ID,
       clientSecret: process.env.NAVER_CLIENT_SECRET,
-      callbackURL: `${base}/auth/naver/callback`
+      callbackURL: '/auth/naver/callback'
     }, (accessToken, refreshToken, profile, done) => {
       const user = {
         provider: 'naver',
@@ -104,7 +116,7 @@ module.exports = function(passport) {
     passport.use('naver-register', new NaverStrategy({
       clientID: process.env.NAVER_CLIENT_ID,
       clientSecret: process.env.NAVER_CLIENT_SECRET,
-      callbackURL: `${base}/auth/naver/register/callback`
+      callbackURL: '/auth/naver/register/callback'
     }, (accessToken, refreshToken, profile, done) => {
       const user = {
         provider: 'naver',

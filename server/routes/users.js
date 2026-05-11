@@ -48,6 +48,15 @@ router.post('/register', (req, res) => {
   const users = db.get('users', []);
   const exists = users.find(u => u.email === email.trim().toLowerCase());
   if (exists) {
+    // passwordHash가 없는 기존 사용자 → 비밀번호 설정 후 로그인 처리
+    if (!exists.passwordHash) {
+      exists.passwordHash = hashPassword(password);
+      exists.name = exists.name || name.trim();
+      db.set('users', users);
+      console.log(`[Users] ${email} 기존 계정에 비밀번호 설정 완료`);
+      const { passwordHash, ...safeUser } = exists;
+      return res.json({ success: true, user: safeUser });
+    }
     return res.status(409).json({ success: false, error: '이미 사용 중인 이메일입니다.' });
   }
 
@@ -79,7 +88,18 @@ router.post('/login', (req, res) => {
 
   const users = db.get('users', []);
   const user = users.find(u => u.email === email.trim().toLowerCase());
-  if (!user || user.passwordHash !== hashPassword(password)) {
+  if (!user) {
+    return res.status(401).json({ success: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
+  }
+
+  // passwordHash가 없는 사용자 (로컬 fallback으로 가입된 경우) → 비밀번호 설정
+  if (!user.passwordHash) {
+    user.passwordHash = hashPassword(password);
+    db.set('users', users);
+    console.log(`[Users] ${email} 비밀번호 최초 설정 완료`);
+  }
+
+  if (user.passwordHash !== hashPassword(password)) {
     return res.status(401).json({ success: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
   }
 

@@ -1412,50 +1412,39 @@ function renderEducationPage() {
 }
 
 function renderEducationCards(items, completedIds) {
- if (items.length === 0) {
- return `<div class="empty-state" style="grid-column:1/-1;">
- <p>콘텐츠가 없습니다</p>
- </div>`;
- }
- completedIds = completedIds || [];
- const catMeta = {
- basics: { label: '기본상식', color: '#6366f1', bg: '#eef2ff' },
- 'body-language': { label: '바디랭귀지', color: '#8b5cf6', bg: '#f5f3ff' },
- training: { label: '훈련', color: '#ec4899', bg: '#fdf2f8' },
- health: { label: '건강관리', color: '#ef4444', bg: '#fef2f2' },
- nutrition: { label: '영양/식이', color: '#f59e0b', bg: '#fffbeb' },
- grooming: { label: '미용/관리', color: '#10b981', bg: '#ecfdf5' },
- safety: { label: '안전', color: '#3b82f6', bg: '#eff6ff' },
- puppy: { label: '퍼피케어', color: '#f472b6', bg: '#fdf2f8' },
- senior: { label: '노견케어', color: '#78716c', bg: '#f5f5f4' },
- law: { label: '법률/에티켓', color: '#64748b', bg: '#f8fafc' },
- posture: { label: '자세', color: '#8b5cf6', bg: '#f5f3ff' },
- leash: { label: '리드줄', color: '#ec4899', bg: '#fdf2f8' }
- };
- return items.map(item => {
- const isCompleted = completedIds.includes(item.id);
- const meta = catMeta[item.category] || { label: item.category, color: '#999', bg: '#f5f5f5' };
- return `
- <div class="card" onclick="Router.navigate('/education/${item.id}')" style="cursor:pointer; overflow:hidden;">
- <div style="height:4px; background:${meta.color};"></div>
- <div class="card__body" style="padding-top:12px;">
- <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
- <span style="display:inline-block; padding:3px 10px; border-radius:6px; font-size:0.72rem; font-weight:600; background:${meta.bg}; color:${meta.color};">${meta.label}</span>
- ${isCompleted ? `<span style="display:inline-block; padding:3px 10px; border-radius:6px; font-size:0.72rem; font-weight:600; background:#d1fae5; color:#065f46;">완료</span>` : ''}
- </div>
- <div class="card__title" style="font-size:0.95rem; line-height:1.4;">${item.title}</div>
- <div class="card__text" style="margin-top:6px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:0.82rem; color:#777;">
- ${item.body.substring(0, 80)}...
- </div>
- <div style="margin-top:10px; display:flex; align-items:center; gap:6px;">
- <span style="font-size:0.72rem; color:#aaa;">${item.quiz ? item.quiz.length + '문제' : ''}</span>
- <span style="flex:1;"></span>
- <span style="font-size:0.75rem; color:${meta.color}; font-weight:600;">학습하기 &rarr;</span>
- </div>
- </div>
- </div>
- `;
- }).join('');
+  if (items.length === 0) {
+    return `<div class="empty-state" style="grid-column:1/-1;">
+      <div class="empty-icon">📭</div>
+      <p>콘텐츠가 없습니다</p>
+    </div>`;
+  }
+  completedIds = completedIds || [];
+  const catMap = {
+    basics: '🐾 기본상식', 'body-language': '🐕 바디랭귀지', training: '🎓 훈련',
+    health: '🏥 건강관리', nutrition: '🥗 영양/식이', grooming: '✂️ 미용/관리',
+    safety: '🛡️ 안전', puppy: '🍼 퍼피케어', senior: '🐕‍🦺 노견케어', law: '⚖️ 법률/에티켓',
+    posture: '🧍 자세', leash: '🦮 리드줄'
+  };
+  const levelMap = { beginner: { label: '입문', color: '#e0f2fe', text: '#0369a1' }, intermediate: { label: '중급', color: '#fef9c3', text: '#854d0e' }, advanced: { label: '심화', color: '#fce7f3', text: '#9d174d' } };
+  return items.map(item => {
+    const isCompleted = completedIds.includes(item.id);
+    const lv = item.level ? levelMap[item.level] : null;
+    return `
+    <div class="card" onclick="Router.navigate('/education/${item.id}')" style="cursor:pointer;${isCompleted ? ' border-left:3px solid var(--color-primary, #FF8FAB);' : ''}">
+      <div class="card__body">
+        <div class="card__subtitle" style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+          <span class="badge badge-primary">${catMap[item.category]}</span>
+          ${lv ? `<span class="badge" style="background:${lv.color}; color:${lv.text};">${lv.label}</span>` : ''}
+          ${isCompleted ? '<span class="badge" style="background:#d1fae5; color:#065f46;">✅ 수료</span>' : ''}
+        </div>
+        <div class="card__title" style="margin-top:8px;">${item.title}</div>
+        <div class="card__text" style="margin-top:6px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+          ${item.body.substring(0, 80)}...
+        </div>
+      </div>
+    </div>
+  `;
+  }).join('');
 }
 
 function filterEducation(category, btn) {
@@ -1496,64 +1485,69 @@ function renderEducationDetailPage(params) {
  let completeButtonHtml = '';
  const hasQuiz = content.quiz && content.quiz.length > 0;
 
- if (isCompleted) {
- completeButtonHtml = `
- <div style="margin-top:24px; padding:16px; background:#d1fae5; border-radius:var(--radius-md, 8px); text-align:center;">
- <span style="font-size:1.2rem;"></span>
- <span style="font-weight:600; color:#065f46; margin-left:8px;">이미 완료한 콘텐츠입니다</span>
- </div>`;
- } else if (hasQuiz) {
- completeButtonHtml = `
- <div id="edu-quiz-section" style="margin-top:24px;">
- <div class="card" style="padding:24px;">
- <h3 style="margin-bottom:4px;">학습 확인 퀴즈</h3>
- <p style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:20px;">3문제 중 2문제 이상 맞추면 통과!</p>
- ${content.quiz.map((q, qi) => `
- <div class="quiz-question" style="margin-bottom:20px; padding:16px; background:var(--color-bg-warm); border-radius:12px;">
- <p style="font-weight:700; margin-bottom:10px;">Q${qi + 1}. ${q.question}</p>
- <div style="display:grid; gap:8px;">
- ${q.options.map((opt, oi) => `
- <label class="quiz-option" id="quiz-opt-${qi}-${oi}" style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fff; border:2px solid var(--color-border, #e5e5e5); border-radius:10px; cursor:pointer; transition:all 0.2s; font-size:0.9rem;" onclick="selectQuizOption(${qi}, ${oi})">
- <input type="radio" name="quiz-${qi}" value="${oi}" style="display:none;">
- <span class="quiz-radio" style="width:20px; height:20px; border:2px solid #ccc; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;"></span>
- <span>${opt}</span>
- </label>
- `).join('')}
- </div>
- </div>
- `).join('')}
- <div id="quiz-result" style="display:none; margin-bottom:16px;"></div>
- <button class="btn btn-primary" id="quiz-submit-btn" onclick="submitEducationQuiz('${content.id}')" style="width:100%; padding:14px; font-size:1rem;">
- 정답 확인하기
- </button>
- </div>
- </div>`;
- } else {
- // 퀴즈 없는 콘텐츠 (기존 완료 버튼)
- if (user) {
- completeButtonHtml = `
- <div style="margin-top:24px; text-align:center;">
- <button class="btn btn-primary" id="complete-btn" onclick="handleCompleteEducation('${content.id}')" style="padding:12px 32px; font-size:1rem;">완료</button>
- </div>`;
- } else {
- completeButtonHtml = `
- <div style="margin-top:24px; text-align:center;">
- <button class="btn btn-primary" onclick="showLoginModal('학습 완료를 기록하려면 로그인이 필요해요!')" style="padding:12px 32px; font-size:1rem;">완료</button>
- </div>`;
- }
- }
+  if (isCompleted) {
+    completeButtonHtml = `
+      <div style="margin-top:24px; padding:16px; background:#d1fae5; border-radius:var(--radius-md, 8px); text-align:center;">
+        <span style="font-size:1.2rem;">✅</span>
+        <span style="font-weight:600; color:#065f46; margin-left:8px;">이미 완료한 콘텐츠입니다</span>
+      </div>`;
+  } else if (hasQuiz) {
+    completeButtonHtml = `
+      <div id="edu-quiz-section" style="margin-top:24px;">
+        <div class="card" style="padding:24px;">
+          <h3 style="margin-bottom:4px;">📝 학습 확인 퀴즈</h3>
+          <p style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:20px;">5문제 중 3문제 이상 맞추면 수료!</p>
+          ${content.quiz.map((q, qi) => `
+            <div class="quiz-question" style="margin-bottom:20px; padding:16px; background:var(--color-bg-warm); border-radius:12px;">
+              <p style="font-weight:700; margin-bottom:10px;">Q${qi + 1}. ${q.question}</p>
+              <div style="display:grid; gap:8px;">
+                ${q.options.map((opt, oi) => `
+                  <label class="quiz-option" id="quiz-opt-${qi}-${oi}" style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fff; border:2px solid var(--color-border, #e5e5e5); border-radius:10px; cursor:pointer; transition:all 0.2s; font-size:0.9rem;" onclick="selectQuizOption(${qi}, ${oi})">
+                    <input type="radio" name="quiz-${qi}" value="${oi}" style="display:none;">
+                    <span class="quiz-radio" style="width:20px; height:20px; border:2px solid #ccc; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;"></span>
+                    <span>${opt}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+          <div id="quiz-result" style="display:none; margin-bottom:16px;"></div>
+          <button class="btn btn-primary" id="quiz-submit-btn" onclick="submitEducationQuiz('${content.id}')" style="width:100%; padding:14px; font-size:1rem;">
+            🎯 정답 확인하기
+          </button>
+        </div>
+      </div>`;
+  } else {
+    // 퀴즈 없는 콘텐츠 (기존 완료 버튼)
+    if (user) {
+      completeButtonHtml = `
+        <div style="margin-top:24px; text-align:center;">
+          <button class="btn btn-primary" id="complete-btn" onclick="handleCompleteEducation('${content.id}')" style="padding:12px 32px; font-size:1rem;">✅ 완료</button>
+        </div>`;
+    } else {
+      completeButtonHtml = `
+        <div style="margin-top:24px; text-align:center;">
+          <button class="btn btn-primary" onclick="showLoginModal('학습 완료를 기록하려면 로그인이 필요해요!')" style="padding:12px 32px; font-size:1rem;">✅ 완료</button>
+        </div>`;
+    }
+  }
 
- renderPage(`
- <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/education')" style="margin-bottom:16px;">← 목록으로</button>
- <div class="detail-header">
- <span class="badge badge-primary">${catMap[content.category]}</span>
- <h1 style="margin-top:8px;">${content.title}</h1>
- </div>
- <div class="detail-section">
- <div style="white-space:pre-line; line-height:1.8; font-size:0.95rem;">${content.body}</div>
- </div>
- ${completeButtonHtml}
- `);
+  const lvMap2 = { beginner: { label: '입문', color: '#e0f2fe', text: '#0369a1' }, intermediate: { label: '중급', color: '#fef9c3', text: '#854d0e' }, advanced: { label: '심화', color: '#fce7f3', text: '#9d174d' } };
+  const lvInfo = content.level ? lvMap2[content.level] : null;
+  renderPage(`
+    <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/education')" style="margin-bottom:16px;">← 목록으로</button>
+    <div class="detail-header">
+      <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:8px;">
+        <span class="badge badge-primary">${catMap[content.category]}</span>
+        ${lvInfo ? `<span class="badge" style="background:${lvInfo.color}; color:${lvInfo.text};">${lvInfo.label}</span>` : ''}
+      </div>
+      <h1 style="margin-top:4px;">${content.title}</h1>
+    </div>
+    <div class="detail-section">
+      <div style="white-space:pre-line; line-height:1.8; font-size:0.95rem;">${content.body}</div>
+    </div>
+    ${completeButtonHtml}
+  `);
 }
 
 /**
@@ -1632,35 +1626,35 @@ function submitEducationQuiz(contentId) {
  return;
  }
 
- const passed = correct >= 2;
- const resultEl = document.getElementById('quiz-result');
- const btn = document.getElementById('quiz-submit-btn');
+  const passed = correct >= 3;
+  const resultEl = document.getElementById('quiz-result');
+  const btn = document.getElementById('quiz-submit-btn');
 
- if (resultEl) {
- resultEl.style.display = 'block';
- if (passed) {
- resultEl.innerHTML = `
- <div style="text-align:center; padding:20px; background:#d1fae5; border-radius:12px;">
- <div style="font-size:2rem; margin-bottom:8px;"></div>
- <div style="font-weight:800; color:#065f46; font-size:1.1rem;">${correct}/${quiz.length} 정답 ? 통과!</div>
- <p style="color:#065f46; font-size:0.85rem; margin-top:4px;">학습 완료로 기록되었습니다.</p>
- </div>`;
- // 학습 완료 처리
- EducationService.markComplete(user.id, contentId);
- if (btn) btn.style.display = 'none';
- } else {
- resultEl.innerHTML = `
- <div style="text-align:center; padding:20px; background:#fff3e0; border-radius:12px;">
- <div style="font-size:2rem; margin-bottom:8px;"></div>
- <div style="font-weight:800; color:#e65100; font-size:1.1rem;">${correct}/${quiz.length} 정답 ? 아쉬워요!</div>
- <p style="color:#e65100; font-size:0.85rem; margin-top:4px;">2문제 이상 맞춰야 통과예요. 내용을 다시 읽고 도전해보세요!</p>
- </div>`;
- if (btn) {
- btn.textContent = '🔄 다시 도전하기';
- btn.onclick = () => Router.navigate('/education/' + contentId);
- }
- }
- }
+  if (resultEl) {
+    resultEl.style.display = 'block';
+    if (passed) {
+      resultEl.innerHTML = `
+        <div style="text-align:center; padding:20px; background:#d1fae5; border-radius:12px;">
+          <div style="font-size:2rem; margin-bottom:8px;">🎉</div>
+          <div style="font-weight:800; color:#065f46; font-size:1.1rem;">${correct}/${quiz.length} 정답 — 통과!</div>
+          <p style="color:#065f46; font-size:0.85rem; margin-top:4px;">학습 완료로 기록되었습니다.</p>
+        </div>`;
+      // 학습 완료 처리
+      EducationService.markComplete(user.id, contentId);
+      if (btn) btn.style.display = 'none';
+    } else {
+      resultEl.innerHTML = `
+        <div style="text-align:center; padding:20px; background:#fff3e0; border-radius:12px;">
+          <div style="font-size:2rem; margin-bottom:8px;">😅</div>
+          <div style="font-weight:800; color:#e65100; font-size:1.1rem;">${correct}/${quiz.length} 정답 — 아쉬워요!</div>
+          <p style="color:#e65100; font-size:0.85rem; margin-top:4px;">3문제 이상 맞춰야 수료예요. 내용을 다시 읽고 도전해보세요!</p>
+        </div>`;
+      if (btn) {
+        btn.textContent = '🔄 다시 도전하기';
+        btn.onclick = () => Router.navigate('/education/' + contentId);
+      }
+    }
+  }
 }
 
 /**
@@ -8675,21 +8669,26 @@ let _trackingMarker = null;
 let _trackingStartMarker = null;
 
 function handleStartTracking() {
- const result = GPSTrackingService.startTracking((data) => {
- document.getElementById('track-distance').textContent = data.distance.toFixed(2);
- const elapsed = data.startTime ? Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000) : 0;
- if (elapsed >= 3600) {
- const h = Math.floor(elapsed / 3600);
- const m = Math.floor((elapsed % 3600) / 60);
- const s = elapsed % 60;
- document.getElementById('track-duration').textContent = String(h) + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
- } else {
- const m = Math.floor(elapsed / 60);
- const s = elapsed % 60;
- document.getElementById('track-duration').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
- }
- document.getElementById('track-pace').textContent = data.avgPace.toFixed(1);
- document.getElementById('track-calories').textContent = data.calories;
+  const user = AuthService.getCurrentUser();
+  const dogs = user ? (user.dogs || []) : [];
+  const selectedIdx = StorageService.get('walkingDogIdx', 0);
+  const dog = dogs.length > 0 ? dogs[Math.min(selectedIdx, dogs.length - 1)] : null;
+
+  const result = GPSTrackingService.startTracking((data) => {
+    document.getElementById('track-distance').textContent = data.distance.toFixed(2);
+    const elapsed = data.startTime ? Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000) : 0;
+    if (elapsed >= 3600) {
+      const h = Math.floor(elapsed / 3600);
+      const m = Math.floor((elapsed % 3600) / 60);
+      const s = elapsed % 60;
+      document.getElementById('track-duration').textContent = String(h) + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    } else {
+      const m = Math.floor(elapsed / 60);
+      const s = elapsed % 60;
+      document.getElementById('track-duration').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+    document.getElementById('track-pace').textContent = data.avgPace.toFixed(1);
+    document.getElementById('track-calories').textContent = data.calories;
 
  if (data.lastPosition && _trackingMap) {
  const pos = [data.lastPosition.lat, data.lastPosition.lng];
@@ -8722,12 +8721,12 @@ function handleStartTracking() {
  _trackingStartMarker.bindPopup('출발');
  }
 
- // 경로 업데이트
- if (_trackingPolyline && data.coordinates.length > 1) {
- _trackingPolyline.setLatLngs(data.coordinates.map(c => [c.lat, c.lng]));
- }
- }
- });
+      // 경로 업데이트
+      if (_trackingPolyline && data.coordinates.length > 1) {
+        _trackingPolyline.setLatLngs(data.coordinates.map(c => [c.lat, c.lng]));
+      }
+    }
+  }, { userId: user?.id, dogId: dog?.name, dogName: dog?.name });
 
  if (!result.success) {
  const alertEl = document.getElementById('tracking-alert');
