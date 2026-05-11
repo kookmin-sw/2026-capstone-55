@@ -438,7 +438,7 @@ async function consultWithClaude(message, history, systemPrompt) {
 
 // ===== Gemini: 통합 AI 상담 (모드별 프롬프트 + RAG) =====
 router.post('/consult', async (req, res) => {
-  const { message, history, mode, aiName } = req.body;
+  const { message, history, mode, aiName, userId } = req.body;
   if (!message) {
     return res.status(400).json({ success: false, error: '메시지를 입력해주세요.' });
   }
@@ -449,11 +449,48 @@ router.post('/consult', async (req, res) => {
     systemPrompt = `당신의 이름은 "${aiName}"입니다. 사용자가 설정한 이름이니 자연스럽게 사용하세요.\n\n` + systemPrompt;
   }
 
+  // 산책 데이터 & 건강 서류 컨텍스트 추가
+  let petDataContext = '';
+  if (userId) {
+    try {
+      // 산책 데이터 로드
+      const walksPath = path.join(__dirname, '..', 'data', 'walks.json');
+      if (fs.existsSync(walksPath)) {
+        const allWalks = JSON.parse(fs.readFileSync(walksPath, 'utf8'));
+        const userWalks = allWalks.filter(w => w.userId === userId).slice(-10);
+        if (userWalks.length > 0) {
+          const totalDist = userWalks.reduce((s, w) => s + (w.distance || 0), 0);
+          const totalDur = userWalks.reduce((s, w) => s + (w.duration || 0), 0);
+          petDataContext += `\n[산책 데이터] 최근 ${userWalks.length}회 산책, 총 ${totalDist.toFixed(1)}km, 총 ${totalDur}분\n`;
+          petDataContext += userWalks.map(w => `- ${w.dogName || '반려견'}: ${w.distance}km, ${w.duration}분 (${w.createdAt?.split('T')[0]})`).join('\n');
+          petDataContext += '\n';
+        }
+      }
+      // 건강 서류 로드
+      const metaPath = path.join(__dirname, '..', 'uploads', 'metadata.json');
+      if (fs.existsSync(metaPath)) {
+        const allDocs = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+        const userDocs = allDocs.filter(d => d.userId === userId);
+        if (userDocs.length > 0) {
+          const typeLabel = { vaccination: '예방접종 증명서', checkup: '건강검진 결과지', treatment: '진료 기록/처방전', surgery: '수술/시술 기록', allergy: '알러지/질병 진단서', medication: '투약 기록', other: '기타' };
+          petDataContext += `\n[건강 서류] 등록된 서류 ${userDocs.length}건\n`;
+          petDataContext += userDocs.map(d => `- ${d.dogName || '반려견'}: ${typeLabel[d.type] || d.type} (${d.originalName}, ${new Date(d.uploadedAt).toLocaleDateString('ko-KR')})`).join('\n');
+          petDataContext += '\n';
+        }
+      }
+    } catch(e) { /* 데이터 로드 실패해도 상담은 계속 */ }
+  }
+
   // 1차: Gemini 시도
   const model = getGeminiModel();
   if (model) {
     try {
       let prompt = systemPrompt + '\n\n';
+
+      // 산책/서류 컨텍스트 추가
+      if (petDataContext) {
+        prompt += petDataContext + '\n';
+      }
 
       // RAG: 모드에 따라 검색 범위 조정
       const ragResults = await searchKnowledgeHybrid(message);

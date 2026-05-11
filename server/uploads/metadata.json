@@ -1,0 +1,46 @@
+[
+  {
+    "id": "file_1778462864389",
+    "userId": "id-mok5uf8l-0badxjq",
+    "dogId": "id-momik16z-quq1r6h",
+    "dogName": "딸기",
+    "type": "treatment",
+    "originalName": "KakaoTalk_20260511_102627752.jpg",
+    "filename": "unknown_doc_1778462864373.jpg",
+    "size": 371856,
+    "uploadedAt": "2026-05-11T01:27:44.389Z"
+  },
+  {
+    "id": "file_1778488590503",
+    "userId": "id-mok5uf8l-0badxjq",
+    "dogId": "id-mophvynx-frpwj7l",
+    "dogName": "누룽지",
+    "type": "treatment",
+    "originalName": "180-8-0000.jpg",
+    "filename": "unknown_doc_1778488590481.jpg",
+    "size": 79069,
+    "uploadedAt": "2026-05-11T08:36:30.503Z"
+  },
+  {
+    "id": "file_1778501973749",
+    "userId": "id-mok5uf8l-0badxjq",
+    "dogId": "id-mophvynx-frpwj7l",
+    "dogName": "누룽지",
+    "type": "vaccination",
+    "originalName": "강아지 진단서2.jpg",
+    "filename": "unknown_doc_1778501973728.jpg",
+    "size": 547629,
+    "uploadedAt": "2026-05-11T12:19:33.749Z"
+  },
+  {
+    "id": "file_1778507324378",
+    "userId": "id-mok5uf8l-0badxjq",
+    "dogId": "id-momik16z-quq1r6h",
+    "dogName": "딸기",
+    "type": "vaccination",
+    "originalName": "강아지 진단서2.jpg",
+    "filename": "unknown_doc_1778507324368.jpg",
+    "size": 547629,
+    "uploadedAt": "2026-05-11T13:48:44.378Z"
+  }
+]
