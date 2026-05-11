@@ -177,6 +177,11 @@ router.patch('/:id/confirm-handoff', (req, res) => {
   db.set('walkSessions', sessions);
 
   const s = sessions[idx];
+  // walk request 상태도 handoff로 동기화
+  const walkRequests = db.get('walkRequests', []);
+  const reqIdx = walkRequests.findIndex(r => r.id === s.requestId);
+  if (reqIdx !== -1) { walkRequests[reqIdx].status = 'handoff'; walkRequests[reqIdx].updatedAt = db.now(); db.set('walkRequests', walkRequests); }
+
   const emitToUser = req.app.get('emitToUser');
   if (emitToUser) emitToUser(s.walkerId, 'handoff-confirmed', { sessionId: s.id });
 

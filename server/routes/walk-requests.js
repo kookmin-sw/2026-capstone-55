@@ -96,6 +96,14 @@ router.get('/', (req, res) => {
   res.json({ success: true, requests });
 });
 
+// 단건 조회
+router.get('/:id', (req, res) => {
+  const requests = db.get('walkRequests', []);
+  const request = requests.find(r => r.id === req.params.id);
+  if (!request) return res.status(404).json({ success: false, error: '요청을 찾을 수 없습니다.' });
+  res.json({ success: true, request });
+});
+
 // 수락
 router.patch('/:id/accept', (req, res) => {
   const requests = db.get('walkRequests', []);
@@ -220,7 +228,7 @@ router.patch('/:id/cancel', (req, res) => {
   const idx = requests.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false });
 
-  if (!['pending', 'accepted', 'heading'].includes(requests[idx].status)) {
+  if (!['pending', 'accepted', 'heading', 'arrived'].includes(requests[idx].status)) {
     return res.json({ success: false, error: '취소할 수 없는 상태입니다.' });
   }
 
