@@ -1160,14 +1160,17 @@ function renderEducationCards(items, completedIds) {
     safety: '🛡️ 안전', puppy: '🍼 퍼피케어', senior: '🐕‍🦺 노견케어', law: '⚖️ 법률/에티켓',
     posture: '🧍 자세', leash: '🦮 리드줄'
   };
+  const levelMap = { beginner: { label: '입문', color: '#e0f2fe', text: '#0369a1' }, intermediate: { label: '중급', color: '#fef9c3', text: '#854d0e' }, advanced: { label: '심화', color: '#fce7f3', text: '#9d174d' } };
   return items.map(item => {
     const isCompleted = completedIds.includes(item.id);
+    const lv = item.level ? levelMap[item.level] : null;
     return `
     <div class="card" onclick="Router.navigate('/education/${item.id}')" style="cursor:pointer;${isCompleted ? ' border-left:3px solid var(--color-primary, #FF8FAB);' : ''}">
       <div class="card__body">
-        <div class="card__subtitle">
+        <div class="card__subtitle" style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
           <span class="badge badge-primary">${catMap[item.category]}</span>
-          ${isCompleted ? '<span class="badge" style="background:#d1fae5; color:#065f46; margin-left:4px;">✅ 완료</span>' : ''}
+          ${lv ? `<span class="badge" style="background:${lv.color}; color:${lv.text};">${lv.label}</span>` : ''}
+          ${isCompleted ? '<span class="badge" style="background:#d1fae5; color:#065f46;">✅ 수료</span>' : ''}
         </div>
         <div class="card__title" style="margin-top:8px;">${item.title}</div>
         <div class="card__text" style="margin-top:6px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
@@ -1228,7 +1231,7 @@ function renderEducationDetailPage(params) {
       <div id="edu-quiz-section" style="margin-top:24px;">
         <div class="card" style="padding:24px;">
           <h3 style="margin-bottom:4px;">📝 학습 확인 퀴즈</h3>
-          <p style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:20px;">3문제 중 2문제 이상 맞추면 통과!</p>
+          <p style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:20px;">5문제 중 3문제 이상 맞추면 수료!</p>
           ${content.quiz.map((q, qi) => `
             <div class="quiz-question" style="margin-bottom:20px; padding:16px; background:var(--color-bg-warm); border-radius:12px;">
               <p style="font-weight:700; margin-bottom:10px;">Q${qi + 1}. ${q.question}</p>
@@ -1264,11 +1267,16 @@ function renderEducationDetailPage(params) {
     }
   }
 
+  const lvMap2 = { beginner: { label: '입문', color: '#e0f2fe', text: '#0369a1' }, intermediate: { label: '중급', color: '#fef9c3', text: '#854d0e' }, advanced: { label: '심화', color: '#fce7f3', text: '#9d174d' } };
+  const lvInfo = content.level ? lvMap2[content.level] : null;
   renderPage(`
     <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/education')" style="margin-bottom:16px;">← 목록으로</button>
     <div class="detail-header">
-      <span class="badge badge-primary">${catMap[content.category]}</span>
-      <h1 style="margin-top:8px;">${content.title}</h1>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:8px;">
+        <span class="badge badge-primary">${catMap[content.category]}</span>
+        ${lvInfo ? `<span class="badge" style="background:${lvInfo.color}; color:${lvInfo.text};">${lvInfo.label}</span>` : ''}
+      </div>
+      <h1 style="margin-top:4px;">${content.title}</h1>
     </div>
     <div class="detail-section">
       <div style="white-space:pre-line; line-height:1.8; font-size:0.95rem;">${content.body}</div>
@@ -1353,7 +1361,7 @@ function submitEducationQuiz(contentId) {
     return;
   }
 
-  const passed = correct >= 2;
+  const passed = correct >= 3;
   const resultEl = document.getElementById('quiz-result');
   const btn = document.getElementById('quiz-submit-btn');
 
@@ -1374,7 +1382,7 @@ function submitEducationQuiz(contentId) {
         <div style="text-align:center; padding:20px; background:#fff3e0; border-radius:12px;">
           <div style="font-size:2rem; margin-bottom:8px;">😅</div>
           <div style="font-weight:800; color:#e65100; font-size:1.1rem;">${correct}/${quiz.length} 정답 — 아쉬워요!</div>
-          <p style="color:#e65100; font-size:0.85rem; margin-top:4px;">2문제 이상 맞춰야 통과예요. 내용을 다시 읽고 도전해보세요!</p>
+          <p style="color:#e65100; font-size:0.85rem; margin-top:4px;">3문제 이상 맞춰야 수료예요. 내용을 다시 읽고 도전해보세요!</p>
         </div>`;
       if (btn) {
         btn.textContent = '🔄 다시 도전하기';
