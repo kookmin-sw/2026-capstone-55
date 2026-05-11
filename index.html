@@ -48,11 +48,13 @@
   <script src="js/services/gpsTrackingService.js"></script>
   <script src="js/services/healthAnalysisService.js"></script>
 
-  <!-- Core -->
+  <!-- Core modules -->
   <script src="js/core/router.js"></script>
   <script src="js/core/ui.js"></script>
+  <script src="js/core/payment.js"></script>
+  <script src="js/core/notifications.js"></script>
 
-  <!-- Pages -->
+  <!-- Page modules -->
   <script src="js/pages/home.js"></script>
   <script src="js/pages/breeds.js"></script>
   <script src="js/pages/education.js"></script>
@@ -68,7 +70,17 @@
   <script src="js/pages/health.js"></script>
   <script src="js/pages/notfound.js"></script>
 
-  <!-- Main App (init + walk session) -->
+  <!-- Feature modules (산책 요청/세션/브로드캐스트/채팅/대시보드) -->
+  <script src="js/features/walkRequest.js"></script>
+  <script src="js/features/walkSession.js"></script>
+  <script src="js/features/broadcast.js"></script>
+  <script src="js/features/chat.js"></script>
+  <script src="js/features/walkerDashboard.js"></script>
+
+  <!-- Realtime listeners (위 feature 모듈 이후에 로드) -->
+  <script src="js/core/realtime.js"></script>
+
+  <!-- Main app (초기화 + 라우트 등록) -->
   <script src="js/app.js"></script>
 
   <!-- 발자국 트레일 효과 -->
