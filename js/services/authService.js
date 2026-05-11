@@ -169,19 +169,34 @@ const AuthService = (() => {
   /**
    * 사용자 프로필 업데이트
    * @param {string} userId
-   * @param {{ name?: string }} data
+   * @param {{ name?: string, profileImage?: string }} data
    * @returns {{ success: boolean, user?: User, error?: string }}
    */
   function updateProfile(userId, data) {
+    const applyUpdates = (user) => {
+      const updated = { ...user };
+      if (data.name) {
+        updated.name = data.name.trim();
+      }
+      if (data.profileImage !== undefined) {
+        updated.profileImage = data.profileImage;
+      }
+      return updated;
+    };
+
     const users = getUsers();
     const index = users.findIndex(u => u.id === userId);
     if (index === -1) {
+      const currentUser = StorageService.get(CURRENT_USER_KEY, null);
+      if (currentUser && currentUser.id === userId) {
+        const updatedUser = applyUpdates(currentUser);
+        setCurrentUser(updatedUser);
+        return { success: true, user: updatedUser };
+      }
       return { success: false, error: '사용자를 찾을 수 없습니다.' };
     }
 
-    if (data.name) {
-      users[index].name = data.name.trim();
-    }
+    users[index] = applyUpdates(users[index]);
 
     saveUsers(users);
     setCurrentUser(users[index]);
@@ -225,7 +240,8 @@ const AuthService = (() => {
       weight: dogData.weight ? Number(dogData.weight) : null,
       neutered: dogData.neutered != null ? Boolean(dogData.neutered) : null,
       personality: dogData.personality || null,
-      healthNote: dogData.healthNote || null
+      healthNote: dogData.healthNote || null,
+      photo: dogData.photo || null
     };
 
     if (!users[index].dogs) {

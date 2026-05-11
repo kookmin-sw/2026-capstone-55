@@ -631,7 +631,7 @@
     "requestedEndTime": "",
     "pickupLatitude": 37.60347304921059,
     "pickupLongitude": 127.03230621776876,
-    "status": "accepted",
+    "status": "expired",
     "createdAt": "2026-05-06T18:29:59.434Z",
     "updatedAt": "2026-05-06T18:30:05.026Z",
     "walkerCurrentLat": 37.60350382420356,
