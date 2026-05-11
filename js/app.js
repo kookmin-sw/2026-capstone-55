@@ -6029,16 +6029,26 @@ function renderProfilePage() {
  <div class="card" style="padding:24px; margin-bottom:16px;">
  <h3 style="margin-bottom:16px;">건강 서류 관리</h3>
  <div id="upload-error"></div>
- <div style="display:flex; gap:8px; margin-bottom:16px;">
- <div style="flex:1;">
+ <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+ <div style="flex:1; min-width:100px;">
+ <label style="font-size:0.85rem; font-weight:600; margin-bottom:4px; display:block;">반려견</label>
+ <select id="upload-dog-select" class="form-select" onchange="loadUploadedFiles(null)">
+ ${user.dogs && user.dogs.length > 0 ? user.dogs.map(d => `<option value="${d.id}">${d.name}</option>`).join('') : '<option value="">반려견 없음</option>'}
+ </select>
+ </div>
+ <div style="flex:1; min-width:100px;">
  <label style="font-size:0.85rem; font-weight:600; margin-bottom:4px; display:block;">서류 종류</label>
  <select id="upload-type" class="form-select">
- <option value="vaccination">예방접종 기록</option>
- <option value="diagnosis">진단서</option>
+ <option value="vaccination">예방접종 증명서</option>
+ <option value="checkup">건강검진 결과지</option>
+ <option value="treatment">진료 기록 / 처방전</option>
+ <option value="surgery">수술 / 시술 기록</option>
+ <option value="allergy">알러지 / 질병 진단서</option>
+ <option value="medication">복용 약 / 투약 기록</option>
  <option value="other">기타</option>
  </select>
  </div>
- <div style="flex:1;">
+ <div style="flex:1; min-width:100px;">
  <label style="font-size:0.85rem; font-weight:600; margin-bottom:4px; display:block;">파일 선택</label>
  <input type="file" id="upload-file" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;">
  </div>
