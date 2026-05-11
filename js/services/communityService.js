@@ -44,7 +44,7 @@ const CommunityService = (() => {
    * @throws {Error} 텍스트가 비어있거나 공백만 있는 경우
    */
   function createPost(newPost) {
-    if (!newPost.text || !newPost.text.trim()) {
+    if ((!newPost.text || !newPost.text.trim()) && !newPost.imageData && !newPost.walkData) {
       throw new Error('게시물 내용을 입력하세요.');
     }
 
@@ -52,8 +52,10 @@ const CommunityService = (() => {
       id: StorageService.generateId(),
       authorId: newPost.authorId,
       authorName: newPost.authorName,
-      text: newPost.text.trim(),
+      text: (newPost.text || '').trim(),
       imageUrls: newPost.imageUrls || [],
+      imageData: newPost.imageData || null,
+      walkData: newPost.walkData || null,
       likes: 0,
       likedBy: [],
       comments: [],

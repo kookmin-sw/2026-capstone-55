@@ -60,12 +60,8 @@ const AuthService = (() => {
       const newUser = result.user;
       createAuthToken(newUser.id);
       setCurrentUser(newUser);
-      // 로컬에도 캐시
-      const users = getUsers();
-      if (!users.find(u => u.id === newUser.id)) {
-        users.push(newUser);
-        saveUsers(users);
-      }
+      // 서버에 이미 저장됨 — 로컬 캐시 덮어쓰기 방지를 위해 syncFromServer 호출
+      try { await StorageService.syncFromServer(); } catch(e) {}
       return { success: true, user: newUser };
     } catch(e) {
       // 서버 연결 실패 시 로컬 fallback
@@ -155,7 +151,9 @@ const AuthService = (() => {
    */
   function getCurrentUser() {
     const token = StorageService.get(AUTH_TOKEN_KEY);
-    if (!token) return null;
+    if (!token) {
+      return null;
+    }
 
     // 토큰 만료 확인
     if (new Date(token.expiresAt) < new Date()) {
@@ -169,19 +167,34 @@ const AuthService = (() => {
   /**
    * 사용자 프로필 업데이트
    * @param {string} userId
-   * @param {{ name?: string }} data
+   * @param {{ name?: string, profileImage?: string }} data
    * @returns {{ success: boolean, user?: User, error?: string }}
    */
   function updateProfile(userId, data) {
+    const applyUpdates = (user) => {
+      const updated = { ...user };
+      if (data.name) {
+        updated.name = data.name.trim();
+      }
+      if (data.profileImage !== undefined) {
+        updated.profileImage = data.profileImage;
+      }
+      return updated;
+    };
+
     const users = getUsers();
     const index = users.findIndex(u => u.id === userId);
     if (index === -1) {
+      const currentUser = StorageService.get(CURRENT_USER_KEY, null);
+      if (currentUser && currentUser.id === userId) {
+        const updatedUser = applyUpdates(currentUser);
+        setCurrentUser(updatedUser);
+        return { success: true, user: updatedUser };
+      }
       return { success: false, error: '사용자를 찾을 수 없습니다.' };
     }
 
-    if (data.name) {
-      users[index].name = data.name.trim();
-    }
+    users[index] = applyUpdates(users[index]);
 
     saveUsers(users);
     setCurrentUser(users[index]);
@@ -220,7 +233,13 @@ const AuthService = (() => {
       name: dogData.name.trim(),
       breed: dogData.breed,
       age: Number(dogData.age),
-      size: dogData.size
+      size: dogData.size,
+      gender: dogData.gender || null,
+      weight: dogData.weight ? Number(dogData.weight) : null,
+      neutered: dogData.neutered != null ? dogData.neutered : null,
+      personality: dogData.personality || null,
+      healthNote: dogData.healthNote || null,
+      photo: dogData.photo || null
     };
 
     if (!users[index].dogs) {
