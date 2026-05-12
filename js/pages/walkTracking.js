@@ -341,6 +341,7 @@ let _walkHistoryCache = [];
 let _walkCalYear = new Date().getFullYear();
 let _walkCalMonth = new Date().getMonth();
 let _walkCalSelectedDate = null; // null이면 전체, 숫자면 해당 날짜
+let _walkRouteMaps = {};
 
 async function loadWalkHistory(userId, dogId) {
   const section = document.getElementById('walk-history-section');
@@ -404,8 +405,10 @@ function renderWalkCalendar() {
   }
   listWalks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  const listHtml = listWalks.length > 0 ? listWalks.map(w => `
-    <div class="walk-history-item" id="walk-item-${w.id}">
+  const listHtml = listWalks.length > 0 ? listWalks.map(w => {
+    const hasRoute = w.coordinates && w.coordinates.length > 1;
+    return `
+    <div class="walk-history-item" id="walk-item-${w.id}" style="flex-wrap:wrap;">
       <div style="flex:1;">
         <div class="walk-history-item__date">${new Date(w.createdAt).toLocaleDateString('ko-KR')} ${new Date(w.createdAt).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}</div>
         <div class="walk-history-item__dog" id="walk-name-${w.id}">${w.title || w.dogName || '산책'}</div>
@@ -418,8 +421,10 @@ function renderWalkCalendar() {
         <button onclick="editWalkName('${w.id}')" style="background:none; border:none; font-size:0.75rem; color:var(--color-text-muted); cursor:pointer; padding:4px;">수정</button>
         <button onclick="deleteWalkRecord('${w.id}')" style="background:none; border:none; font-size:0.75rem; color:#e53e3e; cursor:pointer; padding:4px;">삭제</button>
       </div>
+      ${hasRoute ? `<div id="walk-route-${w.id}" style="width:100%; margin-top:10px; height:160px; border-radius:10px; overflow:hidden; border:1px solid var(--color-border);"></div>` : ''}
     </div>
-  `).join('') : `<div style="text-align:center; padding:16px; color:var(--color-text-muted); font-size:0.82rem;">${_walkCalSelectedDate ? _walkCalSelectedDate + '일에 기록이 없습니다' : '이 달에 기록이 없습니다'}</div>`;
+  `;
+  }).join('') : `<div style="text-align:center; padding:16px; color:var(--color-text-muted); font-size:0.82rem;">${_walkCalSelectedDate ? _walkCalSelectedDate + '일에 기록이 없습니다' : '이 달에 기록이 없습니다'}</div>`;
 
   section.innerHTML = `
     <style>
@@ -473,6 +478,26 @@ function renderWalkCalendar() {
     <div class="walk-history__title">${_walkCalSelectedDate ? '' : '최근 기록'}</div>
     ${listHtml}
   `;
+
+  // 경로가 있는 기록마다 Leaflet 미니맵 자동 초기화
+  setTimeout(() => {
+    listWalks.forEach(w => {
+      if (w.coordinates && w.coordinates.length > 1) {
+        const container = document.getElementById('walk-route-' + w.id);
+        if (container && !_walkRouteMaps[w.id]) {
+          const coords = w.coordinates.map(c => [c.lat, c.lng]);
+          const map = L.map(container, { zoomControl: false, attributionControl: false }).fitBounds(coords, { padding: [20, 20] });
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+          L.polyline(coords, { color: '#F59E0B', weight: 4, opacity: 0.9 }).addTo(map);
+          const startIcon = L.divIcon({ className: '', html: '<div style="width:10px;height:10px;background:#22C55E;border:2px solid #fff;border-radius:50%;"></div>', iconSize: [10, 10], iconAnchor: [5, 5] });
+          const endIcon   = L.divIcon({ className: '', html: '<div style="width:10px;height:10px;background:#EF4444;border:2px solid #fff;border-radius:50%;"></div>', iconSize: [10, 10], iconAnchor: [5, 5] });
+          L.marker(coords[0], { icon: startIcon }).addTo(map);
+          L.marker(coords[coords.length - 1], { icon: endIcon }).addTo(map);
+          _walkRouteMaps[w.id] = map;
+        }
+      }
+    });
+  }, 200);
 }
 
 function changeWalkCalMonth(delta) {
