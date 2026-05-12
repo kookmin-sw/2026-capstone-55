@@ -1197,6 +1197,22 @@ function toggleAiScoreExplain() {
  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
+async function startAiScoreCalc() {
+ const btn = document.getElementById('ai-calc-btn');
+ const overlay = document.getElementById('ai-score-blur-overlay');
+ const list = document.getElementById('ai-walker-list');
+ if (!btn || !overlay) return;
+ btn.disabled = true;
+ btn.innerHTML = `<span class="spinner" style="width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff;margin-right:8px;"></span> AI 분석 중...`;
+ const walkers = window._aiCalcWalkers || [];
+ const profile = window._aiCalcProfile || {};
+ await fetchAiScoresAndUpdateCards(walkers, profile);
+ overlay.style.transition = 'opacity 0.4s';
+ overlay.style.opacity = '0';
+ if (list) { list.style.filter = 'none'; list.style.pointerEvents = ''; list.style.userSelect = ''; }
+ setTimeout(() => { overlay.style.display = 'none'; }, 400);
+}
+
 /** AI 추천 도우미 목록 더보기/접기 토글 */
 function toggleWalkerListMore(btn) {
  const section = document.getElementById('walker-list-section');
@@ -1810,7 +1826,16 @@ async function renderRequesterDashboard(user, myProfile) {
      </div>
      <div style="font-size:0.75rem;color:#999;">점수가 높을수록 내 반려견에게 더 적합한 도우미예요. 장시간 산책을 원하면 장시간 이력이 많은 도우미가 우선 추천돼요.</div>
    </div>
-   ${walkerListHtml}
+   <div id="ai-score-wrapper" style="position:relative;">
+     <div id="ai-score-blur-overlay" style="position:absolute;inset:0;z-index:10;backdrop-filter:blur(6px);background:rgba(255,255,255,0.55);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+       <div style="font-size:0.9rem;font-weight:700;color:#1a1a1a;">${icon('sparkles',16,'#7c6ff7')} AI 적합도 분석 준비됨</div>
+       <div style="font-size:0.78rem;color:#718096;text-align:center;line-height:1.6;">버튼을 누르면 Gemini AI가 내 반려견에게<br>가장 잘 맞는 도우미를 분석해드려요</div>
+       <button id="ai-calc-btn" onclick="startAiScoreCalc()" style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:linear-gradient(135deg,#7c6ff7,#6c47ff);color:#fff;border:none;border-radius:999px;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(108,71,255,0.35);">
+         ${icon('sparkles',15,'#fff')} AI 적합도 계산하기
+       </button>
+     </div>
+     <div id="ai-walker-list" style="filter:blur(4px);pointer-events:none;user-select:none;">${walkerListHtml}</div>
+   </div>
    ${hasMoreWalkers ? `
    <div id="walker-list-more-wrap" style="text-align:center;margin-top:16px;">
      <button type="button" id="walker-list-more-btn" onclick="toggleWalkerListMore(this)" style="padding:10px 24px;background:#fff;border:1.5px solid #1a1a1a;border-radius:999px;color:#1a1a1a;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
@@ -1829,8 +1854,9 @@ async function renderRequesterDashboard(user, myProfile) {
  // GPS 자동 로드
  setTimeout(() => loadDWDiscovery(), 300);
 
- // 백그라운드에서 AI 점수 계산 → 개별 카드 즉시 업데이트
- fetchAiScoresAndUpdateCards(availWalkers, myProfile);
+ // AI 점수는 버튼 클릭 시에만 계산 (API 토큰 절약)
+ window._aiCalcWalkers = availWalkers;
+ window._aiCalcProfile = myProfile;
 
  renderDirectWalkHistory(user.id, 'requester').then(({ html, hasRecords }) => {
  const section = document.getElementById('direct-history-section');
