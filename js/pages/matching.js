@@ -840,7 +840,7 @@ async function renderWalkerDashboard(user, myProfile) {
  <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
  <div class="match-walk-card__info">
  <div class="match-walk-card__name">${pName}</div>
- <div style="font-size:0.8rem;color:var(--color-text-muted);">? 매칭 시각: ${relative} · ${time}</div>
+ <div style="font-size:0.8rem;color:var(--color-text-muted);">${icon('clock',12)} 매칭 시각: ${relative} · ${time}</div>
  <span class="badge badge-info" style="margin-top:4px;">산책 진행 중</span>
  </div>
  </div>
@@ -1328,26 +1328,38 @@ function _initRequesterLiveMap(req) {
  const container = document.getElementById('requester-live-map');
  if (!container) return;
 
- // 내 위치 기준으로 지도 시작 (줌 14로 넓게)
  const lat = req.pickupLatitude || 37.5665;
  const lng = req.pickupLongitude || 126.978;
- const map = L.map(container).setView([lat, lng], 14);
+ const map = L.map(container).setView([lat, lng], 16);
  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
    attribution: 'ⓒ OpenStreetMap'
  }).addTo(map);
 
- // 내 위치 마커
+ // 내 위치 마커 — GPS로 실제 위치 업데이트
  const myIcon = L.divIcon({ html: '<div style="width:14px;height:14px;background:#3182CE;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>', className: '', iconSize: [14,14], iconAnchor: [7,7] });
- L.marker([lat, lng], { icon: myIcon }).bindPopup('내 위치').addTo(map);
+ let myMarker = L.marker([lat, lng], { icon: myIcon }).bindPopup('내 위치').addTo(map);
+ let myLat = lat, myLng = lng;
+
+ navigator.geolocation.getCurrentPosition((pos) => {
+   myLat = pos.coords.latitude;
+   myLng = pos.coords.longitude;
+   myMarker.setLatLng([myLat, myLng]);
+   map.setView([myLat, myLng], 16);
+ }, () => {}, { timeout: 5000, enableHighAccuracy: true });
 
  // 도우미 마커 (실시간 업데이트) — 내 위치보다 크고 눈에 띄게
  const walkerIcon = L.divIcon({ html: '<div style="width:28px;height:28px;background:#F59E0B;border:3px solid #fff;border-radius:50%;box-shadow:0 3px 12px rgba(245,158,11,0.5);animation:pulse 2s infinite;z-index:1000;position:relative;"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.65rem;font-weight:800;">도</div></div>', className: '', iconSize: [28,28], iconAnchor: [14,14] });
  let walkerMarker = null;
 
- // 두 마커가 모두 보이도록 줌 조정
+ // 두 마커가 모두 보이도록 줌 조정 (서울 전역 확대 방지: 최소 zoom 13 유지)
  function fitBothMarkers(walkerLat, walkerLng) {
-   const bounds = L.latLngBounds([[lat, lng], [walkerLat, walkerLng]]);
-   map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+   const bounds = L.latLngBounds([[myLat, myLng], [walkerLat, walkerLng]]);
+   const computedZoom = map.getBoundsZoom(bounds, false, [50, 50]);
+   if (computedZoom < 13) {
+     map.setView([myLat, myLng], 15);
+   } else {
+     map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+   }
  }
 
  // 도우미 현재 위치 가져오기 (폴링)
@@ -1677,7 +1689,7 @@ async function renderRequesterDashboard(user, myProfile) {
  <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
  <div class="match-walk-card__info">
  <div class="match-walk-card__name">${pName}</div>
- <div style="font-size:0.8rem;color:var(--color-text-muted);">? 매칭 시각: ${relative} · ${time}</div>
+ <div style="font-size:0.8rem;color:var(--color-text-muted);">${icon('clock',12)} 매칭 시각: ${relative} · ${time}</div>
  <span class="badge badge-info" style="margin-top:4px;">산책 진행 중</span>
  </div>
  </div>
