@@ -17,6 +17,7 @@ function initApp() {
     Router.register('/ai-consult', renderAiPage);
     Router.register('/community', renderCommunityPage);
     Router.register('/wallet', renderWalletPage);
+    Router.register('/experts', renderExpertsPage);
     Router.register('/matching', renderMatchingPage);
     Router.register('/health', renderHealthDashboardPage);
     Router.register('/walk-tracking', renderWalkTrackingPage);
