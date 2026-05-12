@@ -27,6 +27,7 @@ const walkRequestRoutes  = require('./routes/walk-requests');
 const walkSessionRoutes  = require('./routes/walk-sessions');
 const walkChatRoutes     = require('./routes/walk-chat');
 const walkReviewRoutes   = require('./routes/walk-review');
+const phoneRoutes        = require('./routes/phone');
 
 const app    = express();
 const server = http.createServer(app);
@@ -78,6 +79,7 @@ app.use('/api/walk-sessions', walkSessionRoutes);
 app.use('/api/walk-chat',     walkChatRoutes);
 app.use('/api/walk-review',   walkReviewRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/phone', phoneRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
 app.use(express.static(path.join(__dirname, '..')));

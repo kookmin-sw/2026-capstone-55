@@ -43,16 +43,17 @@ const AuthService = (() => {
    * 회원가입 (서버 API 연동)
    */
   async function register(data) {
-    const { name, email, password } = data;
+    const { name, email, password, phoneToken } = data;
     if (!name || !name.trim()) return { success: false, error: '이름을 입력하세요.' };
     if (!email || !email.trim()) return { success: false, error: '이메일을 입력하세요.' };
     if (!password || password.length < 4) return { success: false, error: '비밀번호는 4자 이상이어야 합니다.' };
+    if (!phoneToken) return { success: false, error: '핸드폰 인증을 완료해주세요.' };
 
     try {
       const res = await fetch('/api/users/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, phoneToken })
       });
       const result = await res.json();
       if (!result.success) return { success: false, error: result.error };

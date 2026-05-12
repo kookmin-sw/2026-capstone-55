@@ -15,6 +15,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { verifyPhoneToken } = require('./phone');
 
 function hashPassword(password) {
   let hash = 0;
@@ -37,7 +38,7 @@ function generateReferralCode() {
 
 // 이메일 회원가입
 router.post('/register', (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phoneToken } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, error: '모든 항목을 입력하세요.' });
   }
@@ -45,13 +46,29 @@ router.post('/register', (req, res) => {
     return res.status(400).json({ success: false, error: '비밀번호는 4자 이상이어야 합니다.' });
   }
 
+  // 핸드폰 인증 필수
+  if (!phoneToken) {
+    return res.status(400).json({ success: false, error: '핸드폰 인증을 완료해주세요.' });
+  }
+  const phone = verifyPhoneToken(phoneToken);
+  if (!phone) {
+    return res.status(400).json({ success: false, error: '핸드폰 인증이 만료되었습니다. 다시 인증해주세요.' });
+  }
+
   const users = db.get('users', []);
+
+  // 전화번호 중복 체크
+  if (users.find(u => u.phone === phone)) {
+    return res.status(409).json({ success: false, error: '이미 가입된 휴대폰 번호입니다.' });
+  }
+
   const exists = users.find(u => u.email === email.trim().toLowerCase());
   if (exists) {
     // passwordHash가 없는 기존 사용자 → 비밀번호 설정 후 로그인 처리
     if (!exists.passwordHash) {
       exists.passwordHash = hashPassword(password);
       exists.name = exists.name || name.trim();
+      if (!exists.phone) exists.phone = phone;
       db.set('users', users);
       console.log(`[Users] ${email} 기존 계정에 비밀번호 설정 완료`);
       const { passwordHash, ...safeUser } = exists;
@@ -64,6 +81,7 @@ router.post('/register', (req, res) => {
     id: db.generateId(),
     email: email.trim().toLowerCase(),
     name: name.trim(),
+    phone,
     nickname: '',
     passwordHash: hashPassword(password),
     referralCode: generateReferralCode(),

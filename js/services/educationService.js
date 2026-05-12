@@ -59,10 +59,25 @@ const EducationService = (() => {
     };
   }
 
+  function markCategoryComplete(userId, category) {
+    const key = 'education_cat_' + userId;
+    const completed = StorageService.get(key, []);
+    if (!completed.includes(category)) {
+      completed.push(category);
+      StorageService.set(key, completed);
+    }
+  }
+
+  function getCategoryCompleted(userId) {
+    return StorageService.get('education_cat_' + userId, []);
+  }
+
   return {
     getByCategory,
     getById,
     markComplete,
-    getProgress
+    getProgress,
+    markCategoryComplete,
+    getCategoryCompleted
   };
 })();
