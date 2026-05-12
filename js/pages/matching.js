@@ -3,32 +3,7 @@ function renderMatchingPage() {
   const user = AuthService.getCurrentUser();
 
   if (!user) {
-    renderPage(`
-      <div class="page-header">
-        <h1>🤝 산책 매칭</h1>
-        <p>산책 도우미와 요청자를 연결해드려요~ 🐕</p>
-      </div>
-      <div class="match-role-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
-        <div class="card" style="padding:24px; text-align:center; cursor:pointer;" onclick="showLoginModal('산책 도우미로 등록하려면 로그인이 필요해요!')">
-          <div style="font-size:2.5rem; margin-bottom:8px;">🚶‍♂️</div>
-          <h3 style="margin-bottom:4px;">산책 도우미</h3>
-          <p style="font-size:0.82rem; color:var(--color-text-muted);">다른 반려견의 산책을 도와주세요</p>
-        </div>
-        <div class="card" style="padding:24px; text-align:center; cursor:pointer;" onclick="showLoginModal('산책 요청을 하려면 로그인이 필요해요!')">
-          <div style="font-size:2.5rem; margin-bottom:8px;">🙋</div>
-          <h3 style="margin-bottom:4px;">산책 요청자</h3>
-          <p style="font-size:0.82rem; color:var(--color-text-muted);">우리 아이 산책을 부탁해보세요</p>
-        </div>
-      </div>
-      <div class="card" style="padding:20px;">
-        <h3 style="margin-bottom:12px;">📋 매칭 시스템 안내</h3>
-        <div style="font-size:0.9rem; line-height:1.8; color:var(--color-text);">
-          <p>🔹 <strong>산책 도우미</strong>: 활동 지역, 가능 시간, 수용 가능 견종 크기를 등록하면 요청을 받을 수 있어요.</p>
-          <p>🔹 <strong>산책 요청자</strong>: 근처 도우미에게 산책을 요청하고 실시간으로 매칭 상태를 확인할 수 있어요.</p>
-          <p>🔹 매칭 완료 후 <strong>GPS 산책 트래킹</strong>으로 경로를 기록할 수 있어요.</p>
-        </div>
-      </div>
-    `);
+    renderLoginPage();
     return;
   }
 
@@ -61,6 +36,40 @@ function renderMatchingRoleSelect(selectedRole) {
     </style>
 
     <div class="match-flow-hero">
+      <div style="margin-bottom:20px;">
+        <svg width="120" height="90" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 사람 실루엣 -->
+          <circle cx="30" cy="18" r="10" fill="#d1c4e9"/>
+          <rect x="22" y="30" width="16" height="22" rx="6" fill="#b39ddb"/>
+          <line x1="22" y1="40" x2="12" y2="52" stroke="#b39ddb" stroke-width="5" stroke-linecap="round"/>
+          <line x1="38" y1="40" x2="44" y2="52" stroke="#b39ddb" stroke-width="5" stroke-linecap="round"/>
+          <line x1="26" y1="52" x2="22" y2="68" stroke="#b39ddb" stroke-width="5" stroke-linecap="round"/>
+          <line x1="34" y1="52" x2="38" y2="68" stroke="#b39ddb" stroke-width="5" stroke-linecap="round"/>
+          <!-- 리드줄 -->
+          <path d="M44 46 Q70 36 78 50" stroke="#9e9e9e" stroke-width="2.5" stroke-linecap="round" fill="none" stroke-dasharray="4 3"/>
+          <!-- 강아지 몸통 -->
+          <ellipse cx="88" cy="60" rx="18" ry="12" fill="#ffcc80"/>
+          <!-- 강아지 머리 -->
+          <circle cx="106" cy="52" r="11" fill="#ffcc80"/>
+          <!-- 귀 -->
+          <ellipse cx="98" cy="44" rx="5" ry="8" rx2="3" fill="#ffa726" transform="rotate(-20 98 44)"/>
+          <ellipse cx="114" cy="44" rx="4" ry="7" fill="#ffa726" transform="rotate(15 114 44)"/>
+          <!-- 눈 -->
+          <circle cx="109" cy="51" r="2" fill="#5d4037"/>
+          <!-- 코 -->
+          <ellipse cx="115" cy="55" rx="3" ry="2" fill="#bf360c"/>
+          <!-- 꼬리 -->
+          <path d="M70 58 Q62 48 68 42" stroke="#ffa726" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <!-- 다리 -->
+          <rect x="78" y="68" width="7" height="14" rx="3.5" fill="#ffa726"/>
+          <rect x="88" y="68" width="7" height="14" rx="3.5" fill="#ffa726"/>
+          <rect x="97" y="68" width="7" height="14" rx="3.5" fill="#ffa726"/>
+          <!-- 발자국들 -->
+          <ellipse cx="18" cy="80" rx="4" ry="3" fill="#ede7f6" opacity="0.7"/>
+          <ellipse cx="32" cy="85" rx="4" ry="3" fill="#ede7f6" opacity="0.7"/>
+          <ellipse cx="46" cy="80" rx="4" ry="3" fill="#ede7f6" opacity="0.5"/>
+        </svg>
+      </div>
       <h1>어떤 역할로 참여할까요?</h1>
       <p>산책 매칭을 시작하려면 역할을 선택해주세요</p>
     </div>

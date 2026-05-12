@@ -733,6 +733,7 @@ let _kycTimerInterval = null;
 let _kycMethod = 'SMS';   // 'PASS' | 'SMS'
 let _kycCarrier = '';
 let _kycSentPhone = '';
+let _kycOnSuccessCallback = null;
 
 /** 폼에 삽입되는 버튼+뱃지 (이메일 가입 / 소셜 가입 공용) */
 function _phoneVerifyHtml() {
@@ -1178,7 +1179,14 @@ function _onKycSuccess(phoneToken, name, phone) {
   }
 
   // 2초 후 자동 닫기
-  setTimeout(closeKycModal, 2000);
+  setTimeout(() => {
+    closeKycModal();
+    if (_kycOnSuccessCallback) {
+      const cb = _kycOnSuccessCallback;
+      _kycOnSuccessCallback = null;
+      cb(phoneToken, phone);
+    }
+  }, 2000);
 }
 
 /** SMS 3분 타이머 */

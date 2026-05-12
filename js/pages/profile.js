@@ -59,7 +59,12 @@ function renderProfilePage() {
  <p style="color:var(--color-text-light); font-size:0.82rem; margin-bottom:10px;">닉네임</p>
  <p style="color:var(--color-text); font-size:0.9rem;">이름: ${user.name}</p>
  <p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">이메일: ${user.email}</p>
- ${user.phone ? `<p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">휴대폰: ${user.phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')}</p>` : ''}
+ ${user.phone
+   ? `<p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">휴대폰: ${user.phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')}</p>`
+   : `<p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px; display:flex; align-items:center; gap:8px;">
+       <span>휴대폰: <span style="color:var(--color-text-muted);">미등록</span></span>
+       <button onclick="openKycForProfile()" style="padding:2px 12px; border-radius:20px; border:1.5px solid var(--color-primary); background:none; color:var(--color-primary); font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap;">인증하기</button>
+     </p>`}
  <p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">코인: ${user.pawCoins || 0} PAW (${user.pawCoins || 0}원)</p>
  <p style="color:var(--color-text-muted); font-size:0.8rem; margin-top:8px;">가입일: ${new Date(user.createdAt).toLocaleDateString('ko-KR')}</p>
  <p style="color:var(--color-text-muted); font-size:0.72rem; margin-top:4px;">* 이름은 본인만 볼 수 있어요. 다른 사람에게는 닉네임만 표시돼요.</p>
@@ -1102,6 +1107,34 @@ function handleSaveEditDog(idx) {
  StorageService.set('currentUser', updated);
 
  renderProfilePage();
+}
+
+// --- 프로필 전화번호 인증 ---
+function openKycForProfile() {
+  _kycOnSuccessCallback = async (phoneToken, phone) => {
+    const user = AuthService.getCurrentUser();
+    if (!user) return;
+    try {
+      const res = await fetch('/api/phone/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, phoneToken })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const normalized = phone.replace(/[^0-9]/g, '');
+        const updated = { ...user, phone: normalized };
+        StorageService.set('currentUser', updated);
+        showToast('전화번호가 등록되었어요!', 'success');
+        renderProfilePage();
+      } else {
+        showToast(data.error || '전화번호 등록에 실패했어요.', 'error');
+      }
+    } catch(e) {
+      showToast('서버 연결에 실패했어요.', 'error');
+    }
+  };
+  openKycModal();
 }
 
 // --- 로그인 페이지 ---
