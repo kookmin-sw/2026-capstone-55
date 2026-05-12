@@ -23,67 +23,38 @@ function renderMatchingPage() {
 
 /** 역할 선택 화면 */
 function renderMatchingRoleSelect(selectedRole) {
+  const walkerSel = selectedRole === 'walker';
+  const reqSel = selectedRole === 'requester';
+
   renderPage(`
-    <style>
-      .match-flow-hero { text-align:center; padding:48px 0 32px; }
-      .match-flow-hero h1 { font-size:1.5rem; font-weight:700; letter-spacing:-0.5px; margin-bottom:6px; }
-      .match-flow-hero p { font-size:0.88rem; color:var(--color-text-muted); }
-      .match-flow-cards { display:flex; gap:16px; max-width:480px; margin:0 auto; }
-      .match-flow-card { flex:1; padding:32px 20px; border:1.5px solid var(--color-border); border-radius:16px; text-align:center; cursor:pointer; transition:all 0.2s; background:#fff; }
-      .match-flow-card:hover { border-color:var(--color-text); background:#f9f9f7; }
-      .match-flow-card h3 { font-size:1rem; font-weight:700; margin-bottom:6px; }
-      .match-flow-card p { font-size:0.78rem; color:var(--color-text-muted); line-height:1.5; }
-    </style>
-
-    <div class="match-flow-hero">
-      <div style="margin-bottom:20px;">
-        <svg width="120" height="90" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- 사람 실루엣 -->
-          <circle cx="30" cy="18" r="10" fill="#d1c4e9"/>
-          <rect x="22" y="30" width="16" height="22" rx="6" fill="#b39ddb"/>
-          <line x1="22" y1="40" x2="12" y2="52" stroke="#b39ddb" stroke-width="5" stroke-linecap="round"/>
-          <line x1="38" y1="40" x2="44" y2="52" stroke="#b39ddb" stroke-width="5" stroke-linecap="round"/>
-          <line x1="26" y1="52" x2="22" y2="68" stroke="#b39ddb" stroke-width="5" stroke-linecap="round"/>
-          <line x1="34" y1="52" x2="38" y2="68" stroke="#b39ddb" stroke-width="5" stroke-linecap="round"/>
-          <!-- 리드줄 -->
-          <path d="M44 46 Q70 36 78 50" stroke="#9e9e9e" stroke-width="2.5" stroke-linecap="round" fill="none" stroke-dasharray="4 3"/>
-          <!-- 강아지 몸통 -->
-          <ellipse cx="88" cy="60" rx="18" ry="12" fill="#ffcc80"/>
-          <!-- 강아지 머리 -->
-          <circle cx="106" cy="52" r="11" fill="#ffcc80"/>
-          <!-- 귀 -->
-          <ellipse cx="98" cy="44" rx="5" ry="8" rx2="3" fill="#ffa726" transform="rotate(-20 98 44)"/>
-          <ellipse cx="114" cy="44" rx="4" ry="7" fill="#ffa726" transform="rotate(15 114 44)"/>
-          <!-- 눈 -->
-          <circle cx="109" cy="51" r="2" fill="#5d4037"/>
-          <!-- 코 -->
-          <ellipse cx="115" cy="55" rx="3" ry="2" fill="#bf360c"/>
-          <!-- 꼬리 -->
-          <path d="M70 58 Q62 48 68 42" stroke="#ffa726" stroke-width="5" stroke-linecap="round" fill="none"/>
-          <!-- 다리 -->
-          <rect x="78" y="68" width="7" height="14" rx="3.5" fill="#ffa726"/>
-          <rect x="88" y="68" width="7" height="14" rx="3.5" fill="#ffa726"/>
-          <rect x="97" y="68" width="7" height="14" rx="3.5" fill="#ffa726"/>
-          <!-- 발자국들 -->
-          <ellipse cx="18" cy="80" rx="4" ry="3" fill="#ede7f6" opacity="0.7"/>
-          <ellipse cx="32" cy="85" rx="4" ry="3" fill="#ede7f6" opacity="0.7"/>
-          <ellipse cx="46" cy="80" rx="4" ry="3" fill="#ede7f6" opacity="0.5"/>
-        </svg>
-      </div>
-      <h1>어떤 역할로 참여할까요?</h1>
-      <p>산책 매칭을 시작하려면 역할을 선택해주세요</p>
+    <div class="page-header">
+      <h1>산책 매칭</h1>
+      <p>산책 도우미와 요청자를 연결해드려요.</p>
     </div>
 
-    <div class="match-flow-cards">
-      <div class="match-flow-card" onclick="openMatchRegisterFlow('walker')">
-        <h3>산책 도우미</h3>
-        <p>다른 분의 반려견을<br>산책시켜 드려요</p>
+    <div class="match-role-grid">
+      <div class="match-role-card ${walkerSel ? 'match-role-card--selected' : ''}" onclick="openMatchRegisterFlow('walker')">
+        ${walkerSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
+        <div class="match-role-card__img-wrap">
+          <img src="/images/dog_walker.png" alt="산책 도우미" class="match-role-card__img">
+        </div>
+        <div class="match-role-card__body">
+          <h3 class="match-role-card__title">산책 도우미</h3>
+          <p class="match-role-card__desc">다른 분의 반려견을<br>산책시켜 드려요</p>
+        </div>
       </div>
-      <div class="match-flow-card" onclick="openMatchRegisterFlow('requester')">
-        <h3>산책 요청자</h3>
-        <p>우리 아이 산책을<br>부탁하고 싶어요</p>
+      <div class="match-role-card ${reqSel ? 'match-role-card--selected' : ''}" onclick="openMatchRegisterFlow('requester')">
+        ${reqSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
+        <div class="match-role-card__img-wrap">
+          <img src="/images/dog_owner.png" alt="산책 요청자" class="match-role-card__img">
+        </div>
+        <div class="match-role-card__body">
+          <h3 class="match-role-card__title">산책 요청자</h3>
+          <p class="match-role-card__desc">우리 아이 산책을<br>부탁하고 싶어요</p>
+        </div>
       </div>
     </div>
+    ${!selectedRole ? '<p class="match-role-hint">위 카드를 클릭해서 역할을 선택해주세요</p>' : ''}
   `);
 }
 
