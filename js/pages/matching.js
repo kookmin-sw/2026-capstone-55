@@ -1485,8 +1485,32 @@ async function startAiScoreCalc() {
  if (!btn || !overlay) return;
  btn.disabled = true;
  btn.innerHTML = `<span class="spinner" style="width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff;margin-right:8px;"></span> AI 분석 중...`;
- const walkers = window._aiCalcWalkers || [];
- const profile = window._aiCalcProfile || {};
+
+ // 버튼 클릭 시 서버에서 최신 워커 목록을 다시 가져옴
+ // (페이지 첫 렌더링 시 GPS가 아직 refresh 전일 수 있어 캐시가 구형일 수 있음)
+ await MatchingService.refreshFromServer();
+
+ const _user = AuthService.getCurrentUser();
+ const _myProfile = _user ? MatchingService.getMyProfile(_user.id) : {};
+ const freshWalkers = MatchingService.getAvailableWalkers()
+   .filter(w => w.userId !== _user?.id);
+
+ // DOM에 있는 카드들의 userId 집합
+ const domIds   = new Set(Array.from(document.querySelectorAll('.walker-card-item')).map(c => c.getAttribute('data-walker-id')));
+ const freshIds = new Set(freshWalkers.map(w => w.userId));
+ const hasStaleCards = freshWalkers.some(w => !domIds.has(w.userId)) || (domIds.size > 0 && [...domIds].some(id => !freshIds.has(id)));
+
+ if (hasStaleCards) {
+   // DOM의 워커가 최신 서버 데이터와 다름 → 페이지 재렌더링 후 AI 계산 자동 재시작
+   window._aiCalcWalkers = freshWalkers;
+   window._aiCalcProfile = _myProfile;
+   window._aiCalcAutoStart = true; // 재렌더 후 자동 실행 플래그
+   await renderRequesterDashboard(_user, _myProfile);
+   return;
+ }
+
+ const walkers = window._aiCalcWalkers || freshWalkers;
+ const profile = window._aiCalcProfile || _myProfile;
  await fetchAiScoresAndUpdateCards(walkers, profile);
  overlay.style.transition = 'opacity 0.4s';
  overlay.style.opacity = '0';
@@ -2201,6 +2225,12 @@ async function renderRequesterDashboard(user, myProfile) {
  // AI 점수는 버튼 클릭 시에만 계산 (API 토큰 절약)
  window._aiCalcWalkers = availWalkers;
  window._aiCalcProfile = myProfile;
+
+ // 구형 캐시로 렌더링됐다가 재렌더된 경우 AI 계산 자동 시작
+ if (window._aiCalcAutoStart) {
+   window._aiCalcAutoStart = false;
+   setTimeout(() => startAiScoreCalc(), 600);
+ }
 
  renderDirectWalkHistory(user.id, 'requester').then(({ html, hasRecords }) => {
  const section = document.getElementById('direct-history-section');
