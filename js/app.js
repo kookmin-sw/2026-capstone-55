@@ -201,8 +201,9 @@ function showPaymentConfirmModal({ dogSize, dogName, duration = 40 }) {
           payBtn.textContent = '반려견을 선택해주세요';
           payBtn.disabled = true;
           payBtn.style.opacity = '0.5';
-     }
-}
+        }
+      }
+    }  // end updateSummary
 
     // 이벤트 바인딩
     modal.querySelectorAll('.pay-dog-cb').forEach(cb => cb.addEventListener('change', updateSummary));
@@ -3372,3 +3373,4 @@ function clearAllNotifications() {
   const panel = document.getElementById('notification-panel');
   if (panel) { panel.remove(); toggleNotificationPanel(); }
 }
+} // close _initWalkSessionMap
