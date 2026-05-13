@@ -155,33 +155,30 @@ async function _renderDiscMap(userLat, userLng, radiusKm) {
  ].filter(Boolean).join('');
 
  const popupHtml = `
- <div style="font-family:inherit;width:300px;">
-   <!-- 상단: 얼굴 사진 크게 (sticky) -->
-   <div style="background:linear-gradient(160deg,#1a1a1a 0%,#2d2d2d 100%);padding:24px 20px 20px;text-align:center;position:sticky;top:0;z-index:2;border-radius:20px 20px 0 0;">
-     <div style="width:88px;height:88px;border-radius:50%;margin:0 auto 12px;border:3px solid #fff;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.35);background:#333;">
+ <div style="font-family:inherit;width:300px;border-radius:20px;overflow:hidden;">
+   <!-- 상단: 헤더 (고정, 스크롤 안됨) -->
+   <div style="background:linear-gradient(160deg,#1a1a1a 0%,#2d2d2d 100%);padding:22px 20px 18px;text-align:center;">
+     <div style="width:86px;height:86px;border-radius:50%;margin:0 auto 12px;border:3px solid #fff;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.35);background:#333;">
        ${photo
          ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;display:block;">`
          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2rem;font-weight:800;">${(w.userName||'?').charAt(0)}</div>`}
      </div>
-     <div style="color:#fff;font-size:1.05rem;font-weight:800;margin-bottom:3px;">${w.userName || '도우미'}</div>
-     <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+     <div style="color:#fff;font-size:1.05rem;font-weight:800;margin-bottom:4px;">${w.userName || '도우미'}</div>
+     <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
        <span style="color:#00AA76;font-size:0.72rem;font-weight:700;">● ON</span>
        <span style="color:rgba(255,255,255,0.6);font-size:0.72rem;">${stars} ${(w.rating||5).toFixed(1)} · 리뷰 ${w.reviewCount||0}건</span>
        ${distTxt ? `<span style="color:#00AA76;font-size:0.72rem;font-weight:700;">${distTxt}</span>` : ''}
      </div>
    </div>
-   <!-- 본문 -->
-   <div style="background:#fff;padding:16px 18px;">
+   <!-- 본문: 이 div만 스크롤됨 -->
+   <div style="background:#fff;padding:16px 18px;max-height:240px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
      ${w.message ? `<div style="font-size:0.8rem;color:#555;line-height:1.55;margin-bottom:12px;padding:10px 12px;background:#f8f8f6;border-radius:10px;font-style:italic;">"${w.message}"</div>` : ''}
-     <!-- 태그 -->
      ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;">${tags}</div>` : ''}
-     <!-- 상세 정보 -->
      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:0.78rem;color:#555;">
        ${w.location ? `<div style="display:flex;gap:8px;"><span style="color:#aaa;min-width:40px;">위치</span><span style="color:#1a1a1a;font-weight:600;">${w.location.replace('서울특별시 ','')}</span></div>` : ''}
        ${w.ownPetExp && w.ownPetExp !== 'none' ? `<div style="display:flex;gap:8px;"><span style="color:#aaa;min-width:40px;">양육</span><span>${{current:'현재 반려견 양육 중',past:'과거 양육 경험'}[w.ownPetExp]||''}</span></div>` : ''}
        ${(w.breedExp||[]).length > 0 ? `<div style="display:flex;gap:8px;"><span style="color:#aaa;min-width:40px;">견종</span><span>${w.breedExp.slice(0,4).join(' · ')}</span></div>` : ''}
      </div>
-     <!-- 가격 + 버튼 -->
      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f8f8f6;border-radius:10px;margin-bottom:12px;">
        <span style="font-size:0.75rem;color:#999;">40분 기준</span>
        <span style="font-size:1.05rem;font-weight:900;color:#1a1a1a;">${walkPrice.toLocaleString()}원~</span>
