@@ -60,15 +60,11 @@ router.post('/analyze', async (req, res) => {
         const allDocs = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
         uploadedDocs = allDocs.filter(d => d.userId === userId);
         // 특정 반려견 선택 시 해당 반려견 서류만 필터
-        if (dogInfo?.name && !dogInfo?.allDogs && dogInfo?.healthDocuments) {
-          const dogId = uploadedDocs.length > 0 ? uploadedDocs[0]?.dogId : null;
-          if (dogInfo.healthDocuments.length > 0) {
-            // 프론트에서 전달된 dogId 기반 필터링
-            const frontDogIds = dogInfo.healthDocuments.map(d => d.dogId).filter(Boolean);
-            if (frontDogIds.length > 0) {
-              uploadedDocs = uploadedDocs.filter(d => frontDogIds.includes(d.dogId));
-            }
-          }
+        if (dogInfo?.name && !dogInfo?.allDogs) {
+          const filtered = uploadedDocs.filter(d => 
+            d.dogName === dogInfo.name || d.dogId === dogInfo.name
+          );
+          if (filtered.length > 0) uploadedDocs = filtered;
         }
       }
     } catch(e) {}
@@ -80,6 +76,10 @@ router.post('/analyze', async (req, res) => {
     const allergyDocs = uploadedDocs.filter(d => d.type === 'allergy');
     const medicationDocs = uploadedDocs.filter(d => d.type === 'medication');
     const diagnosisDocs = uploadedDocs.filter(d => d.type === 'diagnosis');
+    const imageDocs = uploadedDocs.filter(d => {
+      const ext = (d.filename || '').toLowerCase();
+      return ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.png');
+    });
 
     // 산책 데이터 요약
     const recentWalks = walks.slice(-30);
@@ -124,6 +124,7 @@ ${dogInfo?.allDogs ? dogInfo.allDogs.map((d, i) => `### 반려견 ${i+1}: ${d.na
 - 알러지 / 질병 진단서: ${allergyDocs.length > 0 ? allergyDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
 - 복용 약 / 투약 기록: ${medicationDocs.length > 0 ? medicationDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
 - 진단서(기타): ${diagnosisDocs.length > 0 ? diagnosisDocs.map(d => d.originalName + ' (' + new Date(d.uploadedAt).toLocaleDateString('ko-KR') + ')').join(', ') : '미등록'}
+${imageDocs.length > 0 ? '\n※ 첨부된 이미지 서류를 분석하여 건강 상태 평가에 반영해주세요. 서류에 기재된 검사 수치, 접종 내역, 진단 내용 등을 참고하세요.' : ''}
 
 ## 최근 산책 데이터 (최대 30일)
 - 총 산책 횟수: ${recentWalks.length}회
@@ -138,12 +139,13 @@ ${dogInfo?.allDogs ? dogInfo.allDogs.map((d, i) => `### 반려견 ${i+1}: ${d.na
   "behaviorAnalysis": {
     "pattern": "활동 패턴 설명",
     "consistency": "규칙성 평가 (상/중/하)",
+    "keywords": ["짧은 키워드 3~4개 (예: 규칙적 산책, 적정 활동량, 관절 주의)"],
     "recommendation": "행동 패턴 개선 제안"
   },
   "obesityRisk": {
     "level": "위험도 (낮음/보통/높음/매우높음)",
     "score": 0-100 숫자,
-    "factors": ["위험 요인들"],
+    "factors": ["짧은 키워드 형태의 위험 요인 3~4개 (예: 정상 체중 유지, 규칙적 산책 활동, 중성화로 인한 대사량 감소)"],
     "recommendation": "비만 예방 제안"
   },
   "dietRecommendation": {
@@ -159,10 +161,27 @@ ${dogInfo?.allDogs ? dogInfo.allDogs.map((d, i) => `### 반려견 ${i+1}: ${d.na
     "note": "예방접종 관련 참고사항"
   },
   "overallScore": 0-100 숫자,
+  "summaryKeywords": ["짧은 키워드 3~4개 (예: 건강 체중 유지, 규칙적 활동, 관절 관리 필요)"],
   "summary": "종합 건강 평가 요약 (2-3문장)"
 }`;
 
-    const result = await model.generateContent(prompt);
+    // 이미지 서류가 있으면 Gemini에 멀티모달로 전달
+    let parts = [{ text: prompt }];
+    for (const doc of imageDocs.slice(0, 5)) {
+      try {
+        const filePath = path.join(__dirname, '..', 'uploads', doc.filename);
+        if (fs.existsSync(filePath)) {
+          const imageData = fs.readFileSync(filePath);
+          const ext = path.extname(doc.filename).toLowerCase();
+          const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
+          parts.push({
+            inlineData: { mimeType, data: imageData.toString('base64') }
+          });
+        }
+      } catch(e) {}
+    }
+
+    const result = await model.generateContent(parts);
     const text = result.response.text();
 
     // JSON 파싱

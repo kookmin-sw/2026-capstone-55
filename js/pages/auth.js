@@ -107,6 +107,9 @@ function renderRegisterPage() {
  </div>
  <input type="hidden" id="reg-email-verified" value="false">
 
+ <!-- 핸드폰 인증 -->
+ ${_phoneVerifyHtml()}
+
  <div style="background:var(--color-bg-warm); border:2px solid var(--color-border); border-radius:12px; padding:16px; margin-bottom:16px;">
  <p style="font-size:0.82rem; color:var(--color-text-light); margin-bottom:10px;">Pawsitive 서비스 이용을 위해 이름, 이메일을 수집하며 회원 탈퇴 시까지 보유합니다.</p>
  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:6px;">
@@ -188,6 +191,10 @@ function renderSocialAgreePage() {
  <span style="font-size:0.85rem; font-weight:700; color:var(--color-text);">[필수] Pawsitive 이용약관에 동의합니다</span>
  </label>
 
+ <!-- 핸드폰 인증 -->
+ <div id="social-phone-error"></div>
+ ${_phoneVerifyHtml()}
+
  <button class="btn btn-primary" style="width:100%; opacity:0.5;" id="agree-submit-btn" onclick="handleSocialAgreeSubmit()" disabled>동의하고 가입하기 </button>
  <button class="btn btn-secondary" style="width:100%; margin-top:8px;" onclick="handleSocialAgreeCancel()">취소</button>
  </div>
@@ -210,9 +217,18 @@ function renderSocialAgreePage() {
 /**
  * 소셜 동의 완료 → 실제 가입 처리
  */
-function handleSocialAgreeSubmit() {
+async function handleSocialAgreeSubmit() {
  const userData = StorageService.get('pendingSocialUser');
  if (!userData) { Router.navigate('/register'); return; }
+
+ // 핸드폰 인증 확인
+ const phoneToken = document.getElementById('reg-phone-token')?.value;
+ if (!phoneToken) {
+  const errEl = document.getElementById('social-phone-error');
+  if (errEl) errEl.innerHTML = '<div class="alert alert-error">핸드폰 인증을 완료해주세요.</div>';
+  document.getElementById('reg-phone')?.focus();
+  return;
+ }
 
  const socialKey = userData.provider + '_' + userData.providerId;
  const existingUsers = StorageService.get('users', []);
@@ -236,11 +252,24 @@ function handleSocialAgreeSubmit() {
  StorageService.remove('pendingSocialUser');
 
  // 서버에 유저 동기화
- fetch('/api/users/sync', {
+ await fetch('/api/users/sync', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ ...user, pawCoins: 3000 })
  }).catch(() => {});
+
+ // 핸드폰 번호 서버에 연결 (phoneToken 검증 + phone 저장)
+ const linkRes = await fetch('/api/phone/link', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ userId: user.id, phoneToken })
+ }).catch(() => null);
+ if (linkRes && !linkRes.ok) {
+  const linkData = await linkRes.json().catch(() => ({}));
+  const errEl = document.getElementById('social-phone-error');
+  if (errEl) errEl.innerHTML = `<div class="alert alert-error">${linkData.error || '핸드폰 인증 연결에 실패했습니다.'}</div>`;
+  return;
+ }
 
  // 가입 축하 3,000 PAW 코인 지급
  if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
@@ -258,7 +287,6 @@ function handleSocialAgreeSubmit() {
  });
 
  updateNavAuth();
- // 닉네임 + 추천인 설정 페이지로 이동
  alert(' 회원가입을 축하해요!\n\n가입 축하 3,000 PAW 코인이 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');
  Router.navigate('/welcome-setup');
 }
@@ -567,6 +595,7 @@ async function handleLogin() {
  }
  }
  updateNavAuth();
+ getNotifications(); updateBellBadge(); loadServerNotices();
  Router.navigate('/');
  } else {
  if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
@@ -668,7 +697,7 @@ function handleDeleteAccount() {
 /**
  * 실제 탈퇴 실행
  */
-function executeDeleteAccount() {
+async function executeDeleteAccount() {
  const user = AuthService.getCurrentUser();
  if (!user) return;
 
@@ -676,10 +705,12 @@ function executeDeleteAccount() {
  const overlay = document.getElementById('delete-modal-overlay');
  if (overlay) overlay.remove();
 
- // 사용자 데이터 삭제 (카카오 unlink 안 함 ? 로그인 시 동의 화면 방지)
+ // 서버 DB에서 삭제 (전화번호 포함 모든 데이터 제거 → 같은 번호로 재가입 가능)
+ await fetch(`/api/users/${user.id}`, { method: 'DELETE' }).catch(() => {});
+
+ // 로컬 스토리지에서 삭제
  const users = StorageService.get('users', []);
- const filtered = users.filter(u => u.id !== user.id);
- StorageService.set('users', filtered);
+ StorageService.set('users', users.filter(u => u.id !== user.id));
 
  // 매칭 프로필 삭제
  if (typeof MatchingService !== 'undefined' && MatchingService.removeProfile) {
@@ -695,5 +726,534 @@ function executeDeleteAccount() {
  alert('회원탈퇴가 완료되었어요.\n그동안 이용해주셔서 감사합니다 ');
  window.location.replace('/auth/logout');
  }, 100);
+}
+
+// ─── 본인인증 모달 시스템 ────────────────────────────────────────────────────
+
+let _kycTimerInterval = null;
+let _kycMethod = 'SMS';
+let _kycCarrier = '';
+let _kycSentPhone = '';
+let _kycOnSuccessCallback = null;
+
+const _KYC_CHECK_SVG = `<svg width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,4.5 4.5,8 11,1"/></svg>`;
+
+/** 폼에 삽입되는 버튼+뱃지 (이메일 가입 / 소셜 가입 공용) */
+function _phoneVerifyHtml() {
+  return `
+  <div style="border-top:1px solid var(--color-border-light);margin:20px 0 16px;padding-top:18px;">
+    <p style="font-size:0.8rem;font-weight:700;color:var(--color-text);margin-bottom:10px;">
+      📱 본인인증 <span style="color:var(--color-error);font-size:0.75rem;font-weight:500;">필수 — 중복 가입 방지용</span>
+    </p>
+    <button type="button" id="kyc-open-btn" onclick="openKycModal()"
+      style="width:100%;padding:13px;border-radius:12px;border:2px solid var(--color-border);background:#fff;font-size:0.92rem;font-weight:700;color:var(--color-text);cursor:pointer;transition:all 0.15s;"
+      onmouseenter="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary-dark)'"
+      onmouseleave="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text)'">
+      휴대폰 본인인증하기
+    </button>
+    <div id="kyc-verified-badge" style="display:none;margin-top:10px;padding:12px 16px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;align-items:center;gap:8px;">
+      <span style="font-size:1.1rem;">✅</span>
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:#15803d;" id="kyc-badge-name"></div>
+        <div style="font-size:0.78rem;color:#166534;" id="kyc-badge-phone"></div>
+      </div>
+    </div>
+    <input type="hidden" id="reg-phone-token" value="">
+  </div>
+  `;
+}
+
+/** 본인인증 모달 열기 */
+function openKycModal() {
+  if (document.getElementById('kyc-modal-overlay')) return;
+
+  const mvnoList = ['KT엠모바일','SK세븐모바일','헬로모바일','U+알뜰모바일','LG헬로비전','에스원','프리텔레콤','아이즈모바일','기타 알뜰폰'];
+  const mvnoOptions = mvnoList.map(m => `<option value="${m}">${m}</option>`).join('');
+
+  const carriers = [
+    { id:'SKT',  name:'SK텔레콤', abbr:'SKT',  iBg:'#FEE2E2', iFg:'#DC2626', sBg:'#FEF2F2', sBd:'#DC2626' },
+    { id:'KT',   name:'KT',       abbr:'kt',   iBg:'#FFF7ED', iFg:'#EA580C', sBg:'#FFF7ED', sBd:'#EA580C' },
+    { id:'LG',   name:'LG U+',    abbr:'U+',   iBg:'#FAE8FF', iFg:'#A21CAF', sBg:'#FAE8FF', sBd:'#A21CAF' },
+    { id:'MVNO', name:'알뜰폰',   abbr:'알뜰', iBg:'#F1F5F9', iFg:'#475569', sBg:'#F8FAFC', sBd:'#64748b' }
+  ];
+  const carrierGrid = carriers.map(c => `
+    <button type="button" id="kyc-carrier-${c.id}" onclick="kycSelectCarrier('${c.id}')"
+      style="padding:18px 14px;border-radius:14px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;transition:all 0.15s;text-align:left;">
+      <div id="kyc-cicon-${c.id}" style="width:42px;height:42px;border-radius:10px;background:${c.iBg};display:flex;align-items:center;justify-content:center;margin-bottom:10px;transition:all 0.15s;">
+        <span id="kyc-cspan-${c.id}" style="font-size:${c.id==='KT'?'1rem':'0.74rem'};font-weight:900;color:${c.iFg};letter-spacing:-0.5px;${c.id==='KT'?'font-style:italic;':''}">${c.abbr}</span>
+      </div>
+      <div style="font-size:0.88rem;font-weight:700;color:#1a1a1a;">${c.name}</div>
+    </button>`).join('');
+
+  const otpBoxes = [0,1,2,3,4,5].map(() =>
+    `<input type="text" inputmode="numeric" maxlength="1" class="kyc-otp-box"
+      style="width:46px;height:56px;border-radius:12px;border:2px solid #e2e8f0;font-size:1.5rem;font-weight:800;text-align:center;color:#1a1a1a;outline:none;transition:all 0.15s;box-sizing:border-box;"
+      oninput="kycOtpInput(this)" onkeydown="kycOtpKeydown(this,event)" onpaste="kycOtpPaste(event)"
+      onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.08)'"
+      onblur="this.style.borderColor=this.value?'#1a1a1a':'#e2e8f0';this.style.boxShadow='none'">`
+  ).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'kyc-modal-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 0.15s;';
+  overlay.innerHTML = `
+  <div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding-bottom:24px;max-height:92vh;overflow-y:auto;animation:slideUp 0.25s ease-out;">
+
+    <!-- 헤더 -->
+    <div style="position:sticky;top:0;background:#fff;border-radius:24px 24px 0 0;z-index:1;">
+      <div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 16px;">
+        <button id="kyc-back-btn" onclick="kycGoBack()"
+          style="width:36px;height:36px;border-radius:50%;border:none;background:#f1f5f9;font-size:1.3rem;cursor:pointer;color:#374151;opacity:0;pointer-events:none;transition:opacity 0.2s;line-height:1;">‹</button>
+        <div id="kyc-header-title" style="font-size:1rem;font-weight:800;color:#1a1a1a;position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;">휴대폰 본인인증</div>
+        <button onclick="closeKycModal()" style="width:36px;height:36px;border-radius:50%;border:none;background:#f1f5f9;font-size:0.85rem;cursor:pointer;color:#64748b;">✕</button>
+      </div>
+      <div style="height:1px;background:#f1f5f9;"></div>
+    </div>
+
+    <div style="padding:20px 20px 0;">
+
+      <!-- ── STEP 1: 통신사 선택 ── -->
+      <div id="kyc-step-carrier">
+        <p style="font-size:0.85rem;color:#64748b;text-align:center;margin:0 0 18px;">이용 중인 통신사를 선택해 주세요</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">${carrierGrid}</div>
+        <div id="kyc-mvno-wrap" style="display:none;margin-bottom:14px;">
+          <select id="kyc-mvno-select" class="form-input" style="width:100%;">
+            <option value="">알뜰폰 통신사 선택</option>${mvnoOptions}
+          </select>
+        </div>
+        <div id="kyc-carrier-error" style="min-height:0;margin-bottom:8px;"></div>
+
+        <!-- 약관 동의 -->
+        <div style="border:1.5px solid #e2e8f0;border-radius:14px;overflow:hidden;margin-bottom:18px;">
+          <div onclick="kycToggleAllNew()" style="padding:14px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;">
+            <div id="kyc-all-check" data-on="0" style="width:22px;height:22px;border-radius:6px;border:2px solid #d1d5db;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;color:#fff;"></div>
+            <span style="font-size:0.9rem;font-weight:700;color:#1a1a1a;">전체 동의하기</span>
+          </div>
+          ${['[필수] 개인정보 수집·이용 동의','[필수] 고유식별정보 처리 동의','[필수] 통신사 서비스 이용약관 동의'].map((t,i,a) => `
+          <div onclick="kycToggleItem(this)" style="padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;${i<a.length-1?'border-bottom:1px solid #f8fafc;':''}">
+            <div class="kyc-chk" data-on="0" style="width:20px;height:20px;border-radius:5px;border:1.5px solid #d1d5db;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;color:#fff;"></div>
+            <span style="font-size:0.8rem;color:#374151;">${t}</span>
+          </div>`).join('')}
+        </div>
+
+        <!-- 두 액션 버튼 -->
+        <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:4px;">
+          <button type="button" onclick="kycChooseMethod('PASS')"
+            style="width:100%;padding:16px;border-radius:14px;border:none;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.15s;"
+            onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">
+            <span style="background:#fff;color:#1a1a1a;font-size:0.68rem;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:0.5px;">PASS</span>
+            PASS 앱으로 인증하기
+          </button>
+          <button type="button" onclick="kycChooseMethod('SMS')"
+            style="width:100%;padding:16px;border-radius:14px;border:1.5px solid #d1d5db;background:#fff;color:#374151;font-size:0.95rem;font-weight:700;cursor:pointer;transition:background 0.15s;"
+            onmouseenter="this.style.background='#f9fafb'" onmouseleave="this.style.background='#fff'">
+            문자(SMS)로 인증하기
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: 정보 입력 ── -->
+      <div id="kyc-step-info" style="display:none;">
+        <p style="font-size:0.85rem;color:#64748b;text-align:center;margin:0 0 18px;">본인 정보를 입력해 주세요</p>
+        <div id="kyc-info-error" style="min-height:0;margin-bottom:10px;"></div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:0.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">이름</label>
+          <input id="kyc-name" type="text" placeholder="실명 입력" class="form-input" style="width:100%;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:0.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">생년월일 <span style="font-weight:400;color:#94a3b8;">6자리 (예: 990101)</span></label>
+          <input id="kyc-birth" type="text" placeholder="990101" maxlength="6" class="form-input"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="width:100%;letter-spacing:4px;">
+        </div>
+        <div style="margin-bottom:22px;">
+          <label style="font-size:0.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">휴대폰 번호</label>
+          <input id="kyc-phone" type="tel" placeholder="010-0000-0000" class="form-input"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/^(01[016789])([0-9]{3,4})([0-9]{4})$/,'$1-$2-$3')"
+            style="width:100%;">
+        </div>
+        <button id="kyc-info-btn" type="button" onclick="kycSubmitInfo()"
+          style="width:100%;padding:16px;border-radius:14px;border:none;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;margin-bottom:10px;"
+          onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">
+          인증번호 받기
+        </button>
+      </div>
+
+      <!-- ── STEP 3a: PASS 대기 ── -->
+      <div id="kyc-step-pass" style="display:none;text-align:center;padding:12px 0 20px;">
+        <div style="position:relative;width:90px;height:90px;margin:0 auto 22px;">
+          <div style="position:absolute;inset:0;border-radius:50%;background:#e5e7eb;animation:kycPulse 2s ease-in-out infinite;"></div>
+          <div style="position:absolute;inset:10px;border-radius:50%;background:#d1d5db;animation:kycPulse 2s ease-in-out infinite 0.4s;"></div>
+          <div style="position:absolute;inset:20px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:0.58rem;font-weight:900;color:#fff;letter-spacing:0.5px;">PASS</span>
+          </div>
+        </div>
+        <div style="font-size:1rem;font-weight:800;color:#1a1a1a;margin-bottom:8px;">PASS 앱에서 인증을 완료해 주세요</div>
+        <div style="font-size:0.82rem;color:#64748b;margin-bottom:22px;line-height:1.6;">PASS 앱 알림을 확인하고<br>인증 버튼을 눌러주세요</div>
+        <div style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;background:#f8fafc;font-size:0.82rem;color:#64748b;margin-bottom:6px;">
+          <div style="width:14px;height:14px;border:2px solid #d1d5db;border-top-color:#64748b;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
+          인증 대기 중...
+        </div>
+        <div id="kyc-pass-timer" style="font-size:0.75rem;color:#94a3b8;margin-bottom:24px;min-height:18px;"></div>
+        <button type="button" onclick="kycRetry()" style="padding:11px 28px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-size:0.83rem;color:#64748b;cursor:pointer;">다시 시도</button>
+      </div>
+
+      <!-- ── STEP 3b: SMS OTP ── -->
+      <div id="kyc-step-sms" style="display:none;padding-bottom:8px;">
+        <div style="text-align:center;margin-bottom:22px;">
+          <div style="width:58px;height:58px;border-radius:50%;background:#f8fafc;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 12px;">💬</div>
+          <div style="font-size:0.95rem;font-weight:800;color:#1a1a1a;margin-bottom:6px;">인증번호를 입력해 주세요</div>
+          <div id="kyc-sms-desc" style="font-size:0.82rem;color:#64748b;line-height:1.5;"></div>
+        </div>
+        <div id="kyc-sms-error" style="min-height:0;margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;">${otpBoxes}</div>
+        <input type="hidden" id="kyc-otp-input">
+        <div id="kyc-sms-timer" style="font-size:0.78rem;color:#ef4444;text-align:center;margin-bottom:18px;min-height:18px;"></div>
+        <button type="button" onclick="kycVerifySms()"
+          style="width:100%;padding:16px;border-radius:14px;border:none;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;margin-bottom:10px;"
+          onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">
+          인증번호 확인
+        </button>
+        <button type="button" onclick="kycRetry()" style="width:100%;padding:13px;border-radius:14px;border:1.5px solid #e2e8f0;background:#fff;font-size:0.88rem;color:#64748b;cursor:pointer;">
+          다시 시도
+        </button>
+      </div>
+
+      <!-- ── STEP 4: 완료 ── -->
+      <div id="kyc-step-success" style="display:none;text-align:center;padding:24px 0 16px;">
+        <div style="width:80px;height:80px;border-radius:50%;background:#f0fdf4;border:3px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto 20px;animation:kycBounce 0.4s ease-out;">✅</div>
+        <div style="font-size:1.1rem;font-weight:800;color:#15803d;margin-bottom:6px;">본인인증 완료!</div>
+        <div id="kyc-success-info" style="font-size:0.88rem;color:#166534;margin-bottom:28px;"></div>
+        <button type="button" onclick="closeKycModal()"
+          style="width:100%;padding:15px;border-radius:14px;border:none;background:var(--color-primary);color:#fff;font-size:0.97rem;font-weight:800;cursor:pointer;">
+          확인
+        </button>
+      </div>
+
+    </div>
+  </div>
+  <style>
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+    @keyframes spin    { to{transform:rotate(360deg)} }
+    @keyframes kycPulse  { 0%,100%{transform:scale(1);opacity:.4} 50%{transform:scale(1.1);opacity:.15} }
+    @keyframes kycBounce { 0%{transform:scale(.5);opacity:0} 60%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+  </style>
+  `;
+  document.body.appendChild(overlay);
+  _kycMethod = 'SMS';
+  _kycCarrier = '';
+}
+
+function closeKycModal() {
+  if (_kycTimerInterval) clearInterval(_kycTimerInterval);
+  const el = document.getElementById('kyc-modal-overlay');
+  if (el) el.remove();
+}
+
+/** 헤더 뒤로가기: 정보입력 → 통신사 선택 */
+function kycGoBack() {
+  if (_kycTimerInterval) clearInterval(_kycTimerInterval);
+  ['kyc-step-info','kyc-step-pass','kyc-step-sms'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('kyc-step-carrier').style.display = 'block';
+  const bb = document.getElementById('kyc-back-btn');
+  bb.style.opacity = '0'; bb.style.pointerEvents = 'none';
+  document.getElementById('kyc-header-title').textContent = '휴대폰 본인인증';
+}
+
+/** 다시 시도: PASS/SMS 대기 → 정보 입력 */
+function kycRetry() {
+  if (_kycTimerInterval) clearInterval(_kycTimerInterval);
+  document.getElementById('kyc-step-pass').style.display = 'none';
+  document.getElementById('kyc-step-sms').style.display = 'none';
+  document.getElementById('kyc-step-info').style.display = 'block';
+  document.getElementById('kyc-header-title').textContent = _kycMethod === 'PASS' ? 'PASS 앱 인증' : 'SMS 인증';
+}
+
+function kycSelectCarrier(id) {
+  _kycCarrier = id;
+  const def = { SKT:['#FEE2E2','#DC2626'], KT:['#FFF7ED','#EA580C'], LG:['#FAE8FF','#A21CAF'], MVNO:['#F1F5F9','#475569'] };
+  const sel = { SKT:['#FEF2F2','#DC2626'], KT:['#FFF7ED','#EA580C'], LG:['#FAE8FF','#A21CAF'], MVNO:['#F8FAFC','#64748b'] };
+  ['SKT','KT','LG','MVNO'].forEach(c => {
+    const btn  = document.getElementById('kyc-carrier-' + c);
+    const icon = document.getElementById('kyc-cicon-' + c);
+    const span = document.getElementById('kyc-cspan-' + c);
+    if (!btn) return;
+    if (c === id) {
+      btn.style.borderColor = sel[c][1]; btn.style.background = sel[c][0];
+      icon.style.background = sel[c][1]; span.style.color = '#fff';
+    } else {
+      btn.style.borderColor = '#e2e8f0'; btn.style.background = '#fff';
+      icon.style.background = def[c][0]; span.style.color = def[c][1];
+    }
+  });
+  document.getElementById('kyc-mvno-wrap').style.display = id === 'MVNO' ? 'block' : 'none';
+}
+
+function _kycSetCheck(el, on) {
+  el.dataset.on = on ? '1' : '0';
+  el.style.background = on ? 'var(--color-primary,#4F46E5)' : '#fff';
+  el.style.borderColor = on ? 'var(--color-primary,#4F46E5)' : '#d1d5db';
+  el.style.color = '#fff';
+  el.innerHTML = on ? _KYC_CHECK_SVG : '';
+}
+
+function kycToggleItem(row) {
+  const box = row.querySelector('.kyc-chk');
+  if (!box) return;
+  _kycSetCheck(box, box.dataset.on !== '1');
+  const allOn = [...document.querySelectorAll('.kyc-chk')].every(b => b.dataset.on === '1');
+  const allBox = document.getElementById('kyc-all-check');
+  if (allBox) _kycSetCheck(allBox, allOn);
+}
+
+function kycToggleAllNew() {
+  const allBox = document.getElementById('kyc-all-check');
+  const newState = allBox.dataset.on !== '1';
+  _kycSetCheck(allBox, newState);
+  document.querySelectorAll('.kyc-chk').forEach(b => _kycSetCheck(b, newState));
+}
+
+function kycChooseMethod(method) {
+  const errEl = document.getElementById('kyc-carrier-error');
+  if (!_kycCarrier) {
+    errEl.innerHTML = '<div class="alert alert-error">통신사를 먼저 선택해 주세요.</div>'; return;
+  }
+  if (![...document.querySelectorAll('.kyc-chk')].every(b => b.dataset.on === '1')) {
+    errEl.innerHTML = '<div class="alert alert-error">필수 약관에 모두 동의해 주세요.</div>'; return;
+  }
+  errEl.innerHTML = '';
+  _kycMethod = method;
+  document.getElementById('kyc-step-carrier').style.display = 'none';
+  document.getElementById('kyc-step-info').style.display = 'block';
+  const bb = document.getElementById('kyc-back-btn');
+  bb.style.opacity = '1'; bb.style.pointerEvents = 'auto';
+  document.getElementById('kyc-header-title').textContent = method === 'PASS' ? 'PASS 앱 인증' : 'SMS 인증';
+  const btn = document.getElementById('kyc-info-btn');
+  if (btn) btn.textContent = method === 'PASS' ? 'PASS 앱으로 인증하기' : '인증번호 받기';
+  setTimeout(() => document.getElementById('kyc-name')?.focus(), 100);
+}
+
+async function kycSubmitInfo() {
+  const name  = document.getElementById('kyc-name')?.value?.trim();
+  const birth = document.getElementById('kyc-birth')?.value?.trim();
+  const phone = document.getElementById('kyc-phone')?.value?.trim();
+  const errEl = document.getElementById('kyc-info-error');
+  if (!name)  { errEl.innerHTML = '<div class="alert alert-error">이름을 입력해 주세요.</div>'; return; }
+  if (!birth || birth.length !== 6) { errEl.innerHTML = '<div class="alert alert-error">생년월일 6자리를 입력해 주세요.</div>'; return; }
+  if (!phone || phone.replace(/[^0-9]/g,'').length < 10) { errEl.innerHTML = '<div class="alert alert-error">올바른 휴대폰 번호를 입력해 주세요.</div>'; return; }
+  errEl.innerHTML = '';
+  _kycSentPhone = phone;
+  if (_kycMethod === 'PASS') await _kycPassFlow(name, phone);
+  else await _kycSmsFlow(name, phone);
+}
+
+function kycOtpInput(el) {
+  el.value = el.value.replace(/[^0-9]/g,'');
+  const boxes = [...document.querySelectorAll('.kyc-otp-box')];
+  const idx = boxes.indexOf(el);
+  if (el.value && idx < boxes.length - 1) boxes[idx + 1].focus();
+  const hidden = document.getElementById('kyc-otp-input');
+  if (hidden) hidden.value = boxes.map(b => b.value).join('');
+}
+
+function kycOtpKeydown(el, e) {
+  if (e.key === 'Backspace' && !el.value) {
+    const boxes = [...document.querySelectorAll('.kyc-otp-box')];
+    const idx = boxes.indexOf(el);
+    if (idx > 0) { boxes[idx - 1].value = ''; boxes[idx - 1].focus(); }
+  }
+}
+
+function kycOtpPaste(e) {
+  const text = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g,'').slice(0,6);
+  if (!text) return;
+  e.preventDefault();
+  const boxes = [...document.querySelectorAll('.kyc-otp-box')];
+  text.split('').forEach((d,i) => { if (boxes[i]) boxes[i].value = d; });
+  const hidden = document.getElementById('kyc-otp-input');
+  if (hidden) hidden.value = text;
+  boxes[Math.min(text.length, 5)].focus();
+}
+
+/** PASS 인증 플로우 (실제 연동 전: 자동 완료 모킹) */
+async function _kycPassFlow(name, phone) {
+  document.getElementById('kyc-step-info').style.display = 'none';
+  document.getElementById('kyc-step-pass').style.display = 'block';
+  document.getElementById('kyc-header-title').textContent = 'PASS 앱 인증';
+
+  let phoneToken = null;
+  try {
+    const sendRes = await fetch('/api/phone/send-otp', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone })
+    });
+    const sendData = await sendRes.json();
+    if (!sendData.success) {
+      kycRetry();
+      document.getElementById('kyc-info-error').innerHTML = `<div class="alert alert-error">${sendData.error}</div>`;
+      return;
+    }
+    if (sendData.testMode) {
+      const verRes = await fetch('/api/phone/verify-otp', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ phone, code: sendData.testCode })
+      });
+      const verData = await verRes.json();
+      if (verData.success) phoneToken = verData.phoneToken;
+    }
+  } catch(e) {
+    kycRetry();
+    document.getElementById('kyc-info-error').innerHTML = '<div class="alert alert-error">서버 연결에 실패했습니다.</div>';
+    return;
+  }
+
+  let t = 30;
+  const timerEl = document.getElementById('kyc-pass-timer');
+  if (_kycTimerInterval) clearInterval(_kycTimerInterval);
+  _kycTimerInterval = setInterval(() => {
+    if (timerEl) timerEl.textContent = `남은 시간 ${t}초`;
+    t--;
+    if (t < 0) clearInterval(_kycTimerInterval);
+  }, 1000);
+
+  await new Promise(r => setTimeout(r, 2500));
+  if (_kycTimerInterval) clearInterval(_kycTimerInterval);
+  document.getElementById('kyc-step-pass').style.display = 'none';
+
+  if (phoneToken) {
+    _onKycSuccess(phoneToken, name, phone);
+  } else {
+    kycRetry();
+    document.getElementById('kyc-info-error').innerHTML = '<div class="alert alert-error">인증에 실패했습니다. SMS 인증을 이용해 주세요.</div>';
+  }
+}
+
+/** SMS 인증 플로우 */
+async function _kycSmsFlow(name, phone) {
+  try {
+    const res = await fetch('/api/phone/send-otp', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      document.getElementById('kyc-info-error').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+      return;
+    }
+
+    document.getElementById('kyc-step-info').style.display = 'none';
+    document.getElementById('kyc-step-sms').style.display = 'block';
+    document.getElementById('kyc-header-title').textContent = 'SMS 인증';
+
+    const masked = phone.replace(/[^0-9]/g,'').replace(/^(01[016789])([0-9]{3,4})([0-9]{4})$/, '$1-****-$3');
+    const desc = document.getElementById('kyc-sms-desc');
+    if (data.testMode) {
+      desc.innerHTML = `${masked}으로 발송<br><span style="color:var(--color-primary,#4F46E5);font-weight:700;">테스트 모드 — 인증번호: ${data.testCode}</span>`;
+      setTimeout(() => {
+        const code = data.testCode;
+        const boxes = [...document.querySelectorAll('.kyc-otp-box')];
+        code.split('').forEach((d, i) => { if (boxes[i]) boxes[i].value = d; });
+        const hidden = document.getElementById('kyc-otp-input');
+        if (hidden) hidden.value = code;
+        boxes[5]?.focus();
+      }, 400);
+    } else {
+      desc.textContent = `${masked}으로 발송된 인증번호를 입력해 주세요`;
+    }
+    _startKycTimer();
+  } catch(e) {
+    document.getElementById('kyc-info-error').innerHTML = '<div class="alert alert-error">서버 연결에 실패했습니다.</div>';
+  }
+}
+
+/** SMS 인증번호 확인 */
+async function kycVerifySms() {
+  const code  = document.getElementById('kyc-otp-input')?.value?.trim();
+  const errEl = document.getElementById('kyc-sms-error');
+  if (!code || code.length !== 6) {
+    errEl.innerHTML = '<div class="alert alert-error">6자리 인증번호를 입력해 주세요.</div>'; return;
+  }
+  const name = document.getElementById('kyc-name')?.value?.trim() || '';
+  try {
+    const res = await fetch('/api/phone/verify-otp', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone: _kycSentPhone, code })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (_kycTimerInterval) clearInterval(_kycTimerInterval);
+      document.getElementById('kyc-step-sms').style.display = 'none';
+      _onKycSuccess(data.phoneToken, name, _kycSentPhone);
+    } else {
+      errEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+    }
+  } catch(e) {
+    errEl.innerHTML = '<div class="alert alert-error">서버 연결에 실패했습니다.</div>';
+  }
+}
+
+/** 인증 성공 처리 */
+function _onKycSuccess(phoneToken, name, phone) {
+  const normalized = phone.replace(/[^0-9]/g,'');
+  const masked = normalized.replace(/^(01[016789])([0-9]{3,4})([0-9]{4})$/, '$1-****-$3');
+
+  document.getElementById('kyc-step-success').style.display = 'block';
+  document.getElementById('kyc-success-info').textContent = `${name || ''}  ${masked}`;
+  document.getElementById('kyc-header-title').textContent = '인증 완료';
+  const bb = document.getElementById('kyc-back-btn');
+  if (bb) { bb.style.opacity = '0'; bb.style.pointerEvents = 'none'; }
+
+  const tokenInput = document.getElementById('reg-phone-token');
+  if (tokenInput) tokenInput.value = phoneToken;
+
+  const badge = document.getElementById('kyc-verified-badge');
+  if (badge) {
+    badge.style.display = 'flex';
+    const badgeName = document.getElementById('kyc-badge-name');
+    const badgePhone = document.getElementById('kyc-badge-phone');
+    if (badgeName) badgeName.textContent = `${name || ''} 본인인증 완료`;
+    if (badgePhone) badgePhone.textContent = masked;
+  }
+
+  const openBtn = document.getElementById('kyc-open-btn');
+  if (openBtn) {
+    openBtn.textContent = '✅ 본인인증 완료 (재인증)';
+    openBtn.style.borderColor = '#86efac';
+    openBtn.style.color = '#15803d';
+    openBtn.style.background = '#f0fdf4';
+  }
+
+  setTimeout(() => {
+    closeKycModal();
+    if (_kycOnSuccessCallback) {
+      const cb = _kycOnSuccessCallback;
+      _kycOnSuccessCallback = null;
+      cb(phoneToken, phone);
+    }
+  }, 2000);
+}
+
+/** SMS 3분 타이머 */
+function _startKycTimer() {
+  if (_kycTimerInterval) clearInterval(_kycTimerInterval);
+  let seconds = 180;
+  const tick = () => {
+    const el = document.getElementById('kyc-sms-timer');
+    if (!el) { clearInterval(_kycTimerInterval); return; }
+    if (seconds <= 0) {
+      clearInterval(_kycTimerInterval);
+      el.textContent = '⏰ 인증번호가 만료되었어요. 다시 시도해주세요.';
+      return;
+    }
+    const m = Math.floor(seconds / 60);
+    const s = String(seconds % 60).padStart(2,'0');
+    el.textContent = `⏱ 유효시간 ${m}:${s}`;
+    seconds--;
+  };
+  tick();
+  _kycTimerInterval = setInterval(tick, 1000);
 }
 

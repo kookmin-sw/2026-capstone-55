@@ -7,7 +7,9 @@
       "id-moccj45g-ygwkk8x"
     ],
     "scheduledAt": "2026-04-25T04:13:50.238Z",
-    "status": "scheduled"
+    "status": "completed",
+    "completedAt": "2026-05-13T12:57:29.028Z",
+    "completedBy": null
   },
   {
     "id": "id-mol42tlj-kwxmeuc",

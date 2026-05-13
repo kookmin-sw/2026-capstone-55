@@ -34,12 +34,15 @@ const upload = multer({
 router.post('/', upload.single('file'), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: '파일이 없습니다.' });
+    // multer는 originalname을 latin1로 인코딩하므로 UTF-8로 디코딩
+    const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
     const record = {
       id: 'file_' + Date.now(),
       userId: req.body.userId,
       dogId: req.body.dogId || 'default',
-      type: req.body.type || 'other', // vaccination, diagnosis
-      originalName: req.file.originalname,
+      dogName: req.body.dogName || '',
+      type: req.body.type || 'other',
+      originalName: originalName,
       filename: req.file.filename,
       size: req.file.size,
       uploadedAt: new Date().toISOString()
