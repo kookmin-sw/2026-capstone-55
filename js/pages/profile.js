@@ -390,11 +390,16 @@ function saveProfilePhotoCrop() {
    // 매칭 프로필에도 동기화 (도우미·요청자 카드, 지도 마커에도 반영)
    if (typeof MatchingService !== 'undefined') {
      const existingProfile = MatchingService.getMyProfile(user.id);
-     if (existingProfile) {
-       MatchingService.registerProfile(user.id, { ...existingProfile, profilePhoto: profileImage });
-     }
-   }
-   renderProfilePage();
+    if (existingProfile) {
+      MatchingService.registerProfile(user.id, { ...existingProfile, profilePhoto: profileImage });
+    }
+    fetch(`/api/walkers/${user.id}/photo`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profilePhoto: profileImage })
+    }).catch(() => {});
+  }
+  renderProfilePage();
  } else {
    showToast(result.error || '프로필 사진 변경에 실패했어요.', 'error');
  }

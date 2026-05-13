@@ -12,6 +12,23 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 
+function setWalkerAvailability(app, userId, isAvailable) {
+  const walkers = db.get('walkers', []);
+  const idx = walkers.findIndex(w => w.userId === userId);
+  if (idx === -1) return;
+
+  walkers[idx].isAvailable = !!isAvailable;
+  walkers[idx].lastSeenAt = db.now();
+  if (!isAvailable) {
+    walkers[idx].lat = null;
+    walkers[idx].lng = null;
+  }
+  db.set('walkers', walkers);
+
+  const io = app.get('io');
+  if (io) io.emit('walker-status-changed', { userId, isAvailable: !!isAvailable });
+}
+
 // ============================================================
 // Enhanced Scoring 가중치 설정
 // ============================================================
@@ -75,7 +92,7 @@ router.post('/requests', (req, res) => {
   }
 
   // 쿨다운 체크: 최근 30분 내 같은 도우미에게 거절/자동거절/취소된 이력이 있으면 차단
-  const COOLDOWN_MS = 30 * 60 * 1000;
+  const COOLDOWN_MS = 0; // 테스트 중: 최근 거절/취소 후 재요청 제한 비활성화
   const now = Date.now();
   const blockedStatuses = ['rejected', 'walker_busy', 'cancelled', 'rejected_matched'];
   const recentBlocked = requests
@@ -192,6 +209,7 @@ router.patch('/requests/:id/accept', (req, res) => {
   });
 
   db.set('matchRequests', requests);
+  setWalkerAvailability(req.app, walkerId, false);
 
   const r        = requests[idx];
   const schedule = {

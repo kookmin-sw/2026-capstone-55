@@ -1,0 +1,79 @@
+[
+  {
+    "id": "id-mp3xzkdv-qwjwz18",
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "orderId": "walk_mp3xzkdk_ktxlyo",
+    "amount": 10000,
+    "duration": 40,
+    "dogs": [
+      {
+        "name": "초코",
+        "size": "small",
+        "price": 10000
+      }
+    ],
+    "walkerId": "test-walker-001",
+    "requestType": "map",
+    "lat": 37.603621455318134,
+    "lng": 127.03224774773102,
+    "status": "refunded",
+    "requestId": null,
+    "createdAt": "2026-05-13T10:54:13.747Z",
+    "completedAt": null,
+    "refundedAt": "2026-05-13T10:54:36.436Z",
+    "retryCount": 0,
+    "lastError": null,
+    "refundReason": "요청 생성 실패: 도우미가 요청을 거절했어요. 29분 후 다시 시도해주세요."
+  },
+  {
+    "id": "id-mp3yge94-0ra2mw9",
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "orderId": "walk_mp3yge7x_no6j8q",
+    "amount": 10000,
+    "duration": 40,
+    "dogs": [
+      {
+        "name": "초코",
+        "size": "small",
+        "price": 10000
+      }
+    ],
+    "walkerId": "test-walker-001",
+    "requestType": "map",
+    "lat": 37.60346221397469,
+    "lng": 127.03233383390521,
+    "status": "refunded",
+    "requestId": null,
+    "createdAt": "2026-05-13T11:07:18.952Z",
+    "completedAt": null,
+    "refundedAt": "2026-05-13T11:07:44.360Z",
+    "retryCount": 0,
+    "lastError": null,
+    "refundReason": "요청 생성 실패: 도우미가 요청을 거절했어요. 16분 후 다시 시도해주세요."
+  },
+  {
+    "id": "id-mp3yip2g-1cvdeyu",
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "orderId": "walk_mp3yip26_pgh0jo",
+    "amount": 10000,
+    "duration": 40,
+    "dogs": [
+      {
+        "name": "초코",
+        "size": "small",
+        "price": 10000
+      }
+    ],
+    "walkerId": "test-walker-001",
+    "requestType": "map",
+    "lat": 37.60348543634338,
+    "lng": 127.03231798435222,
+    "status": "completed",
+    "requestId": "id-mp3yj4qt-s6x4nm8",
+    "createdAt": "2026-05-13T11:09:06.281Z",
+    "completedAt": "2026-05-13T11:09:26.663Z",
+    "refundedAt": null,
+    "retryCount": 0,
+    "lastError": null
+  }
+]

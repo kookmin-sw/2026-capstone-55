@@ -141,7 +141,14 @@ router.patch('/:id/end', (req, res) => {
   }
 
   const emitToUser = req.app.get('emitToUser');
-  if (emitToUser) emitToUser(s.requesterId, 'walk-ended', { sessionId: s.id, totalDistanceKm: totalDist });
+  if (emitToUser) {
+    emitToUser(s.requesterId, 'walk-ended', {
+      sessionId: s.id,
+      requestId: s.requestId,
+      walkerId: s.walkerId,
+      totalDistanceKm: totalDist
+    });
+  }
 
   res.json({ success: true, session: sessions[idx], totalDistanceKm: totalDist });
 });
