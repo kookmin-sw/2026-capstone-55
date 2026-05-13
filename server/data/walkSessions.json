@@ -44,12 +44,13 @@
     "walkerId": "test-walker-001",
     "requesterId": "id-mol2g5lb-rvnvuvi",
     "dogName": "댕댕이",
-    "status": "handoff",
+    "status": "expired",
     "startedAt": "2026-05-05T08:10:42.924Z",
     "arrivedAt": "2026-05-08T01:38:55.629Z",
     "walkStartedAt": null,
     "endedAt": null,
-    "handoffAt": "2026-05-08T01:38:59.345Z"
+    "handoffAt": "2026-05-08T01:38:59.345Z",
+    "expiredAt": "2026-05-12T16:12:02.779Z"
   },
   {
     "id": "id-mosfccly-d9qt08s",
@@ -262,6 +263,73 @@
     "walkStartedAt": "2026-05-08T04:58:49.604Z",
     "endedAt": "2026-05-08T04:58:56.253Z",
     "handoffAt": "2026-05-08T04:58:47.249Z",
+    "totalDistanceKm": 0
+  },
+  {
+    "id": "id-mp2txdls-onj29yk",
+    "requestId": "id-mp2tx8k4-kzk1fxi",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "초코",
+    "status": "expired",
+    "startedAt": "2026-05-12T16:12:47.008Z",
+    "arrivedAt": null,
+    "walkStartedAt": null,
+    "endedAt": null,
+    "expiredAt": "2026-05-12T16:47:42.515Z"
+  },
+  {
+    "id": "id-mp2v6aib-l08ia6p",
+    "requestId": "id-mp2v66er-2xfx7bp",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "초코",
+    "status": "expired",
+    "startedAt": "2026-05-12T16:47:42.515Z",
+    "arrivedAt": null,
+    "walkStartedAt": null,
+    "endedAt": null,
+    "expiredAt": "2026-05-12T16:47:47.280Z"
+  },
+  {
+    "id": "id-mp2v6e6o-col56ev",
+    "requestId": "id-mp2v66er-2xfx7bp",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "초코",
+    "status": "expired",
+    "startedAt": "2026-05-12T16:47:47.280Z",
+    "arrivedAt": null,
+    "walkStartedAt": null,
+    "endedAt": null,
+    "expiredAt": "2026-05-12T16:47:49.593Z"
+  },
+  {
+    "id": "id-mp2v6fyx-8n8cixa",
+    "requestId": "id-mp2v66er-2xfx7bp",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "초코",
+    "status": "expired",
+    "startedAt": "2026-05-12T16:47:49.593Z",
+    "arrivedAt": null,
+    "walkStartedAt": null,
+    "endedAt": null,
+    "expiredAt": "2026-05-12T16:54:34.673Z"
+  },
+  {
+    "id": "id-mp2vf4j5-1premwf",
+    "requestId": "id-mp2vezn1-zcf722i",
+    "walkerId": "test-walker-001",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "dogName": "초코",
+    "status": "ending",
+    "startedAt": "2026-05-12T16:54:34.673Z",
+    "arrivedAt": "2026-05-12T16:55:26.258Z",
+    "walkStartedAt": "2026-05-12T16:55:40.139Z",
+    "endedAt": null,
+    "handoffAt": "2026-05-12T16:55:32.285Z",
+    "endRequestedAt": "2026-05-12T16:55:51.565Z",
     "totalDistanceKm": 0
   }
 ]
