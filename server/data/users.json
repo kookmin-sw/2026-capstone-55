@@ -7,7 +7,21 @@
     "passwordHash": "hash_kv85c1",
     "referralCode": "PAW-ADMIN",
     "isAdmin": true,
-    "dogs": [],
+    "dogs": [
+      {
+        "id": "id-mp42paeq-hk15gou",
+        "name": "치치",
+        "breed": "골든 리트리버",
+        "age": 3,
+        "size": "medium",
+        "gender": "male",
+        "weight": null,
+        "neutered": true,
+        "personality": "활발함",
+        "healthNote": null,
+        "photo": null
+      }
+    ],
     "pawCoins": 20,
     "createdAt": "2026-04-10T07:54:18.464Z"
   },
@@ -287,7 +301,21 @@
     "provider": "google",
     "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocJkmL8nvApheu95k_f-sF1hCPVH-eO0QPLx6PpScgFjl82HBNc=s96-c",
     "referralCode": "PAW-4HCXWS",
-    "dogs": [],
+    "dogs": [
+      {
+        "id": "id-mp442dna-kbt2uca",
+        "name": "카리나",
+        "breed": "골든 리트리버",
+        "age": 3,
+        "size": "medium",
+        "gender": "female",
+        "weight": null,
+        "neutered": false,
+        "personality": "온순함",
+        "healthNote": null,
+        "photo": null
+      }
+    ],
     "pawCoins": 0,
     "createdAt": "2026-05-12T05:22:47.106Z",
     "nicknameChangedAt": "2026-05-12T05:22:49.810Z",

@@ -451,5 +451,28 @@
     "rating": 5,
     "reviewCount": 0,
     "createdAt": "2026-05-06T10:50:40.797Z"
+  },
+  {
+    "userId": "id-mnsm12ov-kpkaldi",
+    "userName": "Pawsitive 관리자",
+    "role": "requester",
+    "location": "d",
+    "lat": null,
+    "lng": null,
+    "dogSize": "medium",
+    "preferredTime": "오후 (5-7시)",
+    "message": "",
+    "price": 0,
+    "experience": "없음",
+    "acceptedSizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "specialty": "",
+    "isAvailable": true,
+    "rating": 5,
+    "reviewCount": 0,
+    "createdAt": "2026-05-13T13:19:27.154Z"
   }
 ]
