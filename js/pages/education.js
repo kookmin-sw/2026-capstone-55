@@ -28,6 +28,83 @@ function _goToCategoryPage(category) {
   }
 }
 
+const EDUCATION_DOG_ASSETS = {
+  runA: 'images/education-runner-dog-ui.png',
+  runB: 'images/education-runner-dog-run-b-ui.png',
+  sit: 'images/education-dog-sit-front-ui.png',
+  crown: 'images/education-dog-crown-front-ui.png'
+};
+
+function _animateEducationProgress(pct) {
+  const track = document.getElementById('education-progress-track');
+  const fill = document.getElementById('education-progress-fill');
+  const runner = document.getElementById('education-progress-runner');
+  const dog = document.getElementById('education-progress-dog');
+  if (!track || !fill || !runner || !dog) return;
+
+  const clampedPct = Math.max(0, Math.min(100, pct));
+  const durationMs = 3200;
+  const startLeft = 18;
+  const endLeft = () => {
+    const usableWidth = Math.max(track.clientWidth - 36, 0);
+    return startLeft + usableWidth * (clampedPct / 100);
+  };
+  const setState = (state, src) => {
+    runner.classList.remove('is-idle', 'is-running', 'is-resting', 'is-finished');
+    runner.classList.add(state);
+    dog.src = src;
+  };
+
+  if (runner._educationProgressTimer) {
+    clearTimeout(runner._educationProgressTimer);
+    runner._educationProgressTimer = null;
+  }
+  if (runner._educationFrameTimer) {
+    clearInterval(runner._educationFrameTimer);
+    runner._educationFrameTimer = null;
+  }
+
+  fill.style.transitionDuration = `${durationMs}ms`;
+  runner.style.transitionDuration = `${durationMs}ms`;
+  fill.style.width = '0%';
+  runner.style.left = `${startLeft}px`;
+
+  if (clampedPct === 0) {
+    setState('is-idle', EDUCATION_DOG_ASSETS.sit);
+    return;
+  }
+
+  if (clampedPct >= 100) {
+    fill.style.width = '100%';
+    runner.style.left = `${endLeft()}px`;
+    setState('is-finished', EDUCATION_DOG_ASSETS.crown);
+    return;
+  }
+
+  let currentFrame = 0;
+  setState('is-running', EDUCATION_DOG_ASSETS.runA);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      fill.style.width = `${clampedPct}%`;
+      runner.style.left = `${endLeft()}px`;
+    });
+  });
+
+  runner._educationFrameTimer = setInterval(() => {
+    currentFrame = currentFrame ? 0 : 1;
+    dog.src = currentFrame ? EDUCATION_DOG_ASSETS.runB : EDUCATION_DOG_ASSETS.runA;
+  }, 220);
+
+  runner._educationProgressTimer = setTimeout(() => {
+    if (runner._educationFrameTimer) {
+      clearInterval(runner._educationFrameTimer);
+      runner._educationFrameTimer = null;
+    }
+    setState('is-resting', EDUCATION_DOG_ASSETS.sit);
+  }, durationMs);
+}
+
 function renderEducationPage() {
   const user = AuthService.getCurrentUser();
   const progress = user ? EducationService.getProgress(user.id) : { total: EDUCATION_DATA.length, completed: 0, ratio: 0, completedIds: [] };
@@ -84,8 +161,13 @@ function renderEducationPage() {
             <div style="font-size:0.7rem;color:var(--color-text-muted);margin-top:1px;">달성률</div>
           </div>
         </div>
-        <div style="height:8px;background:rgba(0,0,0,0.07);border-radius:4px;overflow:hidden;">
-          <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--color-primary-light),var(--color-primary));border-radius:4px;transition:width 0.3s;"></div>
+        <div class="education-progress">
+          <div class="education-progress__track" id="education-progress-track">
+            <div class="education-progress__fill" id="education-progress-fill"></div>
+            <div class="education-progress__runner" id="education-progress-runner" aria-hidden="true">
+              <img class="education-progress__dog" id="education-progress-dog" src="${EDUCATION_DOG_ASSETS.sit}" alt="">
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -118,6 +200,8 @@ function renderEducationPage() {
       ${renderEducationCards(EducationService.getByCategory('all'), progress.completedIds)}
     </div>
   `);
+
+  _animateEducationProgress(pct);
 }
 
 function renderEducationCards(items, completedIds) {
