@@ -133,59 +133,71 @@ async function _renderDiscMap(userLat, userLng, radiusKm) {
      </div>
      <div class="dw-map-walker-pin__tail"></div>
    </div>`,
-   className: '', iconSize: [44, 54], iconAnchor: [22, 54]
+   className: '', iconSize: [60, 72], iconAnchor: [30, 72]
  });
 
  const stars = '★'.repeat(Math.round(w.rating || 5)) + '☆'.repeat(5 - Math.round(w.rating || 5));
  const isMine = currentUser && w.userId === currentUser.id;
  const canRequest = currentUser && !isMine;
 
- // 요청자 반려견 크기 기반 가격 계산
  const reqProfile = currentUser ? MatchingService.getMyProfile(currentUser.id) : null;
  const reqDogSize = reqProfile?.dogSize || (currentUser?.dogs?.[0]?.size) || 'small';
  const walkPrice = WALK_PRICING[reqDogSize] || WALK_PRICING.small;
- const priceSizeLabel = { small: '소형견', medium: '중형견', large: '대형견' }[reqDogSize] || '소형견';
+ const photo = w.profilePhoto || w.profileImage || '';
+ const careerLabel = {under6m:'6개월 미만','6m1y':'6개월~1년','1y3y':'1~3년',over3y:'3년 이상'}[w.careerYears] || '';
+ const largeDogLabel = {lots:'대형견 숙련',some:'대형견 경험',none:''}[w.largeDogExp] || '';
+ const aggrLabel = {yes:'공격성 대응 가능',some:'경미한 공격성 OK',no:''}[w.aggressionHandle] || '';
+ const tags = [
+   w.preferredTime ? `<span style="background:#f0f0ee;color:#555;padding:3px 9px;border-radius:20px;font-size:0.7rem;font-weight:600;">${w.preferredTime}</span>` : '',
+   careerLabel ? `<span style="background:#EEF2FF;color:#4338CA;padding:3px 9px;border-radius:20px;font-size:0.7rem;font-weight:600;">경력 ${careerLabel}</span>` : '',
+   largeDogLabel ? `<span style="background:#F0FDF4;color:#15803D;padding:3px 9px;border-radius:20px;font-size:0.7rem;font-weight:600;">${largeDogLabel}</span>` : '',
+   aggrLabel ? `<span style="background:#FFF7ED;color:#C2410C;padding:3px 9px;border-radius:20px;font-size:0.7rem;font-weight:600;">${aggrLabel}</span>` : '',
+ ].filter(Boolean).join('');
 
  const popupHtml = `
- <div class="walker-card-popup" style="min-width:280px;font-family:inherit;">
- <div style="background:#1a1a1a;padding:14px 16px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px;">
- <div style="width:44px;height:44px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;overflow:hidden;flex-shrink:0;">
- ${(w.profilePhoto||w.profileImage) ? `<img src="${w.profilePhoto||w.profileImage}" style="width:100%;height:100%;object-fit:cover;">` : (w.userName||'?').charAt(0)}
- </div>
- <div style="flex:1;min-width:0;">
- <div style="color:#fff;font-weight:700;font-size:0.92rem;display:flex;align-items:center;gap:6px;">
- ${w.userName} <span style="color:#00AA76;font-size:0.7rem;">● ON</span>
- </div>
- <div style="color:rgba(255,255,255,0.7);font-size:0.75rem;">${stars} ${(w.rating || 5).toFixed(1)} · 리뷰 ${w.reviewCount || 0}건</div>
- ${distTxt ? `<div style="color:#00AA76;font-size:0.72rem;font-weight:700;margin-top:2px;">${distTxt} 거리</div>` : ''}
- </div>
- </div>
- <div style="padding:14px 16px;">
- ${w.message ? `<div style="font-size:0.8rem;color:#555;font-style:italic;margin-bottom:10px;line-height:1.4;">"${w.message}"</div>` : ''}
- <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
- ${w.preferredTime ? `<span style="font-size:0.72rem;background:#f0f0ee;padding:3px 8px;border-radius:6px;">${w.preferredTime}</span>` : ''}
- ${w.careerYears ? `<span style="font-size:0.72rem;background:#f0f0ee;padding:3px 8px;border-radius:6px;">${{under6m:'경력 6개월↓','6m1y':'경력 ~1년','1y3y':'경력 1~3년',over3y:'경력 3년+'}[w.careerYears]||''}</span>` : ''}
- ${w.largeDogExp === 'lots' ? '<span style="font-size:0.72rem;background:#e8f5e9;color:#2e7d32;padding:3px 8px;border-radius:6px;">대형견 숙련</span>' : ''}
- ${w.aggressionHandle === 'yes' ? '<span style="font-size:0.72rem;background:#fff3e0;color:#e65100;padding:3px 8px;border-radius:6px;">공격성 대응 가능</span>' : ''}
- </div>
- <div style="background:#f8f8f6;border-radius:8px;padding:10px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
- <span style="font-size:0.78rem;color:#718096;">40분 기준</span>
- <span style="font-size:1rem;font-weight:800;color:#1a1a1a;">${walkPrice.toLocaleString()}원${(currentUser?.dogs?.length || 0) > 1 ? '~' : ''}</span>
- </div>
- ${canRequest ? `
- <button class="btn btn-primary btn-sm" style="width:100%;padding:11px;font-size:0.88rem;font-weight:700;border-radius:10px;"
- onclick="openWalkRequestModal('${w.userId}','${escapeQ(w.userName)}')">
- ${walkPrice.toLocaleString()}원 · 산책 요청하기
- </button>` : ''}
- ${isMine ? `<div style="text-align:center;font-size:0.78rem;color:#999;padding:8px 0;">내 프로필이에요</div>` : ''}
- ${!currentUser ? `
- <button class="btn btn-secondary btn-sm" style="width:100%;padding:11px;" onclick="Router.navigate('/login')">로그인 후 요청</button>` : ''}
- </div>
+ <div style="font-family:inherit;width:300px;border-radius:20px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+   <!-- 상단: 얼굴 사진 크게 -->
+   <div style="position:relative;background:linear-gradient(160deg,#1a1a1a 0%,#2d2d2d 100%);padding:24px 20px 20px;text-align:center;">
+     <div style="width:88px;height:88px;border-radius:50%;margin:0 auto 12px;border:3px solid #fff;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.35);background:#333;">
+       ${photo
+         ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+         : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2rem;font-weight:800;">${(w.userName||'?').charAt(0)}</div>`}
+     </div>
+     <div style="color:#fff;font-size:1.05rem;font-weight:800;margin-bottom:3px;">${w.userName || '도우미'}</div>
+     <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+       <span style="color:#00AA76;font-size:0.72rem;font-weight:700;">● ON</span>
+       <span style="color:rgba(255,255,255,0.6);font-size:0.72rem;">${stars} ${(w.rating||5).toFixed(1)} · 리뷰 ${w.reviewCount||0}건</span>
+       ${distTxt ? `<span style="color:#00AA76;font-size:0.72rem;font-weight:700;">${distTxt}</span>` : ''}
+     </div>
+   </div>
+   <!-- 본문 -->
+   <div style="background:#fff;padding:16px 18px;">
+     ${w.message ? `<div style="font-size:0.8rem;color:#555;line-height:1.55;margin-bottom:12px;padding:10px 12px;background:#f8f8f6;border-radius:10px;font-style:italic;">"${w.message}"</div>` : ''}
+     <!-- 태그 -->
+     ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;">${tags}</div>` : ''}
+     <!-- 상세 정보 -->
+     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:0.78rem;color:#555;">
+       ${w.location ? `<div style="display:flex;gap:8px;"><span style="color:#aaa;min-width:40px;">위치</span><span style="color:#1a1a1a;font-weight:600;">${w.location.replace('서울특별시 ','')}</span></div>` : ''}
+       ${w.ownPetExp && w.ownPetExp !== 'none' ? `<div style="display:flex;gap:8px;"><span style="color:#aaa;min-width:40px;">양육</span><span>${{current:'현재 반려견 양육 중',past:'과거 양육 경험'}[w.ownPetExp]||''}</span></div>` : ''}
+       ${(w.breedExp||[]).length > 0 ? `<div style="display:flex;gap:8px;"><span style="color:#aaa;min-width:40px;">견종</span><span>${w.breedExp.slice(0,4).join(' · ')}</span></div>` : ''}
+     </div>
+     <!-- 가격 + 버튼 -->
+     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f8f8f6;border-radius:10px;margin-bottom:12px;">
+       <span style="font-size:0.75rem;color:#999;">40분 기준</span>
+       <span style="font-size:1.05rem;font-weight:900;color:#1a1a1a;">${walkPrice.toLocaleString()}원~</span>
+     </div>
+     ${canRequest ? `<button style="width:100%;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:12px;font-size:0.9rem;font-weight:800;cursor:pointer;letter-spacing:-0.3px;"
+       onclick="openWalkRequestModal('${w.userId}','${escapeQ(w.userName)}')">
+       ${walkPrice.toLocaleString()}원 · 산책 요청하기
+     </button>` : ''}
+     ${isMine ? `<div style="text-align:center;font-size:0.78rem;color:#aaa;padding:6px 0;">내 프로필이에요</div>` : ''}
+     ${!currentUser ? `<button style="width:100%;padding:12px;background:#f0f0ee;color:#1a1a1a;border:none;border-radius:12px;font-size:0.88rem;font-weight:700;cursor:pointer;" onclick="Router.navigate('/login')">로그인 후 요청하기</button>` : ''}
+   </div>
  </div>`;
 
 
  L.marker([w.lat, w.lng], { icon })
- .bindPopup(popupHtml, { maxWidth: 280, className: 'walker-popup' })
+ .bindPopup(popupHtml, { maxWidth: 320, className: 'walker-popup', offset: [0, -68] })
  .addTo(_dwDiscMap);
  });
 

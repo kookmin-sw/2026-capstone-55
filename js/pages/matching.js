@@ -1857,7 +1857,9 @@ async function cancelWalkByWalker(requestId) {
 
 /** 산책 요청자 대시보드 */
 async function renderRequesterDashboard(user, myProfile) {
- const availWalkers = MatchingService.getAvailableWalkers().filter(w => w.userId !== user.id);
+ // 사진 없는 도우미는 AI 추천에서 제외 (신뢰도 보장)
+ const availWalkers = MatchingService.getAvailableWalkers()
+   .filter(w => w.userId !== user.id && !!(w.profilePhoto || w.profileImage));
  const scheduledWalks = MatchingService.getScheduledWalks(user.id);
  const completedWalks = MatchingService.getCompletedWalks(user.id);
 
