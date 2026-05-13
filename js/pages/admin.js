@@ -178,7 +178,7 @@ function adminDeleteUser(userId, userName) {
 }
 
 // 관리자: 공지사항 등록
-function adminSendNotice() {
+async function adminSendNotice() {
   const notice = document.getElementById('admin-notice')?.value;
   if (!notice || !notice.trim()) {
     alert('공지사항 내용을 입력해주세요.');
@@ -192,6 +192,17 @@ function adminSendNotice() {
     createdAt: StorageService.now()
   });
   StorageService.set('notices', notices);
+
+  // 서버를 통해 전체 사용자에게 공지 알림 브로드캐스트
+  try {
+    await fetch('/api/data/broadcast-notice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: notice.trim() })
+    });
+  } catch(e) {}
+
+  addNotification('[공지] ' + notice.trim(), 'info');
 
   alert('공지사항이 등록되었습니다!');
   document.getElementById('admin-notice').value = '';

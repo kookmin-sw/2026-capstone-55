@@ -1,4 +1,4 @@
-// Pawsitive - Main Application
+﻿// Pawsitive - Main Application
 // 앱 초기화, 라우트 등록, 결제 리다이렉트 처리
 
 // ============================================================
@@ -38,6 +38,7 @@ function initApp() {
     registerRoutes();
     Router.init();
     _handlePaymentRedirect();
+    getNotifications(); updateBellBadge(); loadServerNotices();
     console.log('[Pawsitive] 앱이 초기화되었습니다.');
   }).catch(e => {
     console.error('[Pawsitive] 서버 동기화 실패, 로컬 모드로 시작:', e);
@@ -163,6 +164,4 @@ async function _executeMapRequestAfterPayment(user, payment) {
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
   initRealtimeListeners();
-  getNotifications();
-  updateBellBadge();
 });
