@@ -48,12 +48,16 @@ function renderProfilePage() {
  <div class="card" style="padding:24px; margin-bottom:16px;">
  <div class="profile-card-head">
  <label class="profile-avatar-upload">
- <span class="profile-avatar-upload__circle">
+ <span class="profile-avatar-upload__circle" style="${user.profileImage ? 'border:2.5px solid #00AA76;' : 'border:2.5px dashed #ccc;'}">
  ${user.profileImage ? `<img src="${user.profileImage}" alt="프로필 사진">` : icon('user', 34)}
  </span>
  <input type="file" accept="image/*" onchange="handleProfileImageSelect(this)">
- <span class="profile-avatar-upload__label">사진 변경</span>
+ <span class="profile-avatar-upload__label" style="color:${user.profileImage ? '#00AA76' : 'var(--color-text-muted)'};">${user.profileImage ? '✓ 사진 등록됨' : '사진 등록'}</span>
  </label>
+ <div style="margin-top:10px;padding:10px 14px;background:#FFF7ED;border-radius:10px;font-size:0.78rem;color:#92400E;line-height:1.55;border:1px solid #FDE68A;">
+   🔒 <strong>실제 개인 얼굴이 나오는 사진을 등록하셔야 매칭 서비스를 이용할 수 있어요.</strong><br>
+   <span style="color:#B45309;">도우미·요청자 모두 상대방의 얼굴을 확인하고 안전하게 매칭돼요.</span>
+ </div>
  <div class="profile-card-head__info">
  <h3 style="margin-bottom:4px;">${user.nickname || user.name}</h3>
  <p style="color:var(--color-text-light); font-size:0.82rem; margin-bottom:10px;">닉네임</p>
@@ -381,11 +385,18 @@ function saveProfilePhotoCrop() {
  const profileImage = canvas.toDataURL('image/jpeg', 0.86);
  const result = AuthService.updateProfile(user.id, { profileImage });
  if (result.success) {
- closeProfilePhotoCrop();
- showToast('프로필 사진을 변경했어요.', 'success');
- renderProfilePage();
+   closeProfilePhotoCrop();
+   showToast('프로필 사진을 변경했어요.', 'success');
+   // 매칭 프로필에도 동기화 (도우미·요청자 카드, 지도 마커에도 반영)
+   if (typeof MatchingService !== 'undefined') {
+     const existingProfile = MatchingService.getMyProfile(user.id);
+     if (existingProfile) {
+       MatchingService.registerProfile(user.id, { ...existingProfile, profilePhoto: profileImage });
+     }
+   }
+   renderProfilePage();
  } else {
- showToast(result.error || '프로필 사진 변경에 실패했어요.', 'error');
+   showToast(result.error || '프로필 사진 변경에 실패했어요.', 'error');
  }
 }
 

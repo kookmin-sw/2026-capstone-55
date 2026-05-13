@@ -380,10 +380,20 @@ function openMatchRegisterFlow(role) {
  _matchRegStep = 0;
  _matchRegData = {};
 
+ const _flowUser = AuthService.getCurrentUser();
+
+ // 프로필에 사진이 이미 등록돼 있으면 photo 스텝 미리 채워둠 (스킵 가능)
+ const _existingPhoto = _flowUser?.profileImage
+   || MatchingService.getMyProfile(_flowUser?.id)?.profilePhoto
+   || '';
+ if (_existingPhoto) {
+   _matchRegData.profilePhoto = _existingPhoto;
+   _matchRegData._photoFromProfile = true; // 프로필에서 가져온 사진임을 표시
+ }
+
  // 요청자이고 이미 반려견이 등록돼 있으면 dog-select 플로우 사용
  if (role === 'requester') {
-   const user = AuthService.getCurrentUser();
-   const dogs = user?.dogs || [];
+   const dogs = _flowUser?.dogs || [];
    if (dogs.length > 0) {
      _matchRegData._hasDogProfile = true;
      _matchRegData._registeredDogs = dogs;
@@ -411,8 +421,17 @@ function closeMatchRegisterFlow() {
 }
 
 function _getMatchSteps() {
- if (_matchRegRole === 'walker') return _matchWalkerSteps;
- return _matchRegData._hasDogProfile ? _matchRequesterStepsWithDogs : _matchRequesterSteps;
+ let steps;
+ if (_matchRegRole === 'walker') {
+   steps = _matchWalkerSteps;
+ } else {
+   steps = _matchRegData._hasDogProfile ? _matchRequesterStepsWithDogs : _matchRequesterSteps;
+ }
+ // 프로필에 사진이 이미 있으면 photo 스텝 건너뜀
+ if (_matchRegData._photoFromProfile) {
+   steps = steps.filter(s => s.type !== 'photo');
+ }
+ return steps;
 }
 
 function renderMatchRegStep() {
@@ -978,10 +997,15 @@ async function renderWalkerDashboard(user, myProfile) {
  </div>
  `;
 
+ const _userPhoto = user.profileImage || myProfile.profilePhoto || '';
  const profileCard = `
  <div class="match-profile-card">
  <div class="match-profile-card__left">
- <div class="match-profile-card__avatar">${user.name.charAt(0)}</div>
+ <div class="match-profile-card__avatar" style="overflow:hidden;padding:0;">
+   ${_userPhoto
+     ? `<img src="${_userPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
+     : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-weight:800;">${user.name.charAt(0)}</span>`}
+ </div>
  <div>
  <div class="match-profile-card__name">${user.name} <span class="badge badge-primary">산책 도우미</span></div>
  <div class="match-profile-card__meta">${icon('map-pin',13)} ${myProfile.location} · ${icon('clock',13)} ${myProfile.preferredTime}${myProfile.experience ? ' · ' + myProfile.experience : ''}</div>
@@ -1897,10 +1921,15 @@ async function renderRequesterDashboard(user, myProfile) {
  const pendingMap = {};
  sentRequests.forEach(r => { if (r.status === 'pending') pendingMap[r.toUserId] = r; });
 
+ const _reqUserPhoto = user.profileImage || myProfile.profilePhoto || '';
  const profileCard = `
  <div class="match-profile-card">
  <div class="match-profile-card__left">
- <div class="match-profile-card__avatar">${user.name.charAt(0)}</div>
+ <div class="match-profile-card__avatar" style="overflow:hidden;padding:0;">
+   ${_reqUserPhoto
+     ? `<img src="${_reqUserPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
+     : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-weight:800;">${user.name.charAt(0)}</span>`}
+ </div>
  <div>
  <div class="match-profile-card__name">${user.name} <span class="badge badge-primary">산책 요청자</span></div>
  <div class="match-profile-card__meta">
