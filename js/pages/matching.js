@@ -2168,28 +2168,28 @@ async function renderRequesterDashboard(user, myProfile) {
      <div style="font-weight:800;margin-bottom:12px;color:#1a1a1a;font-size:0.88rem;">AI 추천 점수는 이렇게 계산돼요</div>
      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e8f5e9;">
-         <span style="font-weight:800;color:#00AA76;min-width:38px;">+25</span><span><strong>공격성 대응력</strong> — 내 반려견의 공격성 수준에 맞는 도우미 경험치</span>
+         <span style="width:8px;height:8px;border-radius:50%;background:#00AA76;flex-shrink:0;"></span><span><strong>공격성 대응력</strong> — 내 반려견의 공격성 수준에 맞는 도우미 경험치</span>
        </div>
        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e3f2fd;">
-         <span style="font-weight:800;color:#2196F3;min-width:38px;">+20</span><span><strong>지역 근접성</strong> — 같은 동 +20점 / 같은 구 +15점 / 같은 시 +8점</span>
+         <span style="width:8px;height:8px;border-radius:50%;background:#2196F3;flex-shrink:0;"></span><span><strong>지역 근접성</strong> — 같은 동네일수록 높은 점수, 가까울수록 더 잘 매칭돼요</span>
        </div>
        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #fce4ec;">
-         <span style="font-weight:800;color:#E91E63;min-width:38px;">+20</span><span><strong>대형견 경험</strong> — 내 반려견 크기에 맞는 도우미 경험 보유 여부</span>
+         <span style="width:8px;height:8px;border-radius:50%;background:#E91E63;flex-shrink:0;"></span><span><strong>대형견 경험</strong> — 내 반려견 크기에 맞는 도우미 경험 보유 여부</span>
        </div>
        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #fff3e0;">
-         <span style="font-weight:800;color:#FF9800;min-width:38px;">+15</span><span><strong>시간대 매칭</strong> — 원하는 산책 시간과 도우미 가능 시간 일치 여부</span>
+         <span style="width:8px;height:8px;border-radius:50%;background:#FF9800;flex-shrink:0;"></span><span><strong>시간대 매칭</strong> — 원하는 산책 시간과 도우미 가능 시간 일치 여부</span>
        </div>
        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #f3e5f5;">
-         <span style="font-weight:800;color:#9C27B0;min-width:38px;">+15</span><span><strong>산책 경력</strong> — 도우미의 산책 경력 연수 (3년 이상 최고점)</span>
+         <span style="width:8px;height:8px;border-radius:50%;background:#9C27B0;flex-shrink:0;"></span><span><strong>산책 경력</strong> — 도우미의 산책 경력 연수, 경험이 많을수록 유리해요</span>
        </div>
        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e8f5e9;">
-         <span style="font-weight:800;color:#4CAF50;min-width:38px;">+10</span><span><strong>완료 산책 수</strong> — 실제 완료한 산책 기록이 많을수록 신뢰도 가산점</span>
+         <span style="width:8px;height:8px;border-radius:50%;background:#4CAF50;flex-shrink:0;"></span><span><strong>완료 산책 수</strong> — 실제 완료한 산책 기록이 많을수록 신뢰도 가산점</span>
        </div>
        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e3f2fd;">
-         <span style="font-weight:800;color:#607D8B;min-width:38px;">+8</span><span><strong>최근 활동</strong> — 30분 이내 접속 +8점 / 3일 이상 미접속 -5점</span>
+         <span style="width:8px;height:8px;border-radius:50%;background:#607D8B;flex-shrink:0;"></span><span><strong>최근 활동</strong> — 최근에 접속한 도우미일수록 빠른 응답을 기대할 수 있어요</span>
        </div>
        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #fff8e1;">
-         <span style="font-weight:800;color:#FFC107;min-width:38px;">+8</span><span><strong>견종 경험 매칭</strong> — 내 반려견 견종을 산책해본 도우미 우선</span>
+         <span style="width:8px;height:8px;border-radius:50%;background:#FFC107;flex-shrink:0;"></span><span><strong>견종 경험 매칭</strong> — 내 반려견 견종을 산책해본 도우미를 우선 추천해요</span>
        </div>
      </div>
      <div style="font-size:0.73rem;color:#999;padding:8px 10px;background:#fff;border-radius:8px;">점수가 높을수록 내 반려견과 잘 맞는 도우미예요. Gemini AI 분석 버튼을 누르면 더 정밀한 매칭 결과를 볼 수 있어요.</div>
