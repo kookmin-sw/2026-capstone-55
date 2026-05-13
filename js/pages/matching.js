@@ -271,7 +271,7 @@ let _matchRegData = {};
 let _matchRegRole = '';
 
 const _matchWalkerSteps = [
- { key: 'location', question: '어디서 활동하세요?', sub: '동네 이름을 알려주세요', type: 'text', placeholder: '예: 서울 마포구 합정동', required: true },
+ { key: 'location', question: '어디서 활동하세요?', sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true },
  { key: 'preferredTime', question: '언제 산책 가능해요?', sub: '가능한 시간대를 골라주세요', type: 'cards', options: [
  { value: '오전 (7-9시)', label: '이른 아침', desc: '7~9시' },
  { value: '오전 (9-11시)', label: '오전', desc: '9~11시' },
@@ -332,7 +332,7 @@ const _matchRequesterSteps = [
  { value: 'medium', label: '보통이에요', desc: '가끔 말 안 들어요' },
  { value: 'easy', label: '쉬워요', desc: '순한 편이에요' }
  ]},
- { key: 'location', question: '어디서 산책하고 싶으세요?', sub: '동네 이름을 알려주세요', type: 'text', placeholder: '예: 서울 마포구 합정동', required: true },
+ { key: 'location', question: '어디서 산책하고 싶으세요?', sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true },
  { key: 'preferredTime', question: '원하는 산책 시간은요?', sub: '', type: 'cards', options: [
  { value: '오전 (7-9시)', label: '이른 아침', desc: '7~9시' },
  { value: '오전 (9-11시)', label: '오전', desc: '9~11시' },
@@ -398,15 +398,45 @@ function renderMatchRegStep() {
  `).join('')}
  </div>`;
  } else if (step.type === 'multicheck') {
- const selected = _matchRegData[step.key] || [];
- inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:24px;">
- ${step.options.map(opt => `
- <button onclick="toggleMatchRegMulti('${step.key}','${opt}')" style="padding:10px 16px; border:1.5px solid ${selected.includes(opt) ? '#1a1a1a' : '#e5e3e0'}; border-radius:999px; background:${selected.includes(opt) ? '#1a1a1a' : '#fff'}; color:${selected.includes(opt) ? '#fff' : '#333'}; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.15s;">
- ${opt}
- </button>
- `).join('')}
- </div>
- <p style="font-size:0.75rem; color:#aaa; margin-top:10px;">해당 없으면 건너뛰기를 눌러주세요</p>`;
+   const selected = _matchRegData[step.key] || [];
+   inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:24px;">
+   ${step.options.map(opt => `
+   <button onclick="toggleMatchRegMulti('${step.key}','${opt}')" style="padding:10px 16px; border:1.5px solid ${selected.includes(opt) ? '#1a1a1a' : '#e5e3e0'}; border-radius:999px; background:${selected.includes(opt) ? '#1a1a1a' : '#fff'}; color:${selected.includes(opt) ? '#fff' : '#333'}; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.15s;">
+   ${opt}
+   </button>
+   `).join('')}
+   </div>
+   <p style="font-size:0.75rem; color:#aaa; margin-top:10px;">해당 없으면 건너뛰기를 눌러주세요</p>`;
+ } else if (step.type === 'location') {
+   const sido     = _matchRegData.locationSido     || '';
+   const sigungu  = _matchRegData.locationSigungu  || '';
+   const dong     = _matchRegData.locationDong     || '';
+   const sidoList = Object.keys(KOREA_REGIONS);
+   const sigunguList = sido ? Object.keys(KOREA_REGIONS[sido] || {}) : [];
+   const dongList    = (sido && sigungu) ? (KOREA_REGIONS[sido]?.[sigungu] || []) : [];
+   const sel = 'padding:13px 14px;border:1.5px solid #e5e3e0;border-radius:12px;font-size:0.95rem;width:100%;background:#fff;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%23999\' stroke-width=\'1.5\' fill=\'none\' stroke-linecap=\'round\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;';
+   inputHtml = `
+   <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+     <div style="position:relative;">
+       <select id="loc-sido" onchange="_onSidoChange()" style="${sel}${sido ? 'border-color:#1a1a1a;' : ''}">
+         <option value="">시 / 도 선택</option>
+         ${sidoList.map(s => `<option value="${s}"${sido===s?' selected':''}>${s}</option>`).join('')}
+       </select>
+     </div>
+     <div style="position:relative;">
+       <select id="loc-sigungu" onchange="_onSigunguChange()" style="${sel}${sigungu ? 'border-color:#1a1a1a;' : ''}color:${sigunguList.length?'#1a1a1a':'#aaa'};">
+         <option value="">구 / 군 / 시 선택</option>
+         ${sigunguList.map(g => `<option value="${g}"${sigungu===g?' selected':''}>${g}</option>`).join('')}
+       </select>
+     </div>
+     <div style="position:relative;">
+       <select id="loc-dong" style="${sel}${dong ? 'border-color:#1a1a1a;' : ''}color:${dongList.length?'#1a1a1a':'#aaa'};">
+         <option value="">동 / 읍 / 면 선택 (선택사항)</option>
+         ${dongList.map(d => `<option value="${d}"${dong===d?' selected':''}>${d}</option>`).join('')}
+       </select>
+     </div>
+     ${sido && sigungu ? `<div style="font-size:0.78rem;color:#00AA76;font-weight:600;padding:8px 12px;background:#f0fdf4;border-radius:8px;">📍 ${[sido,sigungu,dong].filter(Boolean).join(' ')}</div>` : ''}
+   </div>`;
  }
 
  const isLast = _matchRegStep === total - 1;
@@ -427,6 +457,21 @@ function renderMatchRegStep() {
  setTimeout(() => document.getElementById('match-reg-input')?.focus(), 100);
 }
 
+function _onSidoChange() {
+  const sido = document.getElementById('loc-sido')?.value || '';
+  _matchRegData.locationSido = sido;
+  _matchRegData.locationSigungu = '';
+  _matchRegData.locationDong = '';
+  renderMatchRegStep();
+}
+
+function _onSigunguChange() {
+  const sigungu = document.getElementById('loc-sigungu')?.value || '';
+  _matchRegData.locationSigungu = sigungu;
+  _matchRegData.locationDong = '';
+  renderMatchRegStep();
+}
+
 function selectMatchRegCard(key, value) {
  _matchRegData[key] = value;
  renderMatchRegStep();
@@ -444,9 +489,25 @@ function toggleMatchRegMulti(key, value) {
 function nextMatchRegStep() {
  const steps = _getMatchSteps();
  const step = steps[_matchRegStep];
- const input = document.getElementById('match-reg-input');
- if (input) _matchRegData[step.key] = input.value.trim();
- if (step.required && !_matchRegData[step.key]) { if(input) input.style.borderColor='#e53e3e'; return; }
+
+ if (step.type === 'location') {
+   const sido    = document.getElementById('loc-sido')?.value    || _matchRegData.locationSido    || '';
+   const sigungu = document.getElementById('loc-sigungu')?.value || _matchRegData.locationSigungu || '';
+   const dong    = document.getElementById('loc-dong')?.value    || _matchRegData.locationDong    || '';
+   if (!sido || !sigungu) {
+     showToast('시/도와 구/군/시를 선택해주세요.', 'error');
+     return;
+   }
+   _matchRegData.locationSido    = sido;
+   _matchRegData.locationSigungu = sigungu;
+   _matchRegData.locationDong    = dong;
+   _matchRegData.location = [sido, sigungu, dong].filter(Boolean).join(' ');
+ } else {
+   const input = document.getElementById('match-reg-input');
+   if (input) _matchRegData[step.key] = input.value.trim();
+   if (step.required && !_matchRegData[step.key]) { if(input) input.style.borderColor='#e53e3e'; return; }
+ }
+
  if (_matchRegStep < steps.length - 1) { _matchRegStep++; renderMatchRegStep(); }
 }
 
@@ -982,7 +1043,7 @@ function renderWalkerScoreCard(profile) {
  * 강아지 특성 vs 도우미 역량을 비교해 적합도 산출
  */
 function calcAiMatchScore(walker, requesterProfile, walkHistory) {
- let score = 50; // 기본 점수
+ let score = 35; // 기본 점수 (항목 추가로 기존 50→35 조정)
 
  const dogSize = requesterProfile.dogSize || 'small';
  const aggression = requesterProfile.dogAggression || 'none';
@@ -1033,6 +1094,57 @@ function calcAiMatchScore(walker, requesterProfile, walkHistory) {
 
  // 7. 평점 반영 (+0~5점)
  if (walker.rating) score += Math.round((walker.rating - 3) * 2.5);
+
+ // 8. 지역 근접성 (최대 +20점)
+ const wSido    = walker.locationSido    || '';
+ const wSigungu = walker.locationSigungu || '';
+ const wDong    = walker.locationDong    || '';
+ const rSido    = requesterProfile.locationSido    || '';
+ const rSigungu = requesterProfile.locationSigungu || '';
+ const rDong    = requesterProfile.locationDong    || '';
+ if (wSido && rSido) {
+   if (wSido === rSido && wSigungu && wSigungu === rSigungu) {
+     score += (wDong && wDong === rDong) ? 20 : 15;
+   } else if (wSido === rSido) {
+     score += 8;
+   }
+ } else if (walker.location && requesterProfile.location) {
+   // 구형 텍스트 데이터 fallback: 공백 토큰 교집합으로 근사 계산
+   const wParts = (walker.location || '').split(/\s+/).filter(Boolean);
+   const rParts = (requesterProfile.location || '').split(/\s+/).filter(Boolean);
+   const matches = wParts.filter(p => rParts.includes(p)).length;
+   if (matches >= 2) score += 12;
+   else if (matches === 1) score += 6;
+ }
+
+ // 9. 원하는 시간대 매칭 (최대 +15점)
+ const wTime = walker.preferredTime || '';
+ const rTime = requesterProfile.preferredTime || '';
+ if (wTime && rTime) {
+   if (wTime === '상시 가능') score += 10;
+   else if (wTime === rTime) score += 15;
+   else {
+     const order = ['오전 (7-9시)','오전 (9-11시)','오후 (2-4시)','오후 (5-7시)','저녁 (7-9시)'];
+     const wi = order.indexOf(wTime), ri = order.indexOf(rTime);
+     if (wi !== -1 && ri !== -1 && Math.abs(wi - ri) === 1) score += 7;
+   }
+ }
+
+ // 10. 최근 활동 보정 (최대 +8점, 장기 미접속 -5점)
+ const mins = walker.minutesSinceSeen;
+ if (mins != null) {
+   if (mins < 30)        score += 8;
+   else if (mins < 120)  score += 5;
+   else if (mins < 720)  score += 2;
+   else if (mins >= 4320) score -= 5;
+ }
+
+ // 11. 견종 경험 매칭 (최대 +8점)
+ const reqBreed = requesterProfile.dogBreed || '';
+ if (reqBreed) {
+   const breedExp = Array.isArray(walker.breedExp) ? walker.breedExp : [];
+   if (breedExp.some(b => reqBreed.includes(b) || b.includes(reqBreed))) score += 8;
+ }
 
  return Math.max(0, Math.min(100, Math.round(score)));
 }
