@@ -208,7 +208,6 @@ function renderBreedRecStep() {
 function selectBreedRecCard(key, value) {
   _breedRecData[key] = value;
   renderBreedRecStep();
-  setTimeout(() => nextBreedRecStep(), 300);
 }
 
 function toggleBreedRecFlag(key) {

@@ -1,4 +1,4 @@
-﻿// Pawsitive - Home Page
+// Pawsitive - Home Page
 // --- 홈 페이지 ---
 function renderHomePage() {
   _cleanupMaps();
@@ -25,8 +25,11 @@ function renderHomePage() {
       @keyframes heroContentUp { 0%{opacity:0;transform:translateY(-40%) } 100%{opacity:1;transform:translateY(-50%)} }
       @keyframes heroScrollFloat { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-10px)} }
       @media(max-width:600px){ .hero-banner{height:calc(100vh - 64px);} .hero-banner__content{padding:0 24px;} }
-      .modern-footer { display:flex; justify-content:space-between; align-items:center; padding:24px 0; margin-top:60px; border-top:1px solid var(--color-border); }
+      .modern-footer { padding:32px 0; margin-top:60px; border-top:1px solid var(--color-border); }
+      .modern-footer__top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+      .modern-footer__bottom { text-align:left; }
       .modern-footer-item { font-size:0.72rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:1.5px; font-weight:500; }
+      .modern-footer-item--email { text-transform:none; }
       /* 서비스 소개 버블 */
       .service-intro { display:flex; justify-content:center; align-items:center; padding:56px 24px; background:#fafaf8; }
       .service-bubble { position:relative; display:inline-flex; align-items:center; gap:6px; padding:18px 36px; background:#fff; border:none; border-radius:999px; box-shadow:0 6px 32px rgba(0,0,0,0.1); cursor:pointer; font-size:1rem; font-weight:600; color:#222; letter-spacing:-0.3px; transition:all 0.25s cubic-bezier(0.16,1,0.3,1); }
@@ -132,12 +135,15 @@ function renderHomePage() {
         <div class="grid-3">${renderEducationCards(EducationService.getByCategory('all').slice(0, 6), user ? EducationService.getProgress(user.id).completedIds : [])}</div>
       </div>
       <div class="modern-footer">
-        <span class="modern-footer-item">© 2026 Pawsitive</span>
-        <span class="modern-footer-item">Seoul, Korea</span>
+        <div class="modern-footer__top">
+          <span class="modern-footer-item">© 2026 Pawsitive</span>
+          <span class="modern-footer-item">Seoul, Korea</span>
+        </div>
+        <div class="modern-footer__bottom">
+          <span class="modern-footer-item modern-footer-item--email">Contact: pawsitivecompanyofficial@gmail.com</span>
+        </div>
       </div>
     </div>
   `;
   setTimeout(() => BreedImageService.loadAll(), 100);
 }
-
-
