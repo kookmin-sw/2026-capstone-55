@@ -1,4 +1,4 @@
-// Pawsitive - Dog Walker Page
+﻿// Pawsitive - Dog Walker Page
 // Dog walker discovery, registration, and AI consultation
 
 // ============================================================
