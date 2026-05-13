@@ -244,6 +244,107 @@ function renderHomePage() {
  </div><!-- /svc-grid--bottom -->
  </section>
 
+ <!-- 산책 절차 섹션 -->
+ <section class="walk-flow-section">
+ <style>
+ .walk-flow-section { padding:96px 24px 100px; background:linear-gradient(160deg,#0f0c29 0%,#1a1060 50%,#24243e 100%); position:relative; overflow:hidden; }
+ .walk-flow-section::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(108,71,255,0.18) 0%, transparent 70%); pointer-events:none; }
+ .walk-flow__eyebrow { text-align:center; font-size:0.72rem; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:rgba(180,160,255,0.8); margin-bottom:14px; }
+ .walk-flow__title { text-align:center; font-size:clamp(1.6rem,3.5vw,2.4rem); font-weight:800; color:#fff; letter-spacing:-1px; margin-bottom:12px; line-height:1.2; }
+ .walk-flow__title span { background:linear-gradient(90deg,#a78bfa,#60a5fa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+ .walk-flow__sub { text-align:center; font-size:0.88rem; color:rgba(255,255,255,0.5); margin-bottom:64px; line-height:1.7; }
+ .walk-flow__track { display:flex; align-items:flex-start; justify-content:center; gap:0; max-width:960px; margin:0 auto 56px; position:relative; }
+ .walk-flow__step { display:flex; flex-direction:column; align-items:center; flex:1; position:relative; z-index:1; }
+ .walk-flow__connector { flex:1; height:2px; background:linear-gradient(90deg,rgba(108,71,255,0.6),rgba(96,165,250,0.6)); margin-top:32px; position:relative; }
+ .walk-flow__connector::after { content:'▶'; position:absolute; right:-6px; top:50%; transform:translateY(-50%); font-size:10px; color:rgba(96,165,250,0.7); }
+ .walk-flow__icon-wrap { width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:16px; position:relative; transition:transform 0.3s; }
+ .walk-flow__icon-wrap::before { content:''; position:absolute; inset:-3px; border-radius:50%; background:linear-gradient(135deg,#a78bfa,#60a5fa); opacity:0.35; }
+ .walk-flow__step:hover .walk-flow__icon-wrap { transform:translateY(-6px) scale(1.08); }
+ .walk-flow__num { position:absolute; top:-6px; right:-4px; width:20px; height:20px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#2563eb); color:#fff; font-size:0.6rem; font-weight:800; display:flex; align-items:center; justify-content:center; z-index:2; }
+ .walk-flow__label { font-size:0.82rem; font-weight:700; color:#fff; margin-bottom:6px; text-align:center; white-space:nowrap; }
+ .walk-flow__desc { font-size:0.72rem; color:rgba(255,255,255,0.45); text-align:center; line-height:1.55; max-width:100px; }
+ .walk-flow__cta { display:flex; justify-content:center; }
+ .walk-flow__cta-btn { display:inline-flex; align-items:center; gap:10px; padding:16px 36px; border-radius:999px; background:linear-gradient(135deg,#7c3aed,#2563eb); color:#fff; font-weight:700; font-size:0.92rem; border:none; cursor:pointer; transition:all 0.25s; box-shadow:0 8px 30px rgba(124,58,237,0.35); }
+ .walk-flow__cta-btn:hover { transform:translateY(-3px); box-shadow:0 14px 40px rgba(124,58,237,0.45); }
+ @media(max-width:640px) {
+   .walk-flow__track { flex-direction:column; align-items:center; gap:0; }
+   .walk-flow__connector { width:2px; height:32px; flex:none; margin:0; background:linear-gradient(180deg,rgba(108,71,255,0.6),rgba(96,165,250,0.6)); }
+   .walk-flow__connector::after { content:'▼'; right:auto; left:50%; top:auto; bottom:-8px; transform:translateX(-50%); }
+   .walk-flow__step { flex-direction:row; gap:16px; align-items:center; width:100%; max-width:320px; }
+   .walk-flow__icon-wrap { flex-shrink:0; margin-bottom:0; }
+   .walk-flow__desc { max-width:none; text-align:left; }
+   .walk-flow__label { text-align:left; }
+ }
+ </style>
+
+ <p class="walk-flow__eyebrow">How it works</p>
+ <h2 class="walk-flow__title">Pawsitive <span>산책 매칭</span> 절차</h2>
+ <p class="walk-flow__sub">신청부터 귀가까지 — 5단계로 안전하고 간편하게</p>
+
+ <div class="walk-flow__track">
+
+   <div class="walk-flow__step">
+     <div class="walk-flow__icon-wrap" style="background:rgba(124,58,237,0.2);">
+       ${icon('calendar', 28, '#a78bfa')}
+       <span class="walk-flow__num">1</span>
+     </div>
+     <div class="walk-flow__label">산책 요청</div>
+     <div class="walk-flow__desc">반려견 정보·시간·지역 선택 후 원클릭 요청</div>
+   </div>
+
+   <div class="walk-flow__connector"></div>
+
+   <div class="walk-flow__step">
+     <div class="walk-flow__icon-wrap" style="background:rgba(37,99,235,0.2);">
+       ${icon('sparkles', 28, '#60a5fa')}
+       <span class="walk-flow__num">2</span>
+     </div>
+     <div class="walk-flow__label">AI 매칭</div>
+     <div class="walk-flow__desc">성격·지역·시간대 분석 후 최적 도우미 추천</div>
+   </div>
+
+   <div class="walk-flow__connector"></div>
+
+   <div class="walk-flow__step">
+     <div class="walk-flow__icon-wrap" style="background:rgba(2,132,199,0.2);">
+       ${icon('map-pin', 28, '#38bdf8')}
+       <span class="walk-flow__num">3</span>
+     </div>
+     <div class="walk-flow__label">도우미 픽업</div>
+     <div class="walk-flow__desc">약속 장소에서 도우미가 반려견 직접 픽업</div>
+   </div>
+
+   <div class="walk-flow__connector"></div>
+
+   <div class="walk-flow__step">
+     <div class="walk-flow__icon-wrap" style="background:rgba(16,185,129,0.2);">
+       ${icon('navigation', 28, '#34d399')}
+       <span class="walk-flow__num">4</span>
+     </div>
+     <div class="walk-flow__label">GPS 실시간 산책</div>
+     <div class="walk-flow__desc">앱에서 도우미 위치·경로를 실시간 확인</div>
+   </div>
+
+   <div class="walk-flow__connector"></div>
+
+   <div class="walk-flow__step">
+     <div class="walk-flow__icon-wrap" style="background:rgba(245,158,11,0.2);">
+       ${icon('home', 28, '#fbbf24')}
+       <span class="walk-flow__num">5</span>
+     </div>
+     <div class="walk-flow__label">안전 귀가</div>
+     <div class="walk-flow__desc">산책 완료 후 경로·사진 리포트 자동 발송</div>
+   </div>
+
+ </div>
+
+ <div class="walk-flow__cta">
+   <button class="walk-flow__cta-btn" onclick="Router.navigate('/matching')">
+     지금 산책 도우미 찾기 →
+   </button>
+ </div>
+ </section>
+
  <div class="page-content">
  <div class="home-section">
  <div class="home-section__hd">
