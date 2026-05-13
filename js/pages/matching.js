@@ -58,10 +58,11 @@ function renderMatchingRoleSelect(selectedRole) {
   `);
 }
 
-// 토스 스타일 매칭 등록 플로우
+// 매칭 등록 플로우
 let _matchRegStep = 0;
 let _matchRegData = {};
 let _matchRegRole = '';
+let _matchRegDir = 1;
 
 const _matchWalkerSteps = [
   { key: 'location', question: '어디서 활동하세요?', sub: '동네 이름을 알려주세요', type: 'text', placeholder: '예: 서울 마포구 합정동', required: true },
@@ -106,17 +107,40 @@ const _matchRequesterSteps = [
 function openMatchRegisterFlow(role) {
   _matchRegRole = role;
   _matchRegStep = 0;
+  _matchRegDir = 1;
   _matchRegData = {};
 
+  document.getElementById('match-reg-modal')?.remove();
   const app = document.getElementById('app');
   app.innerHTML += `
-    <div id="match-reg-modal" style="position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
-      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
-        <div style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
-          <button onclick="closeMatchRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
-          <div id="match-reg-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
-          <div id="match-reg-content" style="flex:1; display:flex; flex-direction:column;"></div>
+    <style id="mf-styles">
+      @keyframes mfSU  { from{transform:translateY(100%)} to{transform:translateY(0)} }
+      @keyframes mfFwd { from{opacity:0;transform:translateX(36px)} to{opacity:1;transform:none} }
+      @keyframes mfBwd { from{opacity:0;transform:translateX(-36px)} to{opacity:1;transform:none} }
+      .mf-fwd  { animation:mfFwd 0.26s cubic-bezier(.4,0,.2,1) both }
+      .mf-bwd  { animation:mfBwd 0.26s cubic-bezier(.4,0,.2,1) both }
+      .mf-dot  { width:6px;height:6px;border-radius:3px;background:#E5E3E0;transition:all 0.3s }
+      .mf-dot-on   { width:22px;background:#C8553D }
+      .mf-dot-done { background:#588B8B }
+      .mf-opt { flex:1;min-width:80px;padding:14px 10px;border:1.5px solid #E5E3E0;border-radius:16px;background:#fff;text-align:center;cursor:pointer;transition:all 0.15s;box-sizing:border-box }
+      .mf-opt:hover { border-color:#1a1a1a;background:#F5F3F0 }
+      .mf-opt-sel   { border-color:#C8553D;background:#F9EEEB }
+    </style>
+    <div id="match-reg-modal"
+      onclick="if(event.target===this)closeMatchRegisterFlow()"
+      style="position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;">
+      <div style="background:#FAFAF8;border-radius:28px 28px 0 0;width:100%;max-width:480px;height:86vh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,0.18);animation:mfSU 0.3s cubic-bezier(.4,0,.2,1);overflow:hidden;">
+        <div style="padding:12px 0 4px;display:flex;justify-content:center;flex-shrink:0;">
+          <div style="width:36px;height:4px;background:#D1CFC9;border-radius:2px;"></div>
         </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px 10px;flex-shrink:0;">
+          <button id="mf-back-btn" onclick="prevMatchRegStep()"
+            style="width:36px;height:36px;border-radius:50%;border:none;background:#F5F3F0;font-size:1.4rem;font-weight:300;color:#1a1a1a;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;opacity:0;pointer-events:none;transition:opacity 0.2s;">‹</button>
+          <div id="match-reg-progress" style="display:flex;gap:6px;align-items:center;"></div>
+          <button onclick="closeMatchRegisterFlow()"
+            style="width:36px;height:36px;border-radius:50%;border:none;background:#F5F3F0;font-size:0.82rem;color:#6B6B6B;cursor:pointer;">✕</button>
+        </div>
+        <div id="match-reg-content" style="flex:1;overflow-y:auto;padding:0 24px 32px;"></div>
       </div>
     </div>
   `;
@@ -138,49 +162,75 @@ function renderMatchRegStep() {
   const total = steps.length;
   const content = document.getElementById('match-reg-content');
   const progress = document.getElementById('match-reg-progress');
+  const backBtn = document.getElementById('mf-back-btn');
+  if (!step || !content || !progress) return;
 
-  progress.innerHTML = Array.from({length: total}, (_, i) =>
-    `<div style="flex:1; height:3px; border-radius:2px; background:${i <= _matchRegStep ? '#1a1a1a' : '#e5e3e0'}; transition:background 0.3s;"></div>`
-  ).join('');
+  progress.innerHTML = Array.from({length: total}, (_, i) => {
+    const cls = i === _matchRegStep ? 'mf-dot mf-dot-on' : i < _matchRegStep ? 'mf-dot mf-dot-done' : 'mf-dot';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  if (backBtn) {
+    backBtn.style.opacity = _matchRegStep > 0 ? '1' : '0';
+    backBtn.style.pointerEvents = _matchRegStep > 0 ? 'auto' : 'none';
+  }
+
+  const ilMap = { dogName:{e:'🐾',bg:'#F9EEEB'}, dogSize:{e:'⚖️',bg:'#E4EFEF'}, location:{e:'📍',bg:'#FAF6F0'}, preferredTime:{e:'🕐',bg:'#E4EFEF'}, notes:{e:'📝',bg:'#F5F3F0'}, experience:{e:'🎖️',bg:'#FAF6F0'}, canWalkLarge:{e:'🐕',bg:'#F9EEEB'}, canWalkMultiple:{e:'🐾',bg:'#E4EFEF'}, message:{e:'💬',bg:'#F5F3F0'} };
+  const il = ilMap[step.key] || {e:'🐾',bg:'#F5F3F0'};
 
   let inputHtml = '';
   if (step.type === 'text') {
-    inputHtml = `<input type="text" id="match-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_matchRegData[step.key] || ''}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; margin-top:24px;" autofocus onkeydown="if(event.key==='Enter')nextMatchRegStep()">`;
+    inputHtml = `<input type="text" id="match-reg-input" class="form-input"
+      placeholder="${step.placeholder || ''}" value="${_matchRegData[step.key] || ''}"
+      style="font-size:1.05rem;padding:14px 16px;border-radius:14px;"
+      autofocus onkeydown="if(event.key==='Enter')nextMatchRegStep()">`;
   } else if (step.type === 'textarea') {
-    inputHtml = `<textarea id="match-reg-input" class="form-input" placeholder="${step.placeholder || ''}" rows="3" style="font-size:1rem; padding:14px 16px; border-radius:12px; margin-top:24px; resize:none;">${_matchRegData[step.key] || ''}</textarea>`;
+    inputHtml = `<textarea id="match-reg-input" class="form-input"
+      placeholder="${step.placeholder || ''}" rows="3"
+      style="font-size:1rem;padding:14px 16px;border-radius:14px;resize:none;"
+      >${_matchRegData[step.key] || ''}</textarea>`;
   } else if (step.type === 'cards') {
-    inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">
+    inputHtml = `<div style="display:flex;flex-wrap:wrap;gap:10px;">
       ${step.options.map(opt => `
-        <button onclick="selectMatchRegCard('${step.key}','${opt.value}')" style="flex:1; min-width:90px; padding:16px 12px; border:1.5px solid ${_matchRegData[step.key] === opt.value ? '#1a1a1a' : '#e5e3e0'}; border-radius:14px; background:${_matchRegData[step.key] === opt.value ? '#f5f3f0' : '#fff'}; text-align:center; cursor:pointer; transition:all 0.15s;">
-          <div style="font-size:0.92rem; font-weight:700; color:#1a1a1a;">${opt.label}</div>
-          <div style="font-size:0.7rem; color:#999; margin-top:3px;">${opt.desc}</div>
-        </button>
-      `).join('')}
+        <button type="button" onclick="selectMatchRegCard('${step.key}','${opt.value}',this)"
+          class="mf-opt ${_matchRegData[step.key] === opt.value ? 'mf-opt-sel' : ''}">
+          <div style="font-size:0.92rem;font-weight:700;color:#1a1a1a;">${opt.label}</div>
+          <div style="font-size:0.72rem;color:#999;margin-top:3px;">${opt.desc}</div>
+        </button>`).join('')}
     </div>`;
   }
 
   const isLast = _matchRegStep === total - 1;
   const canSkip = !step.required;
+  const animClass = _matchRegDir >= 0 ? 'mf-fwd' : 'mf-bwd';
 
   content.innerHTML = `
-    <div style="flex:1;">
-      <h2 style="font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; line-height:1.3;">${step.question}</h2>
-      ${step.sub ? `<p style="font-size:0.88rem; color:#999; margin-top:6px;">${step.sub}</p>` : ''}
+    <div class="${animClass}" style="display:flex;flex-direction:column;min-height:100%;padding-top:4px;">
+      <div style="display:flex;justify-content:center;padding:8px 0 20px;">
+        <div style="width:88px;height:88px;border-radius:26px;background:${il.bg};display:flex;align-items:center;justify-content:center;font-size:2.6rem;">${il.e}</div>
+      </div>
+      <h2 style="font-size:1.4rem;font-weight:900;color:#1a1a1a;letter-spacing:-0.4px;line-height:1.3;margin:0 0 6px;">${step.question}</h2>
+      ${step.sub ? `<p style="font-size:0.88rem;color:#6B6B6B;margin:0 0 18px;line-height:1.5;">${step.sub}</p>` : '<div style="margin-bottom:18px;"></div>'}
       ${inputHtml}
-    </div>
-    <div style="display:flex; gap:8px; margin-top:24px;">
-      ${_matchRegStep > 0 ? `<button onclick="prevMatchRegStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; cursor:pointer;">이전</button>` : ''}
-      ${canSkip ? `<button onclick="skipMatchRegStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; color:#999; cursor:pointer;">건너뛰기</button>` : ''}
-      <button onclick="${isLast ? 'finishMatchRegister()' : 'nextMatchRegStep()'}" style="flex:2; padding:14px; border:none; border-radius:12px; background:#1a1a1a; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">${isLast ? '등록 완료' : '다음'}</button>
+      <div style="flex:1;min-height:24px;"></div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding-top:8px;">
+        <button onclick="${isLast ? 'finishMatchRegister()' : 'nextMatchRegStep()'}"
+          style="width:100%;padding:16px;border:none;border-radius:9999px;background:#1a1a1a;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;"
+          onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">
+          ${isLast ? '등록 완료' : '다음'}
+        </button>
+        ${canSkip ? `<button onclick="skipMatchRegStep()" style="width:100%;padding:12px;border:none;background:transparent;color:#A0A0A0;font-size:0.9rem;font-weight:600;cursor:pointer;">건너뛰기</button>` : ''}
+      </div>
     </div>
   `;
-  setTimeout(() => document.getElementById('match-reg-input')?.focus(), 100);
+  setTimeout(() => document.getElementById('match-reg-input')?.focus(), 80);
 }
 
-function selectMatchRegCard(key, value) {
+function selectMatchRegCard(key, value, el) {
   _matchRegData[key] = value;
-  renderMatchRegStep();
-  setTimeout(() => nextMatchRegStep(), 300);
+  document.querySelectorAll('.mf-opt').forEach(b => b.classList.remove('mf-opt-sel'));
+  if (el) el.classList.add('mf-opt-sel');
+  setTimeout(() => { _matchRegDir = 1; nextMatchRegStep(); }, 280);
 }
 
 function nextMatchRegStep() {
@@ -188,12 +238,12 @@ function nextMatchRegStep() {
   const step = steps[_matchRegStep];
   const input = document.getElementById('match-reg-input');
   if (input) _matchRegData[step.key] = input.value.trim();
-  if (step.required && !_matchRegData[step.key]) { if(input) input.style.borderColor='#e53e3e'; return; }
-  if (_matchRegStep < steps.length - 1) { _matchRegStep++; renderMatchRegStep(); }
+  if (step.required && !_matchRegData[step.key]) { if (input) input.style.borderColor = '#C8553D'; return; }
+  if (_matchRegStep < steps.length - 1) { _matchRegDir = 1; _matchRegStep++; renderMatchRegStep(); }
 }
 
 function prevMatchRegStep() {
-  if (_matchRegStep > 0) { _matchRegStep--; renderMatchRegStep(); }
+  if (_matchRegStep > 0) { _matchRegDir = -1; _matchRegStep--; renderMatchRegStep(); }
 }
 
 function skipMatchRegStep() {

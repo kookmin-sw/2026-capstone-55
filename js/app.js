@@ -67,17 +67,21 @@ function _handlePaymentRedirect() {
 
   if (Date.now() - payment.timestamp > 5 * 60 * 1000) return;
 
-  showToast('결제 완료! 매칭 요청을 보내는 중...', 'success');
-
   const user = AuthService.getCurrentUser();
   if (!user) return;
 
   if (payment.requestType === 'broadcast') {
+    showToast('결제 완료! 매칭 요청을 보내는 중...', 'success');
     _executeBroadcastAfterPayment(user, payment);
   } else if (payment.requestType === 'map') {
+    showToast('결제 완료! 매칭 요청을 보내는 중...', 'success');
     _executeMapRequestAfterPayment(user, payment);
+  } else if (payment.requestType === 'expert') {
+    showToast('결제가 완료됐어요. 상담방을 열게요.', 'success');
+    completeExpertPayment(payment.expertId, payment);
   } else {
     if (payment.walkerId) {
+      showToast('결제 완료! 매칭 요청을 보내는 중...', 'success');
       _sendMatchRequestAfterPayment(payment.walkerId, payment);
     }
   }

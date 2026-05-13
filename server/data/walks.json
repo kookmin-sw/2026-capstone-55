@@ -256,5 +256,26 @@
       }
     ],
     "createdAt": "2026-05-07T13:46:59.482Z"
+  },
+  {
+    "id": "walk_1778599746429_56fjuf",
+    "userId": "id-mo2s9e1c-2pg3r3v",
+    "dogId": "초코",
+    "dogName": "초코",
+    "startTime": "2026-05-12T15:29:04.106Z",
+    "endTime": "2026-05-12T15:29:05.853Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [
+      {
+        "lat": 37.67292128442915,
+        "lng": 126.73373714503057,
+        "accuracy": 35,
+        "timestamp": 1778599744121
+      }
+    ],
+    "createdAt": "2026-05-12T15:29:06.429Z"
   }
 ]

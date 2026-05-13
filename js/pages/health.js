@@ -2,47 +2,7 @@
 // --- 건강 분석 대시보드 페이지 ---
 async function renderHealthDashboardPage() {
   const user = AuthService.getCurrentUser();
-  if (!user) {
-    renderPage(`
-      <div class="page-header">
-        <h1>❤️ 건강 분석 대시보드</h1>
-        <p>AI 건강 분석 리포트를 확인해보세요</p>
-      </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
-        <div class="card" style="padding:20px; text-align:center;">
-          <div style="font-size:2rem;">🏃</div>
-          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-top:4px;">총 산책</div>
-          <div style="font-size:1.3rem; font-weight:800;">- 회</div>
-        </div>
-        <div class="card" style="padding:20px; text-align:center;">
-          <div style="font-size:2rem;">📏</div>
-          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-top:4px;">총 거리</div>
-          <div style="font-size:1.3rem; font-weight:800;">- km</div>
-        </div>
-        <div class="card" style="padding:20px; text-align:center;">
-          <div style="font-size:2rem;">⏱️</div>
-          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-top:4px;">총 시간</div>
-          <div style="font-size:1.3rem; font-weight:800;">- 분</div>
-        </div>
-        <div class="card" style="padding:20px; text-align:center;">
-          <div style="font-size:2rem;">🔥</div>
-          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-top:4px;">총 칼로리</div>
-          <div style="font-size:1.3rem; font-weight:800;">- kcal</div>
-        </div>
-      </div>
-      <div class="card" style="padding:20px; margin-bottom:16px;">
-        <h3 style="margin-bottom:12px;">🤖 AI 건강 분석</h3>
-        <p style="color:var(--color-text-muted); font-size:0.9rem;">산책 데이터를 기반으로 AI가 반려견의 건강 상태를 분석하고 맞춤 조언을 제공해요.</p>
-        <div style="margin-top:16px; padding:20px; background:var(--color-bg-warm); border-radius:12px; text-align:center;">
-          <p style="color:var(--color-text-muted);">아직 분석할 데이터가 없어요</p>
-        </div>
-      </div>
-      <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('건강 분석을 이용하려면 로그인이 필요해요!\\n반려견의 산책 데이터를 기반으로 AI가 건강을 분석해드려요.')">🏃 산책 시작하고 데이터 모으기</button>
-    `);
-    return;
-  }
-
-  const dogs = user.dogs || [];
+  const dogs = user ? (user.dogs || []) : [];
   const selectedDogId = StorageService.get('selectedDogId', '_all');
   const dog = selectedDogId !== '_all' ? dogs.find(d => d.name === selectedDogId) : null;
   const displayName = dog ? dog.name : '전체';
@@ -95,18 +55,49 @@ async function renderHealthDashboardPage() {
         </div>
       ` : ''}
 
+      ${!user ? `
+        <div style="text-align:center; margin-bottom:24px; padding:16px; border:1px dashed var(--color-border); border-radius:12px;">
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:8px;">로그인하면 산책 데이터를 기반으로 건강 리포트를 확인할 수 있어요</p>
+          <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/login')">로그인하기</button>
+        </div>
+      ` : ''}
+
       <div id="health-alert"></div>
       <div id="health-stats-section">
         <div style="text-align:center; padding:40px;"><div class="spinner"></div></div>
       </div>
       <div id="health-analysis-section"></div>
 
-      <button class="health-action-btn" onclick="Router.navigate('/walk-tracking')">산책 시작하기</button>
-      <button class="health-action-btn" onclick="Router.navigate('/ai')">AI 상담 받기</button>
+      <button class="health-action-btn" onclick="${user ? "Router.navigate('/walk-tracking')" : "showLoginModal('건강 분석을 이용하려면 로그인이 필요해요!\\n반려견의 산책 데이터를 기반으로 AI가 건강을 분석해드려요.')"}">산책 시작하기</button>
+      <button class="health-action-btn" onclick="${user ? "Router.navigate('/ai')" : "showLoginModal('AI 상담을 이용하려면 로그인이 필요해요!')"}">AI 상담 받기</button>
     </div>
   `);
 
-  await loadHealthDashboard(user);
+  if (user) {
+    await loadHealthDashboard(user);
+  } else {
+    renderHealthLoginRequiredState();
+  }
+}
+
+function renderHealthLoginRequiredState() {
+  const statsSection = document.getElementById('health-stats-section');
+  const analysisSection = document.getElementById('health-analysis-section');
+
+  if (statsSection) {
+    statsSection.innerHTML = `
+      <div style="text-align:center; padding:48px 20px;">
+        <div class="health-score-ring" style="border:3px dashed var(--color-border);">
+          <div class="health-score-ring__value" style="color:var(--color-text-muted);">--</div>
+          <div class="health-score-ring__label">활동 점수</div>
+        </div>
+        <p style="font-size:0.9rem; font-weight:600; margin-bottom:6px;">로그인이 필요해요</p>
+        <p style="font-size:0.82rem; color:var(--color-text-muted);">산책 기록과 건강 분석은 로그인 후 사용할 수 있어요</p>
+      </div>
+    `;
+  }
+
+  if (analysisSection) analysisSection.innerHTML = '';
 }
 
 function handleSelectHealthDog() {
