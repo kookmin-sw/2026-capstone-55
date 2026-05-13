@@ -1922,7 +1922,11 @@ async function renderRequesterDashboard(user, myProfile) {
  const isHidden = idx >= WALKER_INITIAL_LIMIT;
  return `
  <div class="dw-card walker-card-item${w.aiPending ? ' walker-card-item--pending' : ''}" data-walker-idx="${idx}" data-walker-id="${w.userId}" style="${idx === 0 ? 'border-color:#00AA76;' : ''}${isHidden ? 'display:none;' : ''}">
- <div class="dw-card__avatar" style="${idx === 0 ? 'background:#00AA76;' : ''}">${displayName.charAt(0)}</div>
+ <div class="dw-card__avatar" style="${idx === 0 ? 'background:#00AA76;' : ''}overflow:hidden;padding:0;">
+   ${w.profilePhoto
+     ? `<img src="${w.profilePhoto}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
+     : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#fff;font-weight:800;">${displayName.charAt(0)}</span>`}
+ </div>
  <div class="dw-card__body">
  <div class="dw-card__top">
  <div>
@@ -2136,14 +2140,35 @@ async function renderRequesterDashboard(user, myProfile) {
      <h2 class="match-section__title" style="margin:0;">${icon('sparkles',16)} AI 추천 도우미</h2>
      <button onclick="toggleAiScoreExplain()" style="font-size:0.75rem;color:#718096;background:none;border:1px solid #e2e8f0;border-radius:999px;padding:4px 12px;cursor:pointer;transition:all 0.15s;">점수 계산 방식 ?</button>
    </div>
-   <div id="ai-score-explain" style="display:none;background:#f8f8f6;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;font-size:0.82rem;line-height:1.7;color:#4A5568;">
-     <div style="font-weight:700;margin-bottom:8px;color:#1a1a1a;">AI 추천 점수는 이렇게 계산돼요</div>
-     <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin-bottom:12px;">
-       <span style="font-weight:700;color:#00AA76;">50%</span><span>프로필 적합도 — Gemini AI가 도우미 경력·대형견 경험·공격성 대응력을 내 반려견 특성과 비교해 평가</span>
-       <span style="font-weight:700;color:#3182CE;">30%</span><span>이력 보너스 — 내 반려견과 같은 크기의 강아지를 많이 산책시킨 도우미에게 가산점</span>
-       <span style="font-weight:700;color:#F6A623;">20%</span><span>신뢰도 — 산책 완료율 + 리뷰 평점 기반 (산책 3회 미만이면 프로필 점수로 대체)</span>
+   <div id="ai-score-explain" style="display:none;background:#f8f8f6;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:16px;font-size:0.8rem;line-height:1.6;color:#4A5568;">
+     <div style="font-weight:800;margin-bottom:12px;color:#1a1a1a;font-size:0.88rem;">AI 추천 점수는 이렇게 계산돼요</div>
+     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e8f5e9;">
+         <span style="font-weight:800;color:#00AA76;min-width:38px;">+25</span><span><strong>공격성 대응력</strong> — 내 반려견의 공격성 수준에 맞는 도우미 경험치</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e3f2fd;">
+         <span style="font-weight:800;color:#2196F3;min-width:38px;">+20</span><span><strong>지역 근접성</strong> — 같은 동 +20점 / 같은 구 +15점 / 같은 시 +8점</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #fce4ec;">
+         <span style="font-weight:800;color:#E91E63;min-width:38px;">+20</span><span><strong>대형견 경험</strong> — 내 반려견 크기에 맞는 도우미 경험 보유 여부</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #fff3e0;">
+         <span style="font-weight:800;color:#FF9800;min-width:38px;">+15</span><span><strong>시간대 매칭</strong> — 원하는 산책 시간과 도우미 가능 시간 일치 여부</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #f3e5f5;">
+         <span style="font-weight:800;color:#9C27B0;min-width:38px;">+15</span><span><strong>산책 경력</strong> — 도우미의 산책 경력 연수 (3년 이상 최고점)</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e8f5e9;">
+         <span style="font-weight:800;color:#4CAF50;min-width:38px;">+10</span><span><strong>완료 산책 수</strong> — 실제 완료한 산책 기록이 많을수록 신뢰도 가산점</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e3f2fd;">
+         <span style="font-weight:800;color:#607D8B;min-width:38px;">+8</span><span><strong>최근 활동</strong> — 30분 이내 접속 +8점 / 3일 이상 미접속 -5점</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #fff8e1;">
+         <span style="font-weight:800;color:#FFC107;min-width:38px;">+8</span><span><strong>견종 경험 매칭</strong> — 내 반려견 견종을 산책해본 도우미 우선</span>
+       </div>
      </div>
-     <div style="font-size:0.75rem;color:#999;">점수가 높을수록 내 반려견에게 더 적합한 도우미예요. 장시간 산책을 원하면 장시간 이력이 많은 도우미가 우선 추천돼요.</div>
+     <div style="font-size:0.73rem;color:#999;padding:8px 10px;background:#fff;border-radius:8px;">점수가 높을수록 내 반려견과 잘 맞는 도우미예요. Gemini AI 분석 버튼을 누르면 더 정밀한 매칭 결과를 볼 수 있어요.</div>
    </div>
    <div id="ai-score-wrapper" style="position:relative;">
      <div id="ai-score-blur-overlay" style="position:absolute;inset:0;z-index:10;backdrop-filter:blur(6px);background:rgba(255,255,255,0.55);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">

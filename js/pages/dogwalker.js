@@ -122,12 +122,18 @@ async function _renderDiscMap(userLat, userLng, radiusKm) {
  ? (distObj.distance < 1 ? `${(distObj.distance * 1000).toFixed(0)}m` : `${distObj.distance.toFixed(1)}km`)
  : '';
 
+ const walkerPhoto = w.profilePhoto || w.profileImage || '';
+ const walkerInitial = (w.userName || w.name || '?').charAt(0);
  const icon = L.divIcon({
- html: `<div class="dw-map-walker-pin">
- <div class="dw-map-walker-pin__avatar">${(w.userName || w.name || '?').charAt(0)}</div>
- <div class="dw-map-walker-pin__tail"></div>
- </div>`,
- className: '', iconSize: [44, 54], iconAnchor: [22, 54]
+   html: `<div class="dw-map-walker-pin">
+     <div class="dw-map-walker-pin__avatar" style="overflow:hidden;padding:0;">
+       ${walkerPhoto
+         ? `<img src="${walkerPhoto}" alt="${walkerInitial}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
+         : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-weight:800;">${walkerInitial}</span>`}
+     </div>
+     <div class="dw-map-walker-pin__tail"></div>
+   </div>`,
+   className: '', iconSize: [44, 54], iconAnchor: [22, 54]
  });
 
  const stars = '★'.repeat(Math.round(w.rating || 5)) + '☆'.repeat(5 - Math.round(w.rating || 5));
@@ -144,7 +150,7 @@ async function _renderDiscMap(userLat, userLng, radiusKm) {
  <div class="walker-card-popup" style="min-width:280px;font-family:inherit;">
  <div style="background:#1a1a1a;padding:14px 16px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:12px;">
  <div style="width:44px;height:44px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;overflow:hidden;flex-shrink:0;">
- ${w.profileImage ? `<img src="${w.profileImage}" style="width:100%;height:100%;object-fit:cover;">` : w.userName.charAt(0)}
+ ${(w.profilePhoto||w.profileImage) ? `<img src="${w.profilePhoto||w.profileImage}" style="width:100%;height:100%;object-fit:cover;">` : (w.userName||'?').charAt(0)}
  </div>
  <div style="flex:1;min-width:0;">
  <div style="color:#fff;font-weight:700;font-size:0.92rem;display:flex;align-items:center;gap:6px;">
