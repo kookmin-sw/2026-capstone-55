@@ -1,7 +1,6 @@
 ﻿// Pawsitive - Breeds Page
 // --- 품종 목록 페이지 (탭: 백과사전 / AI 추천) ---
 let breedPageTab = 'recommend'; // 'encyclopedia' | 'recommend'
-let _breedRecDir = 1;
 
 function renderBreedListPage() {
   renderPage(`
@@ -95,41 +94,6 @@ const _breedRecommendSteps = [
 
 function renderBreedRecommendUI() {
   return `
-    <style>
-      .breed-rec-start { padding:28px; margin-bottom:20px; text-align:center; }
-      .breed-rec-start__icon { font-size:2.4rem; margin-bottom:12px; }
-      .breed-rec-start h2 { margin-bottom:6px; }
-      .breed-rec-start p { color:var(--color-text-muted); font-size:0.9rem; line-height:1.6; margin:0 auto 20px; max-width:360px; }
-      .breed-rec-flow__progress { display:flex; gap:4px; margin-bottom:32px; }
-      .breed-rec-flow__bar { flex:1; height:3px; border-radius:2px; background:#e5e3e0; transition:background 0.3s; }
-      .breed-rec-flow__bar--on { background:#1a1a1a; }
-      .breed-rec-flow__content { flex:1; display:flex; flex-direction:column; }
-      .breed-rec-flow__title { font-size:1.4rem; font-weight:700; line-height:1.3; margin:0; }
-      .breed-rec-flow__sub { font-size:0.88rem; color:#999; margin-top:6px; }
-      .breed-rec-flow__cards { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
-      .breed-rec-flow__card { flex:1; min-width:92px; padding:16px 12px; border:1.5px solid #e5e3e0; border-radius:14px; background:#fff; text-align:center; cursor:pointer; transition:all 0.15s; }
-      .breed-rec-flow__card:hover { border-color:#1a1a1a; }
-      .breed-rec-flow__card--selected { border-color:#1a1a1a; background:#f5f3f0; }
-      .breed-rec-flow__label { font-size:0.92rem; font-weight:700; color:#1a1a1a; }
-      .breed-rec-flow__desc { font-size:0.7rem; color:#999; margin-top:3px; line-height:1.35; }
-      .breed-rec-flow__number { width:100%; margin-top:24px; padding:18px 16px; border:1.5px solid #e5e3e0; border-radius:14px; background:#fff; color:#1a1a1a; font-size:1.3rem; font-weight:800; text-align:center; outline:none; transition:border-color 0.15s, box-shadow 0.15s; }
-      .breed-rec-flow__number:focus { border-color:#1a1a1a; box-shadow:0 0 0 3px rgba(26,26,26,0.08); }
-      .breed-rec-flow__hint { margin-top:8px; color:#999; font-size:0.75rem; text-align:center; }
-      .breed-rec-flow__actions { display:flex; gap:8px; margin-top:24px; }
-      .breed-rec-flow__btn { padding:14px; border-radius:12px; font-size:0.9rem; font-weight:700; cursor:pointer; transition:opacity 0.15s; }
-      .breed-rec-flow__btn--ghost { flex:1; border:1.5px solid #e5e3e0; background:#fff; color:#1a1a1a; }
-      .breed-rec-flow__btn--muted { flex:1; border:1.5px solid #e5e3e0; background:#fff; color:#999; }
-      .breed-rec-flow__btn--primary { flex:2; border:none; background:#1a1a1a; color:#fff; }
-      .breed-rec-flow__btn--primary:hover { opacity:0.85; }
-      .breed-rec-modal__stage { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px; overflow:hidden; z-index:2; }
-      .breed-rec-modal__card { background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15); z-index:2; animation:modalSlideUp 0.28s ease both; }
-      @media (max-width:520px) {
-        .breed-rec-flow__card { min-width:120px; }
-        .breed-rec-modal__stage { padding:14px; align-items:flex-end; }
-        .breed-rec-modal__card { padding:36px 24px 28px; min-height:360px; border-radius:20px 20px 0 0; }
-      }
-    </style>
-
     <input type="hidden" id="rec-size" value="any">
     <input type="hidden" id="rec-exercise" value="any">
     <input type="hidden" id="rec-grooming" value="any">
@@ -140,11 +104,11 @@ function renderBreedRecommendUI() {
     <input type="checkbox" id="rec-apartment" style="display:none;">
     <textarea id="rec-freetext" style="display:none;"></textarea>
 
-    <div class="card breed-rec-start">
-      <div class="breed-rec-start__icon">🐾</div>
-      <h2>나에게 맞는 반려견 찾기</h2>
-      <p>생활 패턴, 주거 환경, 선호도를 바탕으로 383종 중 딱 맞는 견종을 골라드려요.</p>
-      <button class="btn btn-primary" onclick="openBreedRecommendFlow()" style="width:100%; max-width:320px; padding:14px; font-weight:800;">추천 시작하기</button>
+    <div class="card" style="padding:28px; margin-bottom:20px; text-align:center;">
+      <div style="font-size:2.4rem; margin-bottom:12px;">🐾</div>
+      <h2 style="margin-bottom:6px;">나에게 맞는 반려견 찾기</h2>
+      <p style="color:var(--color-text-muted); font-size:0.9rem; line-height:1.6; margin:0 auto 20px; max-width:360px;">생활 패턴, 주거 환경, 선호도를 바탕으로 383종 중 딱 맞는 견종을 골라드려요.</p>
+      <button id="rec-submit-btn" class="btn btn-primary" onclick="openBreedRecommendFlow()" style="width:100%; max-width:320px; padding:14px; font-weight:800;">추천 시작하기</button>
     </div>
 
     <div id="breed-recommend-result"></div>
@@ -153,46 +117,27 @@ function renderBreedRecommendUI() {
 
 function openBreedRecommendFlow() {
   _breedRecStep = 0;
-  _breedRecDir = 1;
   _breedRecData = {
-    size: 'any', exercise: 'any', grooming: 'any',
-    trainability: 'any', barking: 'any',
-    childFriendly: false, apartmentFriendly: false,
-    count: '3', freeText: ''
+    size: 'any',
+    exercise: 'any',
+    grooming: 'any',
+    trainability: 'any',
+    barking: 'any',
+    childFriendly: false,
+    apartmentFriendly: false,
+    count: '3',
+    freeText: ''
   };
 
   document.getElementById('breed-rec-modal')?.remove();
   const app = document.getElementById('app');
   app.innerHTML += `
-    <style id="brf-styles">
-      @keyframes brfSU  { from{transform:translateY(100%)} to{transform:translateY(0)} }
-      @keyframes brfFwd { from{opacity:0;transform:translateX(36px)} to{opacity:1;transform:none} }
-      @keyframes brfBwd { from{opacity:0;transform:translateX(-36px)} to{opacity:1;transform:none} }
-      .brf-fwd  { animation:brfFwd 0.26s cubic-bezier(.4,0,.2,1) both }
-      .brf-bwd  { animation:brfBwd 0.26s cubic-bezier(.4,0,.2,1) both }
-      .brf-dot  { width:6px;height:6px;border-radius:3px;background:#E5E3E0;transition:all 0.3s }
-      .brf-dot-on   { width:22px;background:#C8553D }
-      .brf-dot-done { background:#588B8B }
-      .brf-opt { flex:1;min-width:80px;padding:14px 10px;border:1.5px solid #E5E3E0;border-radius:14px;background:#fff;text-align:center;cursor:pointer;transition:all 0.15s;box-sizing:border-box }
-      .brf-opt:hover { border-color:#1a1a1a;background:#F5F3F0 }
-      .brf-opt-sel   { border-color:#C8553D;background:#F9EEEB }
-    </style>
-    <div id="breed-rec-modal"
-      onclick="if(event.target===this)closeBreedRecommendFlow()"
-      style="position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.52);backdrop-filter:blur(4px);">
-      <div style="position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;z-index:2;">
-        <div style="background:#FAFAF8;border-radius:28px 28px 0 0;width:100%;max-width:480px;height:86vh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,0.18);animation:brfSU 0.3s cubic-bezier(.4,0,.2,1);overflow:hidden;">
-          <div style="padding:12px 0 4px;display:flex;justify-content:center;flex-shrink:0;">
-            <div style="width:36px;height:4px;background:#D1CFC9;border-radius:2px;"></div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px 10px;flex-shrink:0;">
-            <button id="brf-back-btn" onclick="prevBreedRecStep()"
-              style="width:36px;height:36px;border-radius:50%;border:none;background:#F5F3F0;font-size:1.4rem;font-weight:300;color:#1a1a1a;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;opacity:0;pointer-events:none;transition:opacity 0.2s;">‹</button>
-            <div id="breed-rec-progress" style="display:flex;gap:6px;align-items:center;"></div>
-            <button onclick="closeBreedRecommendFlow()"
-              style="width:36px;height:36px;border-radius:50%;border:none;background:#F5F3F0;font-size:0.82rem;color:#6B6B6B;cursor:pointer;">✕</button>
-          </div>
-          <div id="breed-rec-content" style="flex:1;overflow-y:auto;padding:0 24px 32px;"></div>
+    <div id="breed-rec-modal" style="position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+          <button onclick="closeBreedRecommendFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
+          <div id="breed-rec-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
+          <div id="breed-rec-content" style="flex:1; display:flex; flex-direction:column;"></div>
         </div>
       </div>
     </div>
@@ -209,91 +154,61 @@ function renderBreedRecStep() {
   const total = _breedRecommendSteps.length;
   const content = document.getElementById('breed-rec-content');
   const progress = document.getElementById('breed-rec-progress');
-  const backBtn = document.getElementById('brf-back-btn');
   if (!step || !content || !progress) return;
 
-  progress.innerHTML = Array.from({length: total}, (_, i) => {
-    const cls = i === _breedRecStep ? 'brf-dot brf-dot-on' : i < _breedRecStep ? 'brf-dot brf-dot-done' : 'brf-dot';
-    return `<div class="${cls}"></div>`;
-  }).join('');
-
-  if (backBtn) {
-    backBtn.style.opacity = _breedRecStep > 0 ? '1' : '0';
-    backBtn.style.pointerEvents = _breedRecStep > 0 ? 'auto' : 'none';
-  }
-
-  const ilMap = { size:{e:'📏',bg:'#F9EEEB'}, exercise:{e:'🏃',bg:'#E4EFEF'}, grooming:{e:'✂️',bg:'#FAF6F0'}, trainability:{e:'🎓',bg:'#E4EFEF'}, barking:{e:'🔊',bg:'#F9EEEB'}, environment:{e:'🏠',bg:'#FAF6F0'}, count:{e:'🔢',bg:'#F9EEEB'}, freeText:{e:'💬',bg:'#E4EFEF'} };
-  const il = ilMap[step.key] || {e:'🐾',bg:'#F5F3F0'};
+  progress.innerHTML = Array.from({ length: total }, (_, i) =>
+    `<div style="flex:1; height:3px; border-radius:2px; background:${i <= _breedRecStep ? '#1a1a1a' : '#e5e3e0'}; transition:background 0.3s;"></div>`
+  ).join('');
 
   let inputHtml = '';
   if (step.type === 'cards') {
     const current = _breedRecData[step.key] || step.defaultValue || '';
-    inputHtml = `<div style="display:flex;flex-wrap:wrap;gap:10px;">
+    inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">
       ${step.options.map(opt => `
-        <button type="button" onclick="selectBreedRecCard('${step.key}','${opt.value}',this)"
-          class="brf-opt ${current === opt.value ? 'brf-opt-sel' : ''}">
-          <div style="font-size:0.92rem;font-weight:700;color:#1a1a1a;">${opt.label}</div>
-          <div style="font-size:0.72rem;color:#999;margin-top:3px;">${opt.desc}</div>
-        </button>`).join('')}
+        <button onclick="selectBreedRecCard('${step.key}','${opt.value}')" style="flex:1; min-width:90px; padding:16px 12px; border:1.5px solid ${current === opt.value ? '#1a1a1a' : '#e5e3e0'}; border-radius:14px; background:${current === opt.value ? '#f5f3f0' : '#fff'}; text-align:center; cursor:pointer; transition:all 0.15s;">
+          <div style="font-size:0.92rem; font-weight:700; color:#1a1a1a;">${opt.label}</div>
+          <div style="font-size:0.7rem; color:#999; margin-top:3px;">${opt.desc}</div>
+        </button>
+      `).join('')}
     </div>`;
   } else if (step.type === 'flags') {
-    inputHtml = `<div style="display:flex;flex-wrap:wrap;gap:10px;">
+    inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">
       ${step.options.map(opt => `
-        <button type="button" onclick="toggleBreedRecFlag('${opt.key}')"
-          class="brf-opt ${_breedRecData[opt.key] ? 'brf-opt-sel' : ''}">
-          <div style="font-size:0.92rem;font-weight:700;color:#1a1a1a;">${opt.label}</div>
-          <div style="font-size:0.72rem;color:#999;margin-top:3px;">${opt.desc}</div>
-        </button>`).join('')}
+        <button onclick="toggleBreedRecFlag('${opt.key}')" style="flex:1; min-width:120px; padding:16px 12px; border:1.5px solid ${_breedRecData[opt.key] ? '#1a1a1a' : '#e5e3e0'}; border-radius:14px; background:${_breedRecData[opt.key] ? '#f5f3f0' : '#fff'}; text-align:center; cursor:pointer; transition:all 0.15s;">
+          <div style="font-size:0.92rem; font-weight:700; color:#1a1a1a;">${opt.label}</div>
+          <div style="font-size:0.7rem; color:#999; margin-top:3px;">${opt.desc}</div>
+        </button>
+      `).join('')}
     </div>`;
-  } else if (step.type === 'textarea') {
-    inputHtml = `<textarea id="breed-rec-input" class="form-input"
-      placeholder="${step.placeholder || ''}" rows="4"
-      style="font-size:1rem;padding:14px 16px;border-radius:14px;resize:none;"
-      >${_breedRecData[step.key] || ''}</textarea>`;
   } else if (step.type === 'number') {
-    const cur = _breedRecData[step.key] || step.defaultValue || '';
-    inputHtml = `
-      <input id="breed-rec-input" type="number" inputmode="numeric"
-        min="${step.min||1}" max="${step.max||20}" step="1" value="${cur}"
-        style="width:100%;padding:18px;border:1.5px solid #E5E3E0;border-radius:14px;background:#fff;font-size:1.6rem;font-weight:800;text-align:center;outline:none;transition:border-color 0.15s;box-sizing:border-box;"
-        onfocus="this.style.borderColor='#C8553D'" onblur="this.style.borderColor='#E5E3E0'"
-        onkeydown="if(event.key==='Enter')nextBreedRecStep()">
-      <p style="text-align:center;color:#A0A0A0;font-size:0.78rem;margin:8px 0 0;">${step.min||1}~${step.max||20}종 입력 가능</p>
-    `;
+    inputHtml = `<input type="number" id="breed-rec-input" class="form-input" min="${step.min || 1}" max="${step.max || 20}" value="${_breedRecData[step.key] || step.defaultValue || '3'}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; margin-top:24px; text-align:center; font-weight:800;" autofocus onkeydown="if(event.key==='Enter')nextBreedRecStep()">
+      <p style="text-align:center; color:#999; font-size:0.78rem; margin:8px 0 0;">${step.min || 1}~${step.max || 20}종 입력 가능</p>`;
+  } else if (step.type === 'textarea') {
+    inputHtml = `<textarea id="breed-rec-input" class="form-input" placeholder="${step.placeholder || ''}" rows="3" style="font-size:1rem; padding:14px 16px; border-radius:12px; margin-top:24px; resize:none;">${_breedRecData[step.key] || ''}</textarea>`;
   }
 
   const isLast = _breedRecStep === total - 1;
   const canSkip = !step.required;
-  const animClass = _breedRecDir >= 0 ? 'brf-fwd' : 'brf-bwd';
 
   content.innerHTML = `
-    <div class="${animClass}" style="display:flex;flex-direction:column;min-height:100%;padding-top:4px;">
-      <div style="display:flex;justify-content:center;padding:8px 0 20px;">
-        <div style="width:88px;height:88px;border-radius:26px;background:${il.bg};display:flex;align-items:center;justify-content:center;font-size:2.6rem;">${il.e}</div>
-      </div>
-      <h2 style="font-size:1.4rem;font-weight:900;color:#1a1a1a;letter-spacing:-0.4px;line-height:1.3;margin:0 0 6px;">${step.question}</h2>
-      ${step.sub ? `<p style="font-size:0.88rem;color:#6B6B6B;margin:0 0 18px;line-height:1.5;">${step.sub}</p>` : '<div style="margin-bottom:18px;"></div>'}
+    <div style="flex:1;">
+      <h2 style="font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; line-height:1.3;">${step.question}</h2>
+      ${step.sub ? `<p style="font-size:0.88rem; color:#999; margin-top:6px;">${step.sub}</p>` : ''}
       ${inputHtml}
-      <div style="flex:1;min-height:24px;"></div>
-      <div style="display:flex;flex-direction:column;gap:10px;padding-top:8px;">
-        <button id="rec-submit-btn"
-          onclick="${isLast ? 'finishBreedRecommendFlow()' : 'nextBreedRecStep()'}"
-          style="width:100%;padding:16px;border:none;border-radius:9999px;background:#1a1a1a;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;"
-          onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">
-          ${isLast ? 'AI 맞춤 추천 받기 ✨' : '다음'}
-        </button>
-        ${canSkip ? `<button onclick="skipBreedRecStep()" style="width:100%;padding:12px;border:none;background:transparent;color:#A0A0A0;font-size:0.9rem;font-weight:600;cursor:pointer;">건너뛰기</button>` : ''}
-      </div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:24px;">
+      ${_breedRecStep > 0 ? `<button onclick="prevBreedRecStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; cursor:pointer;">이전</button>` : ''}
+      ${canSkip ? `<button onclick="skipBreedRecStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; color:#999; cursor:pointer;">건너뛰기</button>` : ''}
+      <button onclick="${isLast ? 'finishBreedRecommendFlow()' : 'nextBreedRecStep()'}" style="flex:2; padding:14px; border:none; border-radius:12px; background:#1a1a1a; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">${isLast ? 'AI 맞춤 추천 받기' : '다음'}</button>
     </div>
   `;
-  setTimeout(() => document.getElementById('breed-rec-input')?.focus(), 80);
+  setTimeout(() => document.getElementById('breed-rec-input')?.focus(), 100);
 }
 
-function selectBreedRecCard(key, value, el) {
+function selectBreedRecCard(key, value) {
   _breedRecData[key] = value;
-  document.querySelectorAll('.brf-opt').forEach(b => b.classList.remove('brf-opt-sel'));
-  if (el) el.classList.add('brf-opt-sel');
-  setTimeout(() => { _breedRecDir = 1; nextBreedRecStep(); }, 220);
+  renderBreedRecStep();
+  setTimeout(() => nextBreedRecStep(), 300);
 }
 
 function toggleBreedRecFlag(key) {
@@ -305,34 +220,22 @@ function nextBreedRecStep() {
   const step = _breedRecommendSteps[_breedRecStep];
   const input = document.getElementById('breed-rec-input');
   if (input) _breedRecData[step.key] = input.value.trim();
-  if (_breedRecStep < _breedRecommendSteps.length - 1) {
-    _breedRecDir = 1;
-    _breedRecStep++;
-    renderBreedRecStep();
-  }
+  if (step.required && !_breedRecData[step.key]) { if (input) input.style.borderColor = '#e53e3e'; return; }
+  if (_breedRecStep < _breedRecommendSteps.length - 1) { _breedRecStep++; renderBreedRecStep(); }
 }
 
 function prevBreedRecStep() {
   const step = _breedRecommendSteps[_breedRecStep];
   const input = document.getElementById('breed-rec-input');
   if (input) _breedRecData[step.key] = input.value.trim();
-  if (_breedRecStep > 0) {
-    _breedRecDir = -1;
-    _breedRecStep--;
-    renderBreedRecStep();
-  }
+  if (_breedRecStep > 0) { _breedRecStep--; renderBreedRecStep(); }
 }
 
 function skipBreedRecStep() {
   const step = _breedRecommendSteps[_breedRecStep];
   if (step.type === 'textarea') _breedRecData[step.key] = '';
-  if (_breedRecStep < _breedRecommendSteps.length - 1) {
-    _breedRecDir = 1;
-    _breedRecStep++;
-    renderBreedRecStep();
-  } else {
-    finishBreedRecommendFlow();
-  }
+  if (_breedRecStep < _breedRecommendSteps.length - 1) { _breedRecStep++; renderBreedRecStep(); }
+  else finishBreedRecommendFlow();
 }
 
 function finishBreedRecommendFlow() {
@@ -345,8 +248,7 @@ function finishBreedRecommendFlow() {
   document.getElementById('rec-grooming').value = _breedRecData.grooming || 'any';
   document.getElementById('rec-trainability').value = _breedRecData.trainability || 'any';
   document.getElementById('rec-barking').value = _breedRecData.barking || 'any';
-  const normalizedCount = Math.min(20, Math.max(1, parseInt(_breedRecData.count, 10) || 3));
-  document.getElementById('rec-count').value = String(normalizedCount);
+  document.getElementById('rec-count').value = String(Math.min(20, Math.max(1, parseInt(_breedRecData.count, 10) || 3)));
   document.getElementById('rec-child').checked = !!_breedRecData.childFriendly;
   document.getElementById('rec-apartment').checked = !!_breedRecData.apartmentFriendly;
   document.getElementById('rec-freetext').value = _breedRecData.freeText || '';
