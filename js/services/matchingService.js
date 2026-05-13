@@ -321,6 +321,22 @@ const MatchingService = (() => {
         preferredTime: w.preferredTime || '',
         acceptedSizes: w.acceptedSizes || ['small', 'medium', 'large'],
       }));
+
+      // 서버에서 새 워커 목록을 가져왔으면, localStorage의 구형 더미 워커 프로필을 제거
+      // (userId가 'dummy-walker-'로 시작하는 항목은 walkers.json에서만 관리)
+      if (_serverWalkersCache.length > 0) {
+        const serverIds = new Set(_serverWalkersCache.map(w => w.userId));
+        const profiles = StorageService.get('matchProfiles', []);
+        const cleaned = profiles.filter(p => {
+          if (p.role === 'walker' && p.userId && p.userId.startsWith('dummy-')) {
+            return serverIds.has(p.userId); // 서버에 없는 더미 워커 제거
+          }
+          return true;
+        });
+        if (cleaned.length !== profiles.length) {
+          StorageService.set('matchProfiles', cleaned);
+        }
+      }
     } catch(e) {
       console.error('[MatchingService] 서버 동기화 실패:', e);
       _serverWalkersCache = null;

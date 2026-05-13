@@ -87,7 +87,9 @@ function validateWalkerProfile(body) {
 
 function readWalkers() {
   try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    let raw = fs.readFileSync(DATA_FILE, 'utf8');
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1); // BOM 제거
+    return JSON.parse(raw);
   } catch {
     return [];
   }

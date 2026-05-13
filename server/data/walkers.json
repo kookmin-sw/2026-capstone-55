@@ -1,4 +1,4 @@
-﻿[
+[
   {
     "userId": "dummy-walker-001",
     "name": "김지은",
@@ -30,7 +30,7 @@
     "trustScore": 91,
     "specialty": "대형견·공격성 전문",
     "registeredAt": "2026-04-10T09:00:00.000Z",
-    "lastSeenAt": "2026-05-13T08:46:02.487Z"
+    "lastSeenAt": "2026-05-13T08:44:00.000Z"
   },
   {
     "userId": "dummy-walker-002",
@@ -63,7 +63,7 @@
     "trustScore": 78,
     "specialty": "이른 아침 전문",
     "registeredAt": "2026-04-15T08:00:00.000Z",
-    "lastSeenAt": "2026-05-13T08:46:02.487Z"
+    "lastSeenAt": "2026-05-13T08:44:00.000Z"
   },
   {
     "userId": "dummy-walker-003",
@@ -96,7 +96,7 @@
     "trustScore": 62,
     "specialty": "소형견·불안견 케어",
     "registeredAt": "2026-04-20T10:00:00.000Z",
-    "lastSeenAt": "2026-05-13T08:46:02.487Z"
+    "lastSeenAt": "2026-05-13T08:44:00.000Z"
   },
   {
     "userId": "dummy-walker-004",
@@ -129,7 +129,7 @@
     "trustScore": 97,
     "specialty": "훈련사 출신·문제행동 전문",
     "registeredAt": "2026-03-01T08:00:00.000Z",
-    "lastSeenAt": "2026-05-13T08:46:02.487Z"
+    "lastSeenAt": "2026-05-13T08:44:00.000Z"
   },
   {
     "userId": "dummy-walker-005",
@@ -162,7 +162,7 @@
     "trustScore": 74,
     "specialty": "저녁 산책 전문",
     "registeredAt": "2026-04-05T17:00:00.000Z",
-    "lastSeenAt": "2026-05-13T08:46:02.487Z"
+    "lastSeenAt": "2026-05-13T08:44:00.000Z"
   },
   {
     "userId": "dummy-walker-006",
@@ -195,7 +195,7 @@
     "trustScore": 94,
     "specialty": "다중 산책·상시 가능",
     "registeredAt": "2026-02-15T09:00:00.000Z",
-    "lastSeenAt": "2026-05-13T08:46:02.487Z"
+    "lastSeenAt": "2026-05-13T08:44:00.000Z"
   },
   {
     "userId": "dummy-walker-007",
@@ -228,6 +228,6 @@
     "trustScore": 48,
     "specialty": "소형견 입문 도우미",
     "registeredAt": "2026-05-01T13:00:00.000Z",
-    "lastSeenAt": "2026-05-13T08:46:02.487Z"
+    "lastSeenAt": "2026-05-13T08:44:00.000Z"
   }
 ]
