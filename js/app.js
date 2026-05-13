@@ -89,8 +89,7 @@ async function requestTossPayment({ amount, orderId, orderName, customerName }) 
       showToast('결제가 취소되었어요.', 'info');
     } else {
       showToast('결제 중 오류가 발생했어요: ' + (e.message || ''), 'error');
-    }
-  }
+     }
 }
 
 /**
@@ -202,9 +201,8 @@ function showPaymentConfirmModal({ dogSize, dogName, duration = 40 }) {
           payBtn.textContent = '반려견을 선택해주세요';
           payBtn.disabled = true;
           payBtn.style.opacity = '0.5';
-        }
-      }
-    }
+     }
+}
 
     // 이벤트 바인딩
     modal.querySelectorAll('.pay-dog-cb').forEach(cb => cb.addEventListener('change', updateSummary));
@@ -248,6 +246,33 @@ function showPaymentConfirmModal({ dogSize, dogName, duration = 40 }) {
       };
       localStorage.setItem('pawsitive_pending_payment', JSON.stringify(pendingPayment));
 
+      // 서버에 결제 기록 먼저 생성 (리다이렉트 중 유실 방지)
+      let lat = null, lng = null;
+      try {
+        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 1000, maximumAge: 30000 }));
+        lat = pos.coords.latitude; lng = pos.coords.longitude;
+      } catch(e) {}
+
+      try {
+        await fetch('/api/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            orderId,
+            amount: total,
+            duration: selectedDuration,
+            dogs: selectedDogs,
+            walkerId: window._pendingPaymentWalkerId || null,
+            requestType: window._pendingPaymentType || 'direct',
+            lat, lng
+          })
+        });
+      } catch(e) {
+        // 서버 기록 실패해도 localStorage 백업이 있으므로 계속 진행
+        console.warn('[Payment] 서버 결제 기록 실패, localStorage 백업으로 진행:', e.message);
+      }
+
       try {
         const dogNames = selectedDogs.map(d => d.name).join(', ');
         await requestTossPayment({ amount: total, orderId, orderName: `산책 서비스 (${dogNames})`, customerName: user?.name || '요청자' });
@@ -256,6 +281,17 @@ function showPaymentConfirmModal({ dogSize, dogName, duration = 40 }) {
         resolve({ orderId, amount: total, duration: selectedDuration, dogs: selectedDogs });
       } catch(e) {
         localStorage.removeItem('pawsitive_pending_payment');
+        // 결제 취소/실패 시 서버 기록도 환불 처리
+        try {
+          const payments = await fetch(`/api/payments/by-order/${orderId}`).then(r => r.json());
+          if (payments.success && payments.payment) {
+            await fetch(`/api/payments/${payments.payment.id}/refund`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reason: '결제 취소/실패' })
+            });
+          }
+        } catch(_) {}
         modal.remove();
         reject('payment_failed');
       }
@@ -527,7 +563,13 @@ function _handlePaymentRedirect() {
 
  // localStorage에서 결제 정보 복원
  const raw = localStorage.getItem('pawsitive_pending_payment');
- if (!raw) { showToast('결제 정보를 찾을 수 없어요.', 'error'); return; }
+ if (!raw) {
+   // localStorage에 없으면 서버에서 미처리 결제 확인 (다른 기기/크래시 복구)
+   const user = AuthService.getCurrentUser();
+   if (user) _recoverPendingPaymentFromServer(user);
+   else showToast('결제 정보를 찾을 수 없어요.', 'error');
+   return;
+ }
  localStorage.removeItem('pawsitive_pending_payment');
 
  let payment;
@@ -591,6 +633,8 @@ async function _executeBroadcastAfterPayment(user, payment) {
    });
    const data = await resp.json();
    if (data.success && data.request) {
+     // 서버에 결제 완료 처리
+     _markPaymentCompleted(payment.orderId, data.request.id);
      // 이미 오버레이가 표시 중이면 requestId와 sentCount만 업데이트
      const existingOverlay = document.getElementById('broadcast-waiting');
      if (existingOverlay) {
@@ -610,9 +654,12 @@ async function _executeBroadcastAfterPayment(user, payment) {
    } else {
      document.getElementById('broadcast-waiting')?.remove();
      clearInterval(_broadcastTimer); _broadcastTimer = null;
+     // 요청 실패 시 재시도 기록
+     _markPaymentRetry(payment.orderId, data.error || '요청 생성 실패');
      showToast(data.error || '도우미를 찾지 못했어요.', 'error');
    }
  } catch(e) {
+   _markPaymentRetry(payment.orderId, e.message || '네트워크 오류');
    showToast('요청 전송에 실패했어요.', 'error');
  }
 }
@@ -647,17 +694,129 @@ async function _executeMapRequestAfterPayment(user, payment) {
    });
    const result = await res.json();
    if (result.success) {
+     // 서버에 결제 완료 처리
+     _markPaymentCompleted(payment.orderId, result.request?.id || null);
      showToast('매칭 요청을 보냈습니다!', 'success');
      renderMatchingPage();
    } else {
+     _markPaymentRetry(payment.orderId, result.error || '요청 생성 실패');
      showToast(result.error || '요청 실패', 'error');
    }
  } catch(e) {
+   _markPaymentRetry(payment.orderId, e.message || '네트워크 오류');
    showToast('요청 전송에 실패했어요.', 'error');
  }
 }
 
 // ── 브라우저 푸시 알림 ────────────────────────────────────────
+
+// ── 결제 상태 관리 헬퍼 ─────────────────────────────────────
+/**
+ * 서버에 결제 완료 처리 (요청 전송 성공 시)
+ */
+async function _markPaymentCompleted(orderId, requestId) {
+  try {
+    const resp = await fetch(`/api/payments/by-order/${orderId}`);
+    const data = await resp.json();
+    if (data.success && data.payment) {
+      await fetch(`/api/payments/${data.payment.id}/complete`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId })
+      });
+    }
+  } catch(e) {
+    console.warn('[Payment] 결제 완료 처리 실패:', e.message);
+  }
+}
+
+/**
+ * 요청 생성 실패 시 결제를 환불 상태로 전환
+ */
+async function _markPaymentRetry(orderId, error) {
+  try {
+    const resp = await fetch(`/api/payments/by-order/${orderId}`);
+    const data = await resp.json();
+    if (data.success && data.payment) {
+      await fetch(`/api/payments/${data.payment.id}/refund`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: `요청 생성 실패: ${error || '알 수 없는 오류'}` })
+      });
+    }
+  } catch(e) {
+    console.warn('[Payment] 환불 처리 실패:', e.message);
+  }
+}
+
+/**
+ * 서버에서 미처리 결제 복구 (localStorage 유실 시 fallback)
+ * 앱 시작 시 또는 결제 redirect 후 localStorage가 비어있을 때 호출
+ */
+async function _recoverPendingPaymentFromServer(user) {
+  try {
+    const resp = await fetch(`/api/payments/pending?userId=${user.id}`);
+    const data = await resp.json();
+    if (!data.success || !data.payments || data.payments.length === 0) {
+      return; // 미처리 결제 없음
+    }
+
+    // 가장 최근 미처리 결제를 처리
+    const payment = data.payments[0];
+    console.log('[Payment] 서버에서 미처리 결제 복구:', payment.orderId);
+
+    // 오버레이 표시
+    showWalkerWaitingOverlay('__pending__', 0);
+    const cancelBtn = document.querySelector('#broadcast-waiting button');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+
+    if (payment.requestType === 'broadcast') {
+      _executeBroadcastAfterPayment(user, payment);
+    } else if (payment.requestType === 'map') {
+      _executeMapRequestAfterPayment(user, payment);
+    } else {
+      if (payment.walkerId) {
+        _sendMatchRequestAfterPayment(payment.walkerId, payment);
+      }
+    }
+  } catch(e) {
+    console.warn('[Payment] 서버 미처리 결제 복구 실패:', e.message);
+  }
+}
+
+/**
+ * 앱 시작 시 미처리 결제 자동 확인 (결제 redirect 없이도 복구)
+ * 예: 결제 후 앱이 크래시되었다가 재시작된 경우
+ */
+async function _checkPendingPaymentsOnStartup() {
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  // 이미 결제 redirect 처리 중이면 스킵
+  const hash = window.location.hash || '';
+  if (hash.includes('paymentSuccess=true')) return;
+
+  // localStorage에 미처리 결제가 있으면 스킵 (정상 플로우)
+  if (localStorage.getItem('pawsitive_pending_payment')) return;
+
+  try {
+    const resp = await fetch(`/api/payments/pending?userId=${user.id}`);
+    const data = await resp.json();
+    if (data.success && data.payments && data.payments.length > 0) {
+      const payment = data.payments[0];
+      const elapsed = Date.now() - new Date(payment.createdAt).getTime();
+      // 2분 이내의 미처리 결제만 자동 복구 시도
+      if (elapsed < 2 * 60 * 1000) {
+        showToast('이전 결제를 처리하고 있어요...', 'info');
+        _recoverPendingPaymentFromServer(user);
+      }
+    }
+  } catch(e) {
+    // 조용히 실패
+  }
+}
+
+// ── 브라우저 푸시 알림 (원래 위치) ───────────────────────────
 async function _initPushNotifications() {
   if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
   try {
@@ -699,6 +858,8 @@ document.addEventListener('DOMContentLoaded', () => {
  initApp();
  initRealtimeListeners();
  getNotifications(); updateBellBadge();
+ // 앱 시작 시 미처리 결제 자동 복구 확인
+ setTimeout(() => _checkPendingPaymentsOnStartup(), 2000);
 });
 
 // ============================================================
@@ -722,13 +883,19 @@ function initRealtimeListeners() {
  });
 
  // 요청 수락됨 (요청자용)
- RealtimeService.on('walk-request-accepted', (data) => {
+RealtimeService.on('walk-request-accepted', (data) => {
+  if (_broadcastTimer) { clearInterval(_broadcastTimer); _broadcastTimer = null; }
+  document.getElementById('broadcast-waiting')?.remove();
+  _broadcastRequestId = null;
    _pushNotify('✅ 매칭 성공!', `${data.walkerName || '도우미'}님이 요청을 수락했어요.`, '/#/matching');
    showWalkerAcceptedModal(data);
  });
 
  // 요청 거절됨 (요청자용)
- RealtimeService.on('walk-request-rejected', () => {
+RealtimeService.on('walk-request-rejected', () => {
+ if (_broadcastTimer) { clearInterval(_broadcastTimer); _broadcastTimer = null; }
+ document.getElementById('broadcast-waiting')?.remove();
+ _broadcastRequestId = null;
  showToast('산책 도우미가 요청을 거절했습니다.', 'error');
  _pushNotify('산책 요청 거절', '도우미가 요청을 거절했어요. 다른 도우미에게 요청해보세요.', '/#/matching');
  });
@@ -796,8 +963,9 @@ function initRealtimeListeners() {
  RealtimeService.on('handoff-confirmed', (data) => {
    showToast('요청자가 반려견 전달을 확인했어요! 산책을 시작해주세요.', 'success');
    _pushNotify('🐾 전달 완료!', '요청자가 확인했어요. 산책을 시작해주세요.', '/#/walk-session');
-   const curPath = Router.getPath ? Router.getPath() : '';
-   if (curPath === '/walk-session') renderWalkSessionPage();
+  if (data?.sessionId) _activeSessionId = data.sessionId;
+  const curPath = Router.getPath ? Router.getPath() : '';
+  if (curPath === '/walk-session') renderWalkSessionPage(data?.sessionId);
  });
 
  RealtimeService.on('walk-tracking-started', (data) => {
@@ -806,8 +974,9 @@ function initRealtimeListeners() {
  });
 
  // 4단계: 산책 종료
- RealtimeService.on('walk-ended', (data) => {
+RealtimeService.on('walk-ended', (data) => {
    stopWalkRouteWatcher();
+   _stopWalkerLocationSharing();
    hideChatButton();
    _pushNotify('🐾 산책 완료!', `총 ${data.totalDistanceKm ?? 0} km 산책했어요. 리뷰를 남겨보세요.`, '/#/matching');
    const overlay = document.getElementById('live-tracking-overlay');
@@ -835,8 +1004,11 @@ function initRealtimeListeners() {
  _renderDiscMap(_dwUserLat, _dwUserLng, radius);
  }
  }
+ // 상태 변경(ON/OFF 토글)은 지도 전체 재렌더링 (마커 추가/제거 필요)
  RealtimeService.on('walker-status-changed', refreshDiscoveryMap);
- RealtimeService.on('walker-location-updated', refreshDiscoveryMap);
+ // 위치 업데이트는 지도 재렌더링하지 않음 (6초마다 깜빡임 방지)
+ // 대신 다음 수동 새로고침이나 페이지 진입 시 반영됨
+ // RealtimeService.on('walker-location-updated', refreshDiscoveryMap);
 
  // ── 브로드캐스트 매칭 이벤트 ──────────────────────────────
 
@@ -1201,6 +1373,19 @@ let _walkNavMyMarker = null;     // 도우미 본인 실시간 마커
 let _walkSessionPollTimer = null; // 요청자 도우미 마커 폴링 타이머
 let _walkElapsedTimer = null;    // 경과 시간 타이머
 let _walkStartMs = 0;
+let _walkTestGpsTimer = null;
+let _walkTestGpsStep = 0;
+
+function isWalkTestGpsEnabled() {
+ return localStorage.getItem('pawsitive_walk_test_gps') === 'on';
+}
+
+function toggleWalkTestGps() {
+ const next = isWalkTestGpsEnabled() ? 'off' : 'on';
+ localStorage.setItem('pawsitive_walk_test_gps', next);
+ showToast(next === 'on' ? '테스트 GPS 이동을 켰어요.' : '테스트 GPS 이동을 껐어요.', 'info');
+ renderWalkSessionPage(_activeSessionId);
+}
 
 /** 도우미: 산책 시작 (heading) — 중복 호출 방지 */
 let _startWalkSessionInProgress = false;
@@ -1248,10 +1433,13 @@ function _startWalkerLocationSharing(requestId) {
 
  sendLocation(); // 즉시 1회
  _walkerLocationInterval = setInterval(sendLocation, 5000);
+ _walkerLocationInterval = setInterval(sendLocation, 5000);
 }
 
 function _stopWalkerLocationSharing() {
  if (_walkerLocationInterval) { clearInterval(_walkerLocationInterval); _walkerLocationInterval = null; }
+ if (_walkTestGpsTimer) { clearInterval(_walkTestGpsTimer); _walkTestGpsTimer = null; }
+ _walkTestGpsStep = 0;
 }
 
 /** 도우미: 수락 후 취소 (heading/arrived/handoff 상태) */
@@ -1324,13 +1512,14 @@ async function startActualWalk(sessionId) {
  const result = await res.json();
  if (!result.success) { showToast(result.error || '오류가 발생했습니다.', 'error'); return; }
  _activeSessionId = sessionId;
- RealtimeService.startRouteTracking(sessionId);
+ if (!isWalkTestGpsEnabled()) RealtimeService.startRouteTracking(sessionId);
  if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
  showToast('산책 중 화면을 꺼지 마세요 ? 위치 공유가 유지됩니다.', 'info');
  renderWalkSessionPage(sessionId);
  } catch(e) {
  showToast('오류가 발생했습니다.', 'error');
- }
+      }
+      }
 }
 
 /** 도우미: 산책 종료 */
@@ -1341,6 +1530,7 @@ async function endWalkSession(sessionId) {
     const result = await res.json();
     if (!result.success) { showToast('종료에 실패했습니다.', 'error'); return; }
     RealtimeService.stopRouteTracking();
+    _stopWalkerLocationSharing();
     _activeSessionId = null;
     showWalkCompletionScreen(result.session, result.totalDistanceKm);
   } catch(e) {
@@ -1559,7 +1749,7 @@ async function renderWalkSessionPage(sessionId) {
    if (st === 'heading')   actionBtn = `<div class="wsp-btn-row">${cancelBtn}<button class="wsp-btn wsp-btn--blue" onclick="arriveAtPickup('${sid}')">📍 도착했어요</button></div>`;
    else if (st === 'arrived') actionBtn = `<div class="wsp-btn-row">${cancelBtn}<span class="wsp-waiting">전달 확인 대기 중…</span></div>`;
    else if (st === 'handoff')  actionBtn = `<button class="wsp-btn wsp-btn--green" onclick="startActualWalk('${sid}')">🐾 산책 시작</button>`;
-   else if (st === 'walking')  actionBtn = `<button class="wsp-btn wsp-btn--red" onclick="endWalkSession('${sid}')">🏁 산책 종료</button>`;
+  else if (st === 'walking')  actionBtn = `<div class="wsp-btn-row"><button class="wsp-cancel-btn" onclick="toggleWalkTestGps()">${isWalkTestGpsEnabled() ? '테스트 이동 끄기' : '테스트 이동'}</button><button class="wsp-btn wsp-btn--red" onclick="endWalkSession('${sid}')">🏁 산책 종료</button></div>`;
  } else {
    if (st === 'arrived') actionBtn = `<button class="wsp-btn wsp-btn--amber" onclick="confirmHandoff('${sid}')">🐕 반려견 전달 완료</button>`;
  }
@@ -1668,6 +1858,7 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
  // ── 기존 리소스 정리 ──
  if (_walkNavWatchId !== null) { navigator.geolocation.clearWatch(_walkNavWatchId); _walkNavWatchId = null; }
  if (_walkSessionPollTimer) { clearInterval(_walkSessionPollTimer); _walkSessionPollTimer = null; }
+ if (_walkTestGpsTimer) { clearInterval(_walkTestGpsTimer); _walkTestGpsTimer = null; }
  if (_walkElapsedTimer) { clearInterval(_walkElapsedTimer); _walkElapsedTimer = null; }
  if (_walkPositionHandler) { RealtimeService.off('walker-position', _walkPositionHandler); _walkPositionHandler = null; }
  if (_walkRouteMap) { try { _walkRouteMap.remove(); } catch(e) {} _walkRouteMap = null; }
@@ -1676,8 +1867,26 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
  // ── 헬퍼 ──
  const _hav = (la1,lo1,la2,lo2) => {
    const R=6371000,r=Math.PI/180,dLa=(la2-la1)*r,dLo=(lo2-lo1)*r;
-   const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
-   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+ const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
+ return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+};
+ const _moveMarkerSmooth = (marker, nextLatLng, duration = 900) => {
+   if (!marker || !nextLatLng) return;
+   const cur = marker.getLatLng();
+   const fromLat = cur.lat, fromLng = cur.lng;
+   const toLat = Array.isArray(nextLatLng) ? nextLatLng[0] : nextLatLng.lat;
+   const toLng = Array.isArray(nextLatLng) ? nextLatLng[1] : nextLatLng.lng;
+   if (!Number.isFinite(toLat) || !Number.isFinite(toLng)) return;
+   if (marker._smoothAnim) cancelAnimationFrame(marker._smoothAnim);
+   const start = performance.now();
+   const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+   const step = now => {
+     const t = Math.min(1, (now - start) / duration);
+     const e = ease(t);
+     marker.setLatLng([fromLat + (toLat - fromLat) * e, fromLng + (toLng - fromLng) * e]);
+     if (t < 1) marker._smoothAnim = requestAnimationFrame(step);
+   };
+   marker._smoothAnim = requestAnimationFrame(step);
  };
  const _banner = document.getElementById('wsp-banner');
  const _showBanner = t => { if (_banner) { _banner.textContent=t; _banner.style.display=''; } };
@@ -1699,8 +1908,16 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
  // 현재 사용자 프로필 사진 가져오기
  const _curUser = AuthService.getCurrentUser();
  const _myProfile = _curUser ? MatchingService.getMyProfile(_curUser.id) : null;
- const _myPhoto = _myProfile?.profilePhoto || '';
+ let _myPhoto = _curUser?.profileImage || _myProfile?.profilePhoto || '';
  const _myName  = _curUser ? (_curUser.nickname || _curUser.name || '나') : '나';
+
+ if (isWalker && !_myPhoto && _curUser?.id) {
+   try {
+     const walkerData = await (await fetch('/api/walkers')).json();
+     const self = Array.isArray(walkerData) ? walkerData.find(w => w.userId === _curUser.id || w.id === _curUser.id) : null;
+     _myPhoto = self?.profilePhoto || self?.profileImage || '';
+   } catch(e) {}
+ }
 
  // 아이콘 팩토리 (사진 우선, 없으면 기존 스타일)
  const _iconMe = (photo, name) => _makeSessionIcon(
@@ -1761,14 +1978,15 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
    if (isWalker) {
      // 도우미 → 요청자 사진은 walk-requests에서 requesterPhoto 또는 별도 조회
      const reqData = requestId ? await (await fetch(`/api/walk-requests/${requestId}`)).json() : null;
-     _partnerPhoto = reqData?.request?.requesterPhoto || '';
+    _partnerPhoto = reqData?.request?.requesterPhoto || reqData?.request?.requesterProfileImage || '';
    } else {
      // 요청자 → 도우미 사진은 walkers API에서
      const walkerSession = await (await fetch(`/api/walk-sessions?userId=${_curUser?.id}`)).json();
      const sess = (walkerSession.sessions||[]).find(s=>s.id===sessionId);
      if (sess?.walkerId) {
        const walkerData = await (await fetch('/api/walkers')).json();
-       _partnerPhoto = walkerData.find(w=>w.userId===sess.walkerId)?.profilePhoto || '';
+      const walker = walkerData.find(w=>w.userId===sess.walkerId);
+      _partnerPhoto = walker?.profilePhoto || walker?.profileImage || '';
      }
    }
  } catch(e) {}
@@ -1807,9 +2025,9 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
          const la=pos.coords.latitude, lo=pos.coords.longitude;
          // 마커 최초 생성 또는 이동
          if (!_walkNavMyMarker) {
-           _walkNavMyMarker = L.marker([la,lo],{icon:_iconWalker(true)}).bindPopup('내 위치').addTo(_walkRouteMap);
+          _walkNavMyMarker = L.marker([la,lo],{icon:_iconWalker(true, _myPhoto, _myName)}).bindPopup('내 위치').addTo(_walkRouteMap);
          } else {
-           _walkNavMyMarker.setLatLng([la,lo]);
+           _moveMarkerSmooth(_walkNavMyMarker, [la,lo]);
          }
          if (!_walkNavLine && pickupLat) {
            _walkNavLine = L.polyline([[la,lo],[pickupLat,pickupLng]],{color:'#3B82F6',weight:3,dashArray:'8 5',opacity:.8}).addTo(_walkRouteMap);
@@ -1829,7 +2047,20 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
      }
 
    // ── 단계 3: 산책 중 / 완료 (본인 경로 표시) ──
-   } else if (sessionStatus==='walking' || sessionStatus==='completed') {
+    if (sessionStatus === 'arrived') {
+      _walkSessionPollTimer = setInterval(async () => {
+        try {
+          const d = await (await fetch(`/api/walk-sessions?userId=${_curUser?.id}`)).json();
+          const latest = (d.sessions || []).find(s => s.id === sessionId);
+          if (latest && latest.status !== sessionStatus) {
+            _activeSessionId = sessionId;
+            renderWalkSessionPage(sessionId);
+          }
+        } catch(e) {}
+      }, 3000);
+    }
+
+  } else if (sessionStatus==='walking' || sessionStatus==='completed') {
      _hideBanner();
 
      // 저장된 경로 로드
@@ -1840,7 +2071,7 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
          _walkRoutePoints = d.points.map(p=>[p.latitude,p.longitude]);
          _walkPolyline = L.polyline(_walkRoutePoints,{color:'#F59E0B',weight:5,opacity:.9}).addTo(_walkRouteMap);
          lastPt = _walkRoutePoints[_walkRoutePoints.length-1];
-         _walkLiveMarker = L.marker(lastPt,{icon:_iconWalker(sessionStatus==='walking')}).addTo(_walkRouteMap);
+         _walkLiveMarker = L.marker(lastPt,{icon:_iconWalker(sessionStatus==='walking', _myPhoto, _myName)}).addTo(_walkRouteMap);
          _updateRouteStats(d.points.length, d.totalDistanceKm);
          if (sessionStatus==='completed') {
            _walkRouteMap.fitBounds(_walkPolyline.getBounds(),{padding:[50,50],maxZoom:17});
@@ -1860,7 +2091,35 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
 
      // 산책 중: watchPosition으로 경로 그리기
      if (sessionStatus==='walking') {
-       RealtimeService.startRouteTracking(sessionId);
+      if (isWalkTestGpsEnabled()) {
+        RealtimeService.stopRouteTracking();
+        _hideBanner();
+        const baseLat = lastPt?.[0] ?? myLat ?? pickupLat ?? 37.5665;
+        const baseLng = lastPt?.[1] ?? myLng ?? pickupLng ?? 126.9780;
+        const pushTestPoint = async () => {
+          _walkTestGpsStep += 1;
+          const lat = baseLat + (_walkTestGpsStep * 0.000055);
+          const lng = baseLng + Math.sin(_walkTestGpsStep / 3) * 0.000045 + (_walkTestGpsStep * 0.000018);
+          const latlng = [lat, lng];
+          if (_walkLiveMarker) _moveMarkerSmooth(_walkLiveMarker, latlng);
+          else _walkLiveMarker = L.marker(latlng,{icon:_iconWalker(true, _myPhoto, _myName)}).addTo(_walkRouteMap);
+          if (!_walkPolyline) _walkPolyline = L.polyline([latlng],{color:'#F59E0B',weight:5,opacity:.9}).addTo(_walkRouteMap);
+          else _walkPolyline.addLatLng(latlng);
+          _walkRoutePoints.push(latlng);
+          _walkRouteMap?.setView(latlng,_walkRouteMap.getZoom()>=16?_walkRouteMap.getZoom():17,{animate:true,duration:.4});
+          _updateRouteStatsDelta();
+          try {
+            await fetch(`/api/walk-sessions/${sessionId}/route`, {
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({latitude:lat, longitude:lng})
+            });
+          } catch(e) {}
+        };
+        pushTestPoint();
+        _walkTestGpsTimer = setInterval(pushTestPoint, 2500);
+      } else {
+      RealtimeService.startRouteTracking(sessionId);
        if (navigator.geolocation) {
          let _prevLat=null, _prevLng=null;
          _walkNavWatchId = navigator.geolocation.watchPosition(pos => {
@@ -1878,8 +2137,8 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
            _hideBanner();
 
            // 마커는 항상 표시 (정확도 무관)
-           if (_walkLiveMarker) _walkLiveMarker.setLatLng(latlng);
-           else _walkLiveMarker = L.marker(latlng,{icon:_iconWalker(true)}).addTo(_walkRouteMap);
+           if (_walkLiveMarker) _moveMarkerSmooth(_walkLiveMarker, latlng);
+           else _walkLiveMarker = L.marker(latlng,{icon:_iconWalker(true, _myPhoto, _myName)}).addTo(_walkRouteMap);
            _walkRouteMap?.setView(latlng,_walkRouteMap.getZoom()>=16?_walkRouteMap.getZoom():17,{animate:true,duration:.4});
 
            // 경로 폴리라인: 정확도 150m 이내만 기록
@@ -1913,7 +2172,7 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
      if (!walkerMarker) {
        walkerMarker = L.marker([lat,lng],{icon:_iconWalker(true,_partnerPhoto,'도우미')}).bindPopup('도우미').addTo(_walkRouteMap);
      } else {
-       walkerMarker.setLatLng([lat,lng]);
+       _moveMarkerSmooth(walkerMarker, [lat,lng]);
      }
      if (!panTo) return;
      if (!_hasGps) {
@@ -1980,7 +2239,7 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
          if (!requestId) return;
          try {
            const d = await (await fetch(`/api/walk-requests/${requestId}/walker-location`)).json();
-           if (d.lat&&d.lng && walkerMarker) walkerMarker.setLatLng([d.lat,d.lng]);
+           if (d.lat&&d.lng && walkerMarker) _moveMarkerSmooth(walkerMarker, [d.lat,d.lng]);
          } catch(e) {}
        }, 5000);
 
@@ -1994,7 +2253,7 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
          } else {
            _walkPolyline.addLatLng(latlng);
          }
-         if (walkerMarker) walkerMarker.setLatLng(latlng);
+         if (walkerMarker) _moveMarkerSmooth(walkerMarker, latlng);
          else walkerMarker = L.marker(latlng,{icon:_iconWalker(true)}).addTo(_walkRouteMap);
          // 도우미 따라가기 (zoom 유지, 너무 넓어지지 않도록 setView)
          _walkRouteMap?.setView(latlng,_walkRouteMap.getZoom()>10?_walkRouteMap.getZoom():16,{animate:true,duration:.4});
@@ -2056,7 +2315,7 @@ function _startElapsedTimer(startedAt) {
 function updateLiveWalkerMarker(lat, lng) {
  if (!_walkRouteMap) return;
  const latlng = [lat, lng];
- if (_walkLiveMarker) _walkLiveMarker.setLatLng(latlng);
+ if (_walkLiveMarker) _moveMarkerSmooth(_walkLiveMarker, latlng);
 }
 
 function stopWalkRouteWatcher() {

@@ -29,11 +29,45 @@ const MatchingService = (() => {
 
   /**
    * 내 매칭 프로필 조회
+   * matchProfiles에 없으면 서버 워커 캐시에서도 확인 (refreshFromServer 정리 후 복구)
    * @param {string} userId
    * @returns {Object|null}
    */
   function getMyProfile(userId) {
-    return getAllProfiles().find(p => p.userId === userId) || null;
+    const local = getAllProfiles().find(p => p.userId === userId);
+    if (local) return local;
+
+    // matchProfiles에서 삭제됐지만 서버 walkers.json에는 있는 경우 (동기화 타이밍 이슈 복구)
+    if (_serverWalkersCache) {
+      const serverWalker = _serverWalkersCache.find(w => w.userId === userId);
+      if (serverWalker) {
+        // 서버 워커 데이터를 matchProfile 형태로 변환하여 반환
+        return {
+          userId: serverWalker.userId,
+          userName: serverWalker.userName || serverWalker.name || '도우미',
+          role: 'walker',
+          location: serverWalker.location || '',
+          lat: serverWalker.lat || null,
+          lng: serverWalker.lng || null,
+          preferredTime: serverWalker.preferredTime || '',
+          message: serverWalker.message || serverWalker.intro || '',
+          price: serverWalker.price || 0,
+          experience: serverWalker.experience || '',
+          acceptedSizes: serverWalker.acceptedSizes || ['small', 'medium', 'large'],
+          careerYears: serverWalker.careerYears || 'under6m',
+          largeDogExp: serverWalker.largeDogExp || 'none',
+          aggressionHandle: serverWalker.aggressionHandle || 'no',
+          ownPetExp: serverWalker.ownPetExp || 'none',
+          isAvailable: serverWalker.isAvailable ?? false,
+          rating: serverWalker.rating || 5.0,
+          reviewCount: serverWalker.reviewCount || 0,
+          profilePhoto: serverWalker.profilePhoto || serverWalker.profileImage || '',
+          createdAt: serverWalker.createdAt || ''
+        };
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -65,6 +99,7 @@ const MatchingService = (() => {
       experience: data.experience || '없음',
       acceptedSizes: data.acceptedSizes || ['small', 'medium', 'large'],
       specialty: data.specialty || '',
+      profilePhoto: data.profilePhoto || user?.profileImage || '',
       isAvailable: true,
       rating: 5.0,
       reviewCount: 0,
@@ -129,6 +164,31 @@ const MatchingService = (() => {
     StorageService.set(REVIEWS_KEY, reviews);
   }
 
+  function normalizeWalkRequest(r) {
+    if (!r) return r;
+    return {
+      ...r,
+      fromUserId: r.fromUserId || r.requesterId,
+      toUserId: r.toUserId || r.walkerId,
+      fromUserName: r.fromUserName || r.requesterName,
+      requestData: r.requestData || {
+        dogId: r.dogId || null,
+        dogName: r.dogName || '',
+        dogBreed: r.dogBreed || '',
+        dogSize: r.dogSize || '',
+        location: r.pickupLatitude && r.pickupLongitude ? '현재 위치' : '',
+        lat: r.pickupLatitude || null,
+        lng: r.pickupLongitude || null,
+        desiredTime: r.requestedStartTime ? '지금 (즉시 매칭)' : '',
+        notes: r.requestMessage || r.dogSpecialNotes || '',
+        dogs: r.dogs || null,
+        duration: r.duration || null,
+        paymentOrderId: r.paymentOrderId || null,
+        paymentAmount: r.paymentAmount || r.totalPrice || 0
+      }
+    };
+  }
+
   /**
   /**
    * 매칭 요청 보내기
@@ -138,15 +198,35 @@ const MatchingService = (() => {
    * @returns {Promise<{success: boolean, request?: Object, error?: string, cooldown?: boolean, retryAfterMs?: number}>}
    */
   async function sendRequest(fromId, toId, requestData) {
-    // 서버 API 우선 호출 (쿨다운/에러 응답 수신)
+    // 실제 산책 세션과 이어지는 walk-requests API로 통합
     try {
-      const res = await fetch('/api/matching/requests', {
+      const payload = requestData || {};
+      const res = await fetch('/api/walk-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fromUserId: fromId, toUserId: toId, requestData: requestData || {} })
+        body: JSON.stringify({
+          requesterId: fromId,
+          walkerId: toId,
+          dogId: payload.dogId || null,
+          dogName: payload.dogName || '',
+          dogBreed: payload.dogBreed || '',
+          dogSize: payload.dogSize || '',
+          dogs: payload.dogs || null,
+          dogSpecialNotes: payload.notes || '',
+          requestMessage: payload.notes || '',
+          duration: payload.duration || 40,
+          totalPrice: payload.paymentAmount || 0,
+          paymentOrderId: payload.paymentOrderId || null,
+          paymentAmount: payload.paymentAmount || 0,
+          requestedStartTime: new Date().toISOString(),
+          requestedEndTime: new Date(Date.now() + (payload.duration || 40) * 60000).toISOString(),
+          pickupLatitude: payload.lat || null,
+          pickupLongitude: payload.lng || null
+        })
       });
       const data = await res.json();
       if (data && data.success && data.request) {
+        data.request = normalizeWalkRequest(data.request);
         // 로컬 캐시에도 반영
         const requests = getAllRequests();
         if (!requests.find(r => r.id === data.request.id)) {
@@ -323,16 +403,16 @@ const MatchingService = (() => {
       }));
 
       // 서버 워커 목록을 기준으로 localStorage 구형 더미 워커 정리
-      // dummy- 접두사 워커는 walkers.json에서만 관리하므로 localStorage에서 전부 제거
+      // 서버 walkers.json에 실제로 존재하는 워커는 절대 삭제하지 않음
       if (_serverWalkersCache.length > 0) {
         const serverIds = new Set(_serverWalkersCache.map(w => w.userId));
         const profiles = StorageService.get('matchProfiles', []);
         const cleaned = profiles.filter(p => {
           if (p.role === 'walker' && p.userId) {
-            // dummy- 또는 test- 접두사 워커는 localStorage에서 제거 (서버가 단일 소스)
+            // 서버에 존재하는 워커는 보호 (실제 등록된 사용자)
+            if (serverIds.has(p.userId)) return true;
+            // 서버에 없는 dummy-/test- 접두사 워커만 제거 (레거시 로컬 데이터)
             if (p.userId.startsWith('dummy-') || p.userId.startsWith('test-')) return false;
-            // 서버에 동일 userId가 있는 워커도 로컬에서 제거 (서버 데이터 우선)
-            if (serverIds.has(p.userId)) return false;
           }
           return true;
         });
@@ -436,10 +516,8 @@ const MatchingService = (() => {
       profiles[idx].lat = lat;
       profiles[idx].lng = lng;
     }
-    if (!isAvailable) {
-      profiles[idx].lat = null;
-      profiles[idx].lng = null;
-    }
+    // OFF 시에도 마지막 위치는 유지 (지도 표시용, isAvailable로 필터링)
+    // lat/lng를 null로 만들면 다시 ON할 때 GPS 재획득 전까지 지도에서 사라짐
     saveProfiles(profiles);
   }
 
@@ -498,9 +576,9 @@ const MatchingService = (() => {
   /** 받은 요청 조회 — 서버 API 우선 */
   async function getReceivedRequestsRemote(userId) {
     try {
-      const res    = await fetch(`/api/matching/requests?userId=${userId}`);
+      const res    = await fetch(`/api/walk-requests?walkerId=${userId}`);
       const result = await res.json();
-      return result.requests || [];
+      return (result.requests || []).map(normalizeWalkRequest);
     } catch (e) {
       return getAllRequests().filter(r => r.toUserId === userId && (r.status === 'pending' || r.status === 'accepted'));
     }
@@ -509,9 +587,9 @@ const MatchingService = (() => {
   /** 보낸 요청 조회 — 서버 API 우선 (모든 상태 포함, 최신순) */
   async function getSentRequestsRemote(userId) {
     try {
-      const res    = await fetch(`/api/matching/requests?fromUserId=${userId}`);
+      const res    = await fetch(`/api/walk-requests?requesterId=${userId}`);
       const result = await res.json();
-      return result.requests || [];
+      return (result.requests || []).map(normalizeWalkRequest);
     } catch (e) {
       return getAllRequests()
         .filter(r => r.fromUserId === userId)
@@ -522,7 +600,7 @@ const MatchingService = (() => {
   /** 보낸 요청 취소 */
   async function cancelSentRequest(requestId) {
     try {
-      const res = await fetch(`/api/matching/requests/${requestId}/cancel`, { method: 'PATCH' });
+      const res = await fetch(`/api/walk-requests/${requestId}/cancel`, { method: 'PATCH' });
       return await res.json();
     } catch (e) {
       // 로컬 fallback
@@ -539,7 +617,7 @@ const MatchingService = (() => {
   /** 브로드캐스트 요청 수락 — 서버 API 우선 */
   async function acceptBroadcastRequest(requestId) {
     try {
-      const res    = await fetch(`/api/matching/requests/${requestId}/accept`, { method: 'PATCH' });
+      const res    = await fetch(`/api/walk-requests/${requestId}/accept`, { method: 'PATCH' });
       return await res.json();
     } catch (e) {
       // 로컬 fallback
@@ -564,7 +642,7 @@ const MatchingService = (() => {
   /** 요청 거절 — 서버 API 우선 */
   async function rejectRequestRemote(requestId) {
     try {
-      await fetch(`/api/matching/requests/${requestId}/reject`, { method: 'PATCH' });
+      await fetch(`/api/walk-requests/${requestId}/reject`, { method: 'PATCH' });
     } catch (e) {
       rejectRequest(requestId);
     }

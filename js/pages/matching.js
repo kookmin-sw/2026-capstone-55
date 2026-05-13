@@ -1,7 +1,7 @@
 // Pawsitive - Matching Page
 // Dog walker matching, profiles, and walk management
 
-function renderMatchingPage() {
+async function renderMatchingPage() {
  const user = AuthService.getCurrentUser();
 
  if (!user) {
@@ -42,7 +42,11 @@ function renderMatchingPage() {
  return;
  }
 
- const myProfile = MatchingService.getMyProfile(user.id);
+ let myProfile = MatchingService.getMyProfile(user.id);
+ if (!myProfile) {
+   await MatchingService.refreshFromServer();
+   myProfile = MatchingService.getMyProfile(user.id);
+ }
 
  if (!myProfile) {
  renderMatchingRoleSelect(null);
@@ -270,6 +274,13 @@ let _matchRegStep = 0;
 let _matchRegData = {};
 let _matchRegRole = '';
 
+function _isUserRegisteredProfilePhoto(photo) {
+ if (!photo) return false;
+ if (photo.startsWith('data:image/')) return true;
+ if (photo.startsWith('/uploads/') || photo.startsWith('/images/')) return true;
+ return false;
+}
+
 const _matchWalkerSteps = [
  { key: 'location',         question: '어디서 활동하세요?',                   sub: '시/도 → 구/군 → 동 순으로 선택해주세요',   type: 'location',    required: true,  aiScore: true },
  { key: 'preferredTime',   question: '언제 산책 가능해요?',                  sub: '가능한 시간대를 골라주세요',               type: 'cards',       aiScore: true, options: [
@@ -382,10 +393,13 @@ function openMatchRegisterFlow(role) {
 
  const _flowUser = AuthService.getCurrentUser();
 
- // 프로필에 사진이 이미 등록돼 있으면 photo 스텝 미리 채워둠 (스킵 가능)
- const _existingPhoto = _flowUser?.profileImage
-   || MatchingService.getMyProfile(_flowUser?.id)?.profilePhoto
-   || '';
+// 앱에서 직접 등록한 사진만 photo 스텝 스킵 대상으로 본다.
+// 구글/소셜 기본 이미지는 요청자 얼굴 확인용 등록 사진으로 간주하지 않는다.
+ const _profilePhoto = _flowUser?.profileImage || '';
+ const _matchingPhoto = MatchingService.getMyProfile(_flowUser?.id)?.profilePhoto || '';
+ const _existingPhoto = _isUserRegisteredProfilePhoto(_profilePhoto)
+   ? _profilePhoto
+   : (_isUserRegisteredProfilePhoto(_matchingPhoto) ? _matchingPhoto : '');
  if (_existingPhoto) {
    _matchRegData.profilePhoto = _existingPhoto;
    _matchRegData._photoFromProfile = true; // 프로필에서 가져온 사진임을 표시
@@ -704,7 +718,11 @@ function finishMatchRegister() {
  const user = AuthService.getCurrentUser();
  if (!user) return;
 
- const photo = _matchRegData.profilePhoto || '';
+ const photo = _matchRegData.profilePhoto || user.profileImage || '';
+ if (photo && user.profileImage !== photo) {
+   AuthService.updateProfile(user.id, { profileImage: photo });
+   user.profileImage = photo;
+ }
 
  if (_matchRegRole === 'walker') {
  handleRegisterMatchProfile('walker', {
@@ -815,9 +833,9 @@ function handleRegisterMatchProfile(role, flowData) {
  preferredTime = flowData.preferredTime;
  message = flowData.message || '';
  if (role === 'walker') {
- extra = { experience: flowData.experience || '', canWalkLarge: flowData.canWalkLarge || false, canWalkMultiple: flowData.canWalkMultiple || false };
+ extra = { experience: flowData.experience || '', canWalkLarge: flowData.canWalkLarge || false, canWalkMultiple: flowData.canWalkMultiple || false, profilePhoto: flowData.profilePhoto || user.profileImage || '' };
  } else {
- extra = { dogName: flowData.dogName, dogSize: flowData.dogSize, notes: flowData.notes || '' };
+ extra = { dogName: flowData.dogName, dogSize: flowData.dogSize, notes: flowData.notes || '', profilePhoto: flowData.profilePhoto || user.profileImage || '' };
  }
  } else {
  // DOM에서 직접 읽기
@@ -886,7 +904,13 @@ function handleRegisterMatchProfile(role, flowData) {
  }
  }
 
- MatchingService.registerProfile(user.id, { role, location: location.trim(), preferredTime, message: message.trim(), isAvailable: true, ...extra });
+ const unifiedProfilePhoto = extra.profilePhoto || user.profileImage || '';
+ if (unifiedProfilePhoto && user.profileImage !== unifiedProfilePhoto) {
+   AuthService.updateProfile(user.id, { profileImage: unifiedProfilePhoto });
+   user.profileImage = unifiedProfilePhoto;
+ }
+
+ MatchingService.registerProfile(user.id, { role, location: location.trim(), preferredTime, message: message.trim(), isAvailable: true, profilePhoto: unifiedProfilePhoto, ...extra });
 
  // 도우미로 등록 시 walkers.json에도 추가 (브로드캐스트 대상에 포함되도록)
  if (role === 'walker') {
@@ -910,9 +934,40 @@ function handleRegisterMatchProfile(role, flowData) {
  largeDogExp: extra.largeDogExp || 'none',
  aggressionHandle: extra.aggressionHandle || 'no',
  ownPetExp: extra.ownPetExp || 'none',
- profilePhoto: flowData?.profilePhoto || '',
+ profilePhoto: unifiedProfilePhoto,
  })
  }).then(() => MatchingService.refreshFromServer()).catch(() => {});
+
+ // 등록 직후 GPS 좌표를 받아서 서버에 위치 업데이트 (지도 표시용)
+ if (navigator.geolocation) {
+   navigator.geolocation.getCurrentPosition(pos => {
+     const lat = pos.coords.latitude;
+     const lng = pos.coords.longitude;
+     // 로컬 프로필에 좌표 저장
+     MatchingService.setAvailability(user.id, true, lat, lng);
+     // 서버 walkers.json에도 좌표 업데이트
+     fetch(`/api/walkers/${user.id}/location`, {
+       method: 'PATCH',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ lat, lng })
+     }).catch(() => {});
+     // 서버 토글 ON (좌표 포함)
+     fetch('/api/walkers/toggle', {
+       method: 'PATCH',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ userId: user.id, lat, lng })
+     }).then(() => MatchingService.refreshFromServer())
+       .then(() => renderMatchingPage())
+       .catch(() => {});
+   }, () => {
+     // GPS 실패해도 등록은 완료 — 토글 ON만 시도
+     fetch('/api/walkers/toggle', {
+       method: 'PATCH',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ userId: user.id })
+     }).catch(() => {});
+   }, { timeout: 6000, enableHighAccuracy: false });
+ }
  }
 
  refreshDrawer();
@@ -997,7 +1052,14 @@ async function renderWalkerDashboard(user, myProfile) {
  </div>
  `;
 
- const _userPhoto = user.profileImage || myProfile.profilePhoto || '';
+ let _serverWalkerPhoto = '';
+ try {
+   const walkers = await (await fetch('/api/walkers')).json();
+   const selfWalker = Array.isArray(walkers) ? walkers.find(w => w.userId === user.id || w.id === user.id) : null;
+   _serverWalkerPhoto = selfWalker?.profilePhoto || selfWalker?.profileImage || '';
+ } catch(e) {}
+
+ const _userPhoto = user.profileImage || myProfile.profilePhoto || _serverWalkerPhoto || '';
  const profileCard = `
  <div class="match-profile-card">
  <div class="match-profile-card__left">
@@ -1678,16 +1740,34 @@ function _initRequesterLiveMap(req) {
  // 내 위치 마커 (요청자 사진)
  const user = AuthService.getCurrentUser();
  const myProfile = user ? MatchingService.getMyProfile(user.id) : null;
- const myPhoto = myProfile?.profilePhoto || '';
+ const myPhoto = user?.profileImage || myProfile?.profilePhoto || '';
  const myName  = user ? (user.nickname || user.name || '나') : '나';
  const myIcon  = _makePhotoMarker(myPhoto, myName.charAt(0), '#3182CE', 36, false);
  let myMarker  = L.marker([lat, lng], { icon: myIcon }).bindPopup('내 위치').addTo(map);
  let myLat = lat, myLng = lng;
+ const moveMarkerSmooth = (marker, nextLatLng, duration = 900) => {
+   if (!marker || !nextLatLng) return;
+   const cur = marker.getLatLng();
+   const fromLat = cur.lat, fromLng = cur.lng;
+   const toLat = Array.isArray(nextLatLng) ? nextLatLng[0] : nextLatLng.lat;
+   const toLng = Array.isArray(nextLatLng) ? nextLatLng[1] : nextLatLng.lng;
+   if (!Number.isFinite(toLat) || !Number.isFinite(toLng)) return;
+   if (marker._smoothAnim) cancelAnimationFrame(marker._smoothAnim);
+   const start = performance.now();
+   const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+   const tick = now => {
+     const t = Math.min(1, (now - start) / duration);
+     const e = ease(t);
+     marker.setLatLng([fromLat + (toLat - fromLat) * e, fromLng + (toLng - fromLng) * e]);
+     if (t < 1) marker._smoothAnim = requestAnimationFrame(tick);
+   };
+   marker._smoothAnim = requestAnimationFrame(tick);
+ };
 
  navigator.geolocation.getCurrentPosition((pos) => {
    myLat = pos.coords.latitude;
    myLng = pos.coords.longitude;
-   myMarker.setLatLng([myLat, myLng]);
+   moveMarkerSmooth(myMarker, [myLat, myLng]);
    map.setView([myLat, myLng], 16);
  }, () => {}, { timeout: 5000, enableHighAccuracy: true });
 
@@ -1698,7 +1778,7 @@ function _initRequesterLiveMap(req) {
  // 도우미 사진 미리 로드
  fetch('/api/walkers').then(r => r.json()).then(walkers => {
    const w = walkers.find(w => w.userId === req.walkerId);
-   if (w?.profilePhoto) walkerPhoto = w.profilePhoto;
+  if (w?.profilePhoto || w?.profileImage) walkerPhoto = w.profilePhoto || w.profileImage;
  }).catch(() => {});
 
  const _getWalkerIcon = (pulse) => _makePhotoMarker(
@@ -1726,7 +1806,7 @@ function _initRequesterLiveMap(req) {
          walkerMarker = L.marker([data.lat, data.lng], { icon: _getWalkerIcon(true) }).bindPopup(`${req.walkerName || '도우미'} 위치`).addTo(map);
          fitBothMarkers(data.lat, data.lng);
        } else {
-         walkerMarker.setLatLng([data.lat, data.lng]);
+         moveMarkerSmooth(walkerMarker, [data.lat, data.lng]);
        }
      } else if (!walkerMarker) {
        // fallback: walkers.json에서 도우미 마지막 위치 + 사진 로드
@@ -1735,7 +1815,7 @@ function _initRequesterLiveMap(req) {
          const walkers = await wRes.json();
          const walker = walkers.find(w => w.userId === req.walkerId);
          if (walker && walker.lat && walker.lng) {
-           if (walker.profilePhoto) walkerPhoto = walker.profilePhoto;
+           if (walker.profilePhoto || walker.profileImage) walkerPhoto = walker.profilePhoto || walker.profileImage;
            walkerMarker = L.marker([walker.lat, walker.lng], { icon: _getWalkerIcon(true) }).bindPopup(`${req.walkerName || '도우미'} (마지막 위치)`).addTo(map);
            fitBothMarkers(walker.lat, walker.lng);
          }
@@ -1755,7 +1835,7 @@ function _initRequesterLiveMap(req) {
        walkerMarker = L.marker([data.lat, data.lng], { icon: _getWalkerIcon(true) }).bindPopup(`${req.walkerName || '도우미'} 위치`).addTo(map);
        fitBothMarkers(data.lat, data.lng);
      } else {
-       walkerMarker.setLatLng([data.lat, data.lng]);
+       moveMarkerSmooth(walkerMarker, [data.lat, data.lng]);
      }
      // walking 상태면 경로 폴리라인 추가
      if (req.status === 'walking' && routePolyline) {
@@ -1771,9 +1851,9 @@ function _initRequesterLiveMap(req) {
      if (req.status === 'walking' && routePolyline) {
        const latlng = [data.latitude, data.longitude];
        routePolyline.addLatLng(latlng);
-       if (walkerMarker) walkerMarker.setLatLng(latlng);
+       if (walkerMarker) moveMarkerSmooth(walkerMarker, latlng);
        else {
-         walkerMarker = L.marker(latlng, { icon: walkerIcon }).addTo(map);
+         walkerMarker = L.marker(latlng, { icon: _getWalkerIcon(true) }).addTo(map);
        }
        map.panTo(latlng);
        routePoints++;
@@ -1802,8 +1882,8 @@ function _initRequesterLiveMap(req) {
            points.forEach(p => routePolyline.addLatLng(p));
            routePoints = points.length;
            const last = points[points.length - 1];
-           if (walkerMarker) walkerMarker.setLatLng(last);
-           else walkerMarker = L.marker(last, { icon: walkerIcon }).addTo(map);
+           if (walkerMarker) moveMarkerSmooth(walkerMarker, last);
+           else walkerMarker = L.marker(last, { icon: _getWalkerIcon(req.status === 'walking') }).addTo(map);
            map.fitBounds(routePolyline.getBounds(), { padding: [30, 30] });
            updateWalkStats();
          }
@@ -1978,8 +2058,8 @@ async function renderRequesterDashboard(user, myProfile) {
  return `
  <div class="dw-card walker-card-item${w.aiPending ? ' walker-card-item--pending' : ''}" data-walker-idx="${idx}" data-walker-id="${w.userId}" style="${idx === 0 ? 'border-color:#00AA76;' : ''}${isHidden ? 'display:none;' : ''}">
  <div class="dw-card__avatar" style="${idx === 0 ? 'background:#00AA76;' : ''}overflow:hidden;padding:0;">
-   ${w.profilePhoto
-     ? `<img src="${w.profilePhoto}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
+  ${(w.profilePhoto || w.profileImage)
+    ? `<img src="${w.profilePhoto || w.profileImage}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
      : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#fff;font-weight:800;">${displayName.charAt(0)}</span>`}
  </div>
  <div class="dw-card__body">
@@ -2358,8 +2438,15 @@ async function handleToggleMatcherAvailability() {
  await _syncWalkerState(user.id, true, lat, lng);
  renderMatchingPage();
  }, async () => {
- MatchingService.setAvailability(user.id, true, null, null);
- await _syncWalkerState(user.id, true, null, null);
+ // GPS 실패 시 프로필에 저장된 마지막 위치 사용
+ const fallbackProfile = MatchingService.getMyProfile(user.id);
+ const fallbackLat = fallbackProfile?.lat || null;
+ const fallbackLng = fallbackProfile?.lng || null;
+ MatchingService.setAvailability(user.id, true, fallbackLat, fallbackLng);
+ await _syncWalkerState(user.id, true, fallbackLat, fallbackLng);
+ if (!fallbackLat) {
+   showToast('GPS를 받지 못했어요. 위치 권한을 확인해주세요.', 'warning');
+ }
  renderMatchingPage();
  }, { timeout: 6000, enableHighAccuracy: false });
 
@@ -2502,12 +2589,20 @@ async function _sendMatchRequestAfterPayment(toUserId, paymentResult) {
 
  const result = await MatchingService.sendRequest(user.id, toUserId, requestData);
  if (result && result.success) {
+   // 서버에 결제 완료 처리
+   if (paymentResult?.orderId) {
+     _markPaymentCompleted(paymentResult.orderId, result.request?.id || result.id || null);
+   }
    if (alertEl) {
      alertEl.innerHTML = '<div class="alert alert-success">결제 완료! 매칭 요청을 보냈습니다 💳</div>';
      setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
    }
    renderMatchingPage();
  } else {
+   // 요청 실패 시 재시도 기록
+   if (paymentResult?.orderId) {
+     _markPaymentRetry(paymentResult.orderId, result?.error || '요청 전송 실패');
+   }
    if (alertEl) {
      alertEl.innerHTML = `<div class="alert alert-error">${result?.error || '요청 전송에 실패했습니다.'}</div>`;
      setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 5000);

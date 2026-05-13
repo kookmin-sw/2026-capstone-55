@@ -27,6 +27,7 @@ const walkRequestRoutes  = require('./routes/walk-requests');
 const walkSessionRoutes  = require('./routes/walk-sessions');
 const walkChatRoutes     = require('./routes/walk-chat');
 const walkReviewRoutes   = require('./routes/walk-review');
+const paymentRoutes      = require('./routes/payments');
 
 const app    = express();
 const server = http.createServer(app);
@@ -77,6 +78,7 @@ app.use('/api/walk-requests', walkRequestRoutes);
 app.use('/api/walk-sessions', walkSessionRoutes);
 app.use('/api/walk-chat',     walkChatRoutes);
 app.use('/api/walk-review',   walkReviewRoutes);
+app.use('/api/payments',      paymentRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
@@ -142,8 +144,23 @@ app.set('emitToUser', emitToUser);
 app.set('emitToAvailableWalkers', emitToAvailableWalkers);
 
 // --- 서버 시작 ---
+
 // 오래된 요청 자동 만료 (10분마다 실행)
 const db = require('./db');
+
+// 결제 자동 환불 헬퍼 (만료 시 사용)
+function _autoRefundPayment(orderId, reason) {
+  const payments = db.get('payments', []);
+  const idx = payments.findIndex(p => p.orderId === orderId);
+  if (idx !== -1 && ['pending', 'completed'].includes(payments[idx].status)) {
+    payments[idx].status = 'refunded';
+    payments[idx].refundedAt = db.now();
+    payments[idx].refundReason = reason;
+    db.set('payments', payments);
+    // TODO: 실제 토스페이먼츠 환불 API 호출
+  }
+}
+
 setInterval(() => {
   const now = Date.now();
   const cutoff24h = now - 24 * 60 * 60 * 1000;
@@ -156,14 +173,18 @@ setInterval(() => {
     // pending 상태로 2시간 지난 것 → expired
     if (r.status === 'pending' && created < cutoff2h) {
       r.status = 'expired'; changed = true;
+      // 결제 환불 처리
+      if (r.paymentOrderId) _autoRefundPayment(r.paymentOrderId, '요청 만료 (2시간 초과)');
     }
     // accepted/heading 상태로 24시간 지난 것 → expired
     if (['accepted','heading'].includes(r.status) && created < cutoff24h) {
       r.status = 'expired'; changed = true;
+      if (r.paymentOrderId) _autoRefundPayment(r.paymentOrderId, '세션 만료 (24시간 초과)');
     }
     // broadcasting 상태 만료 체크
     if (r.status === 'broadcasting' && r.expiresAt && new Date(r.expiresAt) < new Date()) {
       r.status = 'expired'; changed = true;
+      if (r.paymentOrderId) _autoRefundPayment(r.paymentOrderId, '브로드캐스트 만료 (도우미 미응답)');
     }
   });
   if (changed) db.set('walkRequests', requests);
