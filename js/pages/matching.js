@@ -271,107 +271,107 @@ let _matchRegData = {};
 let _matchRegRole = '';
 
 const _matchWalkerSteps = [
- { key: 'location', question: '어디서 활동하세요?', sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true },
- { key: 'preferredTime', question: '언제 산책 가능해요?', sub: '가능한 시간대를 골라주세요', type: 'cards', options: [
- { value: '오전 (7-9시)', label: '이른 아침', desc: '7~9시' },
- { value: '오전 (9-11시)', label: '오전', desc: '9~11시' },
- { value: '오후 (2-4시)', label: '오후', desc: '2~4시' },
- { value: '오후 (5-7시)', label: '늦은 오후', desc: '5~7시' },
- { value: '저녁 (7-9시)', label: '저녁', desc: '7~9시' },
- { value: '상시 가능', label: '상시', desc: '언제든' }
+ { key: 'location',         question: '어디서 활동하세요?',                   sub: '시/도 → 구/군 → 동 순으로 선택해주세요',   type: 'location',    required: true,  aiScore: true },
+ { key: 'preferredTime',   question: '언제 산책 가능해요?',                  sub: '가능한 시간대를 골라주세요',               type: 'cards',       aiScore: true, options: [
+   { value: '오전 (7-9시)',  label: '이른 아침', desc: '7~9시' },
+   { value: '오전 (9-11시)', label: '오전',     desc: '9~11시' },
+   { value: '오후 (2-4시)',  label: '오후',     desc: '2~4시' },
+   { value: '오후 (5-7시)',  label: '늦은 오후', desc: '5~7시' },
+   { value: '저녁 (7-9시)',  label: '저녁',     desc: '7~9시' },
+   { value: '상시 가능',     label: '상시',     desc: '언제든' }
  ]},
- { key: 'careerYears', question: '산책 경력이 어느 정도예요?', sub: '대략적인 기간을 선택해주세요', type: 'cards', options: [
- { value: 'under6m', label: '6개월 미만', desc: '입문 단계' },
- { value: '6m1y', label: '6개월~1년', desc: '초보' },
- { value: '1y3y', label: '1년~3년', desc: '중급' },
- { value: 'over3y', label: '3년 이상', desc: '숙련' }
+ { key: 'careerYears',     question: '산책 경력이 어느 정도예요?',            sub: '대략적인 기간을 선택해주세요',             type: 'cards',       aiScore: true, options: [
+   { value: 'under6m', label: '6개월 미만', desc: '입문 단계' },
+   { value: '6m1y',    label: '6개월~1년', desc: '초보' },
+   { value: '1y3y',    label: '1년~3년',   desc: '중급' },
+   { value: 'over3y',  label: '3년 이상',  desc: '숙련' }
  ]},
- { key: 'ownPetExp', question: '반려견을 직접 키워본 경험이 있나요?', sub: '', type: 'cards', options: [
- { value: 'current', label: '현재 키우는 중', desc: '반려인' },
- { value: 'past', label: '과거에 키웠어요', desc: '경험 있음' },
- { value: 'none', label: '없어요', desc: '경험 없음' }
+ { key: 'ownPetExp',       question: '반려견을 직접 키워본 경험이 있나요?',   sub: '',                                       type: 'cards',       aiScore: true, options: [
+   { value: 'current', label: '현재 키우는 중', desc: '반려인' },
+   { value: 'past',    label: '과거에 키웠어요', desc: '경험 있음' },
+   { value: 'none',    label: '없어요',         desc: '경험 없음' }
  ]},
- { key: 'largeDogExp', question: '대형견 산책 경험이 있나요?', sub: '25kg 이상 기준이에요', type: 'cards', options: [
- { value: 'lots', label: '많아요', desc: '자주 했어요' },
- { value: 'some', label: '조금 있어요', desc: '몇 번 해봤어요' },
- { value: 'none', label: '없어요', desc: '소/중형만 해봤어요' }
+ { key: 'largeDogExp',     question: '대형견 산책 경험이 있나요?',            sub: '25kg 이상 기준이에요',                    type: 'cards',       aiScore: true, options: [
+   { value: 'lots', label: '많아요',      desc: '자주 했어요' },
+   { value: 'some', label: '조금 있어요', desc: '몇 번 해봤어요' },
+   { value: 'none', label: '없어요',      desc: '소/중형만 해봤어요' }
  ]},
- { key: 'aggressionHandle', question: '공격성 있는 강아지도 산책할 수 있나요?', sub: '솔직하게 답변해주세요', type: 'cards', options: [
- { value: 'yes', label: '가능해요', desc: '경험 있어요' },
- { value: 'some', label: '어느 정도요', desc: '경미한 수준은 OK' },
- { value: 'no', label: '어려워요', desc: '온순한 강아지만' }
+ { key: 'aggressionHandle', question: '공격성 있는 강아지도 산책할 수 있나요?', sub: '솔직하게 답변해주세요',                 type: 'cards',       aiScore: true, options: [
+   { value: 'yes',  label: '가능해요',    desc: '경험 있어요' },
+   { value: 'some', label: '어느 정도요', desc: '경미한 수준은 OK' },
+   { value: 'no',   label: '어려워요',   desc: '온순한 강아지만' }
  ]},
- { key: 'breedExp', question: '어떤 견종을 많이 산책해보셨나요?', sub: '해당되는 견종을 모두 선택해주세요', type: 'multicheck', options: [
- '리트리버', '푸들', '말티즈', '진돗개', '포메라니안', '시바견', '허스키', '비글', '코커스패니얼', '기타'
+ { key: 'breedExp',        question: '어떤 견종을 많이 산책해보셨나요?',      sub: '해당되는 견종을 모두 선택해주세요',        type: 'multicheck',  aiScore: true, options: [
+   '리트리버','푸들','말티즈','진돗개','포메라니안','시바견','허스키','비글','코커스패니얼','기타'
  ]},
- { key: 'problemBehavior', question: '어떤 문제 행동을 다뤄봤나요?', sub: '경험 있는 항목을 모두 선택해주세요', type: 'multicheck', options: [
- '공격성', '짖음', '줄 당김', '분리불안', '낯선 사람 경계', '다른 강아지에게 예민함'
+ { key: 'problemBehavior', question: '어떤 문제 행동을 다뤄봤나요?',          sub: '경험 있는 항목을 모두 선택해주세요',      type: 'multicheck',  aiScore: true, options: [
+   '공격성','짖음','줄 당김','분리불안','낯선 사람 경계','다른 강아지에게 예민함'
  ]},
- { key: 'message', question: '간단히 자기소개 해주세요', sub: '요청자가 참고할 수 있어요', type: 'textarea', placeholder: '산책 스타일, 성격 등을 자유롭게 적어주세요', required: true },
- { key: 'profilePhoto', question: '프로필 사진을 등록해주세요', sub: '매칭 시 꼭 필요해요! 요청자 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
+ { key: 'message',         question: '간단히 자기소개 해주세요',              sub: '요청자가 참고할 수 있어요',               type: 'textarea',    required: true,  placeholder: '산책 스타일, 성격 등을 자유롭게 적어주세요' },
+ { key: 'profilePhoto',    question: '프로필 사진을 등록해주세요',            sub: '매칭 시 꼭 필요해요! 요청자 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
 ];
 
 const _matchRequesterSteps = [
- { key: 'dogName', question: '반려견 이름이 뭐예요?', sub: '', type: 'text', placeholder: '예: 초코', required: true },
- { key: 'dogSize', question: '반려견 크기는요?', sub: '체중 기준으로 선택해주세요', type: 'cards', options: [
- { value: 'small', label: '소형', desc: '~7kg' },
- { value: 'medium', label: '중형', desc: '7~15kg' },
- { value: 'large', label: '대형', desc: '15kg~' }
+ { key: 'dogName',       question: '반려견 이름이 뭐예요?',          sub: '',                                       type: 'text',     required: true,  placeholder: '예: 초코' },
+ { key: 'dogSize',       question: '반려견 크기는요?',               sub: '체중 기준으로 선택해주세요',             type: 'cards',    aiScore: true, options: [
+   { value: 'small',  label: '소형', desc: '~7kg' },
+   { value: 'medium', label: '중형', desc: '7~15kg' },
+   { value: 'large',  label: '대형', desc: '15kg~' }
  ]},
- { key: 'dogAggression', question: '반려견에게 공격성이 있나요?', sub: '정확할수록 더 잘 맞는 도우미를 찾아드려요', type: 'cards', options: [
- { value: 'high', label: '공격성 강함', desc: '다른 개/사람에게 반응함' },
- { value: 'medium', label: '약간 있어요', desc: '특정 상황에서만' },
- { value: 'none', label: '온순해요', desc: '공격성 없음' }
+ { key: 'dogAggression', question: '반려견에게 공격성이 있나요?',    sub: '정확할수록 더 잘 맞는 도우미를 찾아드려요', type: 'cards',   aiScore: true, options: [
+   { value: 'high',   label: '공격성 강함', desc: '다른 개/사람에게 반응함' },
+   { value: 'medium', label: '약간 있어요', desc: '특정 상황에서만' },
+   { value: 'none',   label: '온순해요',    desc: '공격성 없음' }
  ]},
- { key: 'dogPersonality', question: '반려견 성격은 어때요?', sub: '가장 가까운 항목을 선택해주세요', type: 'cards', options: [
- { value: 'active', label: '활발해요', desc: '에너지가 넘쳐요' },
- { value: 'normal', label: '보통이에요', desc: '평균적인 편' },
- { value: 'shy', label: '겁이 많아요', desc: '낯선 환경에 예민함' }
+ { key: 'dogPersonality', question: '반려견 성격은 어때요?',          sub: '가장 가까운 항목을 선택해주세요',           type: 'cards',   aiScore: true, options: [
+   { value: 'active', label: '활발해요',    desc: '에너지가 넘쳐요' },
+   { value: 'normal', label: '보통이에요',  desc: '평균적인 편' },
+   { value: 'shy',    label: '겁이 많아요', desc: '낯선 환경에 예민함' }
  ]},
- { key: 'walkDifficulty', question: '산책 난이도는 어느 정도예요?', sub: '줄 당김, 돌발행동 등을 고려해주세요', type: 'cards', options: [
- { value: 'hard', label: '어려운 편', desc: '통제가 쉽지 않아요' },
- { value: 'medium', label: '보통이에요', desc: '가끔 말 안 들어요' },
- { value: 'easy', label: '쉬워요', desc: '순한 편이에요' }
+ { key: 'walkDifficulty', question: '산책 난이도는 어느 정도예요?',  sub: '줄 당김, 돌발행동 등을 고려해주세요',      type: 'cards',   aiScore: true, options: [
+   { value: 'hard',   label: '어려운 편',  desc: '통제가 쉽지 않아요' },
+   { value: 'medium', label: '보통이에요', desc: '가끔 말 안 들어요' },
+   { value: 'easy',   label: '쉬워요',     desc: '순한 편이에요' }
  ]},
- { key: 'location', question: '어디서 산책하고 싶으세요?', sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true },
- { key: 'preferredTime', question: '원하는 산책 시간은요?', sub: '', type: 'cards', options: [
- { value: '오전 (7-9시)', label: '이른 아침', desc: '7~9시' },
- { value: '오전 (9-11시)', label: '오전', desc: '9~11시' },
- { value: '오후 (2-4시)', label: '오후', desc: '2~4시' },
- { value: '오후 (5-7시)', label: '늦은 오후', desc: '5~7시' },
- { value: '저녁 (7-9시)', label: '저녁', desc: '7~9시' }
+ { key: 'location',      question: '어디서 산책하고 싶으세요?',      sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true, aiScore: true },
+ { key: 'preferredTime', question: '원하는 산책 시간은요?',          sub: '',                                       type: 'cards',    aiScore: true, options: [
+   { value: '오전 (7-9시)',  label: '이른 아침', desc: '7~9시' },
+   { value: '오전 (9-11시)', label: '오전',     desc: '9~11시' },
+   { value: '오후 (2-4시)',  label: '오후',     desc: '2~4시' },
+   { value: '오후 (5-7시)',  label: '늦은 오후', desc: '5~7시' },
+   { value: '저녁 (7-9시)',  label: '저녁',     desc: '7~9시' }
  ]},
- { key: 'notes', question: '추가 요청사항이 있나요?', sub: '없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '예: 목줄 빼지 말아주세요, 간식 챙겨드릴게요', required: false },
- { key: 'profilePhoto', question: '프로필 사진을 등록해주세요', sub: '매칭 시 꼭 필요해요! 도우미 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
+ { key: 'notes',        question: '추가 요청사항이 있나요?',         sub: '없으면 건너뛰어도 돼요',                  type: 'textarea', required: false, placeholder: '예: 목줄 빼지 말아주세요, 간식 챙겨드릴게요' },
+ { key: 'profilePhoto', question: '프로필 사진을 등록해주세요',      sub: '매칭 시 꼭 필요해요! 도우미 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
 ];
 
 // 반려견 등록돼있을 때 요청자 스텝 (dogName/dogSize 대신 dog-select)
 const _matchRequesterStepsWithDogs = [
- { key: 'selectedDogs', question: '어떤 반려견과 산책할까요?', sub: '여러 마리도 선택 가능해요', type: 'dog-select', required: true },
- { key: 'dogAggression', question: '반려견에게 공격성이 있나요?', sub: '정확할수록 더 잘 맞는 도우미를 찾아드려요', type: 'cards', options: [
+ { key: 'selectedDogs', question: '어떤 반려견과 산책할까요?', sub: '여러 마리도 선택 가능해요', type: 'dog-select', required: true, aiScore: true },
+ { key: 'dogAggression', question: '반려견에게 공격성이 있나요?', sub: '정확할수록 더 잘 맞는 도우미를 찾아드려요', type: 'cards', aiScore: true, options: [
    { value: 'high', label: '공격성 강함', desc: '다른 개/사람에게 반응함' },
    { value: 'medium', label: '약간 있어요', desc: '특정 상황에서만' },
    { value: 'none', label: '온순해요', desc: '공격성 없음' }
  ]},
- { key: 'dogPersonality', question: '반려견 성격은 어때요?', sub: '가장 가까운 항목을 선택해주세요', type: 'cards', options: [
-   { value: 'active', label: '활발해요', desc: '에너지가 넘쳐요' },
-   { value: 'normal', label: '보통이에요', desc: '평균적인 편' },
-   { value: 'shy', label: '겁이 많아요', desc: '낯선 환경에 예민함' }
+ { key: 'dogPersonality', question: '반려견 성격은 어때요?', sub: '가장 가까운 항목을 선택해주세요', type: 'cards', aiScore: true, options: [
+   { value: 'active', label: '활발해요',    desc: '에너지가 넘쳐요' },
+   { value: 'normal', label: '보통이에요',  desc: '평균적인 편' },
+   { value: 'shy',    label: '겁이 많아요', desc: '낯선 환경에 예민함' }
  ]},
- { key: 'walkDifficulty', question: '산책 난이도는 어느 정도예요?', sub: '줄 당김, 돌발행동 등을 고려해주세요', type: 'cards', options: [
-   { value: 'hard', label: '어려운 편', desc: '통제가 쉽지 않아요' },
+ { key: 'walkDifficulty', question: '산책 난이도는 어느 정도예요?', sub: '줄 당김, 돌발행동 등을 고려해주세요', type: 'cards', aiScore: true, options: [
+   { value: 'hard',   label: '어려운 편',  desc: '통제가 쉽지 않아요' },
    { value: 'medium', label: '보통이에요', desc: '가끔 말 안 들어요' },
-   { value: 'easy', label: '쉬워요', desc: '순한 편이에요' }
+   { value: 'easy',   label: '쉬워요',     desc: '순한 편이에요' }
  ]},
- { key: 'location', question: '어디서 산책하고 싶으세요?', sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true },
- { key: 'preferredTime', question: '원하는 산책 시간은요?', sub: '', type: 'cards', options: [
-   { value: '오전 (7-9시)', label: '이른 아침', desc: '7~9시' },
-   { value: '오전 (9-11시)', label: '오전', desc: '9~11시' },
-   { value: '오후 (2-4시)', label: '오후', desc: '2~4시' },
-   { value: '오후 (5-7시)', label: '늦은 오후', desc: '5~7시' },
-   { value: '저녁 (7-9시)', label: '저녁', desc: '7~9시' }
+ { key: 'location', question: '어디서 산책하고 싶으세요?', sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true, aiScore: true },
+ { key: 'preferredTime', question: '원하는 산책 시간은요?', sub: '', type: 'cards', aiScore: true, options: [
+   { value: '오전 (7-9시)',  label: '이른 아침', desc: '7~9시' },
+   { value: '오전 (9-11시)', label: '오전',     desc: '9~11시' },
+   { value: '오후 (2-4시)',  label: '오후',     desc: '2~4시' },
+   { value: '오후 (5-7시)',  label: '늦은 오후', desc: '5~7시' },
+   { value: '저녁 (7-9시)',  label: '저녁',     desc: '7~9시' }
  ]},
- { key: 'notes', question: '추가 요청사항이 있나요?', sub: '없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '예: 목줄 빼지 말아주세요, 간식 챙겨드릴게요', required: false },
+ { key: 'notes',        question: '추가 요청사항이 있나요?',    sub: '없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '예: 목줄 빼지 말아주세요, 간식 챙겨드릴게요', required: false },
  { key: 'profilePhoto', question: '프로필 사진을 등록해주세요', sub: '매칭 시 꼭 필요해요! 도우미 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
 ];
 
@@ -531,10 +531,20 @@ function renderMatchRegStep() {
  const isLast = _matchRegStep === total - 1;
  const canSkip = !step.required;
 
+ const isWalkerRole = _matchRegRole === 'walker';
+ const aiMsg = isWalkerRole
+   ? '입력할수록 요청자에게 상위 추천돼요'
+   : '입력할수록 딱 맞는 도우미를 찾아드려요';
+
  content.innerHTML = `
  <div style="flex:1;">
  <h2 style="font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; line-height:1.3;">${step.question}</h2>
  ${step.sub ? `<p style="font-size:0.88rem; color:#999; margin-top:6px;">${step.sub}</p>` : ''}
+ ${step.aiScore ? `<div style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:5px 11px;background:linear-gradient(135deg,#EDE9FE,#F5F3FF);border:1px solid #C4B5FD;border-radius:999px;">
+   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+   <span style="font-size:0.71rem;font-weight:800;color:#6D28D9;letter-spacing:0.2px;">AI 매칭 점수 반영</span>
+   <span style="font-size:0.68rem;color:#8B5CF6;font-weight:500;">· ${aiMsg}</span>
+ </div>` : ''}
  ${inputHtml}
  </div>
  <div style="display:flex; gap:8px; margin-top:24px;">
