@@ -1685,13 +1685,31 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
  const _etaText = sec => sec < 60 ? `${sec}초` : `약 ${Math.ceil(sec/60)}분`;
  const _distText = m => m < 1000 ? `${Math.round(m)}m` : `${(m/1000).toFixed(1)}km`;
 
- // 아이콘 팩토리
- const _iconMe = () => L.divIcon({html:'<div class="wsm-me"></div>',className:'',iconSize:[16,16],iconAnchor:[8,8]});
- const _iconWalker = (pulse=false) => L.divIcon({
-   html:`<div class="wsm-walker${pulse?' wsm-walker--pulse':''}">🐾</div>`,
-   className:'',iconSize:[38,38],iconAnchor:[19,19]
- });
- const _iconPickup = name => L.divIcon({
+ // ── 프로필 사진 기반 원형 아이콘 팩토리 ──
+ const _makeSessionIcon = (photoUrl, fallback, color, size, pulse) => {
+   const inner = photoUrl
+     ? `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+     : `<div style="width:100%;height:100%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:${Math.round(size*0.32)}px;">${fallback}</div>`;
+   return L.divIcon({
+     html:`<div style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid #fff;outline:2.5px solid ${color};overflow:hidden;box-shadow:0 3px 14px rgba(0,0,0,0.3);background:${color};${pulse?'animation:wsmWalkerPulse 2s ease infinite;':''}">${inner}</div>`,
+     className:'', iconSize:[size,size], iconAnchor:[size/2,size/2]
+   });
+ };
+
+ // 현재 사용자 프로필 사진 가져오기
+ const _curUser = AuthService.getCurrentUser();
+ const _myProfile = _curUser ? MatchingService.getMyProfile(_curUser.id) : null;
+ const _myPhoto = _myProfile?.profilePhoto || '';
+ const _myName  = _curUser ? (_curUser.nickname || _curUser.name || '나') : '나';
+
+ // 아이콘 팩토리 (사진 우선, 없으면 기존 스타일)
+ const _iconMe = (photo, name) => _makeSessionIcon(
+   photo || _myPhoto, (name||_myName).charAt(0), '#3B82F6', 38, false
+ );
+ const _iconWalker = (pulse=false, photo, name) => _makeSessionIcon(
+   photo || '', (name||'도').charAt(0), '#F59E0B', 44, pulse
+ );
+ const _iconPickup = () => L.divIcon({
    html:`<div class="wsm-pickup">📍</div>`,
    className:'',iconSize:[34,34],iconAnchor:[17,17]
  });
@@ -1737,6 +1755,24 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
    }
  } catch(e) {}
 
+ // 요청자/도우미 사진 로드 (매칭 프로필에서)
+ let _partnerPhoto = '';
+ try {
+   if (isWalker) {
+     // 도우미 → 요청자 사진은 walk-requests에서 requesterPhoto 또는 별도 조회
+     const reqData = requestId ? await (await fetch(`/api/walk-requests/${requestId}`)).json() : null;
+     _partnerPhoto = reqData?.request?.requesterPhoto || '';
+   } else {
+     // 요청자 → 도우미 사진은 walkers API에서
+     const walkerSession = await (await fetch(`/api/walk-sessions?userId=${_curUser?.id}`)).json();
+     const sess = (walkerSession.sessions||[]).find(s=>s.id===sessionId);
+     if (sess?.walkerId) {
+       const walkerData = await (await fetch('/api/walkers')).json();
+       _partnerPhoto = walkerData.find(w=>w.userId===sess.walkerId)?.profilePhoto || '';
+     }
+   }
+ } catch(e) {}
+
  // ════════════════════════════════════════════════════════
  // 도우미 뷰
  // ════════════════════════════════════════════════════════
@@ -1744,13 +1780,14 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
 
    // ── 단계 1/2: 이동 중 / 도착 (픽업 네비게이션) ──
    if (sessionStatus==='heading' || sessionStatus==='arrived') {
-     // GPS 성공 시에만 초기 마커 배치 (실패면 watchPosition에서 첫 위치 수신 시 생성)
+     // 도우미 본인 마커 (도우미 사진)
      if (_hasGps) {
-       _walkNavMyMarker = L.marker([myLat,myLng],{icon:_iconWalker(true)}).bindPopup('내 위치').addTo(_walkRouteMap);
+       _walkNavMyMarker = L.marker([myLat,myLng],{icon:_iconWalker(true, _myPhoto, _myName)}).bindPopup('내 위치').addTo(_walkRouteMap);
      }
 
      if (pickupLat && pickupLng) {
-       L.marker([pickupLat,pickupLng],{icon:_iconPickup()}).bindPopup(`<b>${pickupName}</b><br>픽업 장소`).addTo(_walkRouteMap);
+       // 픽업 마커 → 요청자 사진 사용
+       L.marker([pickupLat,pickupLng],{icon:_makeSessionIcon(_partnerPhoto, pickupName.charAt(0), '#EF4444', 40, false)}).bindPopup(`<b>${pickupName}</b><br>픽업 장소`).addTo(_walkRouteMap);
        if (_hasGps) {
          _walkNavLine = L.polyline([[myLat,myLng],[pickupLat,pickupLng]],{color:'#3B82F6',weight:3,dashArray:'8 5',opacity:.8}).addTo(_walkRouteMap);
          _walkRouteMap.fitBounds([[myLat,myLng],[pickupLat,pickupLng]],{padding:[60,60],maxZoom:17});
@@ -1867,14 +1904,14 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
  // 요청자 뷰
  // ════════════════════════════════════════════════════════
  } else {
-   // 내 위치 (정적 마커) - GPS 성공 시에만 표시
-   const myMarker = _hasGps ? L.marker([myLat,myLng],{icon:_iconMe()}).bindPopup('내 위치').addTo(_walkRouteMap) : null;
+   // 내 위치 (요청자 사진 마커) - GPS 성공 시에만 표시
+   const myMarker = _hasGps ? L.marker([myLat,myLng],{icon:_iconMe(_myPhoto,_myName)}).bindPopup('내 위치').addTo(_walkRouteMap) : null;
 
    let walkerMarker = null;
    const _updateWalkerMarker = (lat,lng,panTo=true) => {
      if (!_walkRouteMap) return;
      if (!walkerMarker) {
-       walkerMarker = L.marker([lat,lng],{icon:_iconWalker(true)}).bindPopup('도우미').addTo(_walkRouteMap);
+       walkerMarker = L.marker([lat,lng],{icon:_iconWalker(true,_partnerPhoto,'도우미')}).bindPopup('도우미').addTo(_walkRouteMap);
      } else {
        walkerMarker.setLatLng([lat,lng]);
      }

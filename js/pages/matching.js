@@ -307,7 +307,8 @@ const _matchWalkerSteps = [
  { key: 'problemBehavior', question: '어떤 문제 행동을 다뤄봤나요?', sub: '경험 있는 항목을 모두 선택해주세요', type: 'multicheck', options: [
  '공격성', '짖음', '줄 당김', '분리불안', '낯선 사람 경계', '다른 강아지에게 예민함'
  ]},
- { key: 'message', question: '간단히 자기소개 해주세요', sub: '요청자가 참고할 수 있어요', type: 'textarea', placeholder: '산책 스타일, 성격 등을 자유롭게 적어주세요', required: true }
+ { key: 'message', question: '간단히 자기소개 해주세요', sub: '요청자가 참고할 수 있어요', type: 'textarea', placeholder: '산책 스타일, 성격 등을 자유롭게 적어주세요', required: true },
+ { key: 'profilePhoto', question: '프로필 사진을 등록해주세요', sub: '매칭 시 꼭 필요해요! 요청자 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
 ];
 
 const _matchRequesterSteps = [
@@ -340,7 +341,8 @@ const _matchRequesterSteps = [
  { value: '오후 (5-7시)', label: '늦은 오후', desc: '5~7시' },
  { value: '저녁 (7-9시)', label: '저녁', desc: '7~9시' }
  ]},
- { key: 'notes', question: '추가 요청사항이 있나요?', sub: '없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '예: 목줄 빼지 말아주세요, 간식 챙겨드릴게요', required: false }
+ { key: 'notes', question: '추가 요청사항이 있나요?', sub: '없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '예: 목줄 빼지 말아주세요, 간식 챙겨드릴게요', required: false },
+ { key: 'profilePhoto', question: '프로필 사진을 등록해주세요', sub: '매칭 시 꼭 필요해요! 도우미 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
 ];
 
 function openMatchRegisterFlow(role) {
@@ -407,6 +409,29 @@ function renderMatchRegStep() {
    `).join('')}
    </div>
    <p style="font-size:0.75rem; color:#aaa; margin-top:10px;">해당 없으면 건너뛰기를 눌러주세요</p>`;
+ } else if (step.type === 'photo') {
+   const existing = _matchRegData.profilePhoto || '';
+   const isWalker = _matchRegRole === 'walker';
+   inputHtml = `
+   <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:20px;">
+     <div id="photo-preview-wrap" onclick="document.getElementById('match-photo-input').click()"
+       style="width:130px;height:130px;border-radius:50%;overflow:hidden;border:2.5px dashed ${existing?'#1a1a1a':'#ccc'};cursor:pointer;background:#f8f8f6;display:flex;align-items:center;justify-content:center;transition:border-color 0.2s;">
+       ${existing
+         ? `<img src="${existing}" style="width:100%;height:100%;object-fit:cover;">`
+         : `<div style="text-align:center;"><div style="font-size:2.2rem;">📷</div><div style="font-size:0.72rem;color:#aaa;margin-top:6px;">탭하여 선택</div></div>`}
+     </div>
+     <input type="file" id="match-photo-input" accept="image/*" style="display:none;" onchange="_onMatchPhotoSelect(this)">
+     <button onclick="document.getElementById('match-photo-input').click()"
+       style="padding:10px 26px;border:1.5px solid #1a1a1a;border-radius:999px;background:#fff;font-size:0.88rem;font-weight:700;cursor:pointer;">
+       ${existing ? '📷 사진 변경' : '📷 사진 선택'}
+     </button>
+     <div style="padding:14px 16px;background:#FFFBEB;border-radius:14px;font-size:0.82rem;line-height:1.7;color:#92400E;text-align:left;width:100%;box-sizing:border-box;">
+       <strong>🔒 안전 산책을 위해</strong><br>
+       ${isWalker
+         ? '요청자가 도우미의 얼굴을 확인해 신뢰하고 맡길 수 있어요.<br>사진이 있을수록 매칭 확률이 높아집니다.'
+         : '도우미가 요청자의 얼굴을 확인해 안심하고 반려견을 케어할 수 있어요.<br>사진이 있을수록 매칭 확률이 높아집니다.'}
+     </div>
+   </div>`;
  } else if (step.type === 'location') {
    const sido     = _matchRegData.locationSido     || '';
    const sigungu  = _matchRegData.locationSigungu  || '';
@@ -455,6 +480,39 @@ function renderMatchRegStep() {
  </div>
  `;
  setTimeout(() => document.getElementById('match-reg-input')?.focus(), 100);
+}
+
+/** 프로필 사진을 200×200 JPEG로 압축 후 base64 반환 */
+function _compressProfilePhoto(file, callback) {
+  if (!file || !file.type.startsWith('image/')) { callback(null); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const SIZE = 200;
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      const side = Math.min(img.width, img.height);
+      const ox = (img.width - side) / 2, oy = (img.height - side) / 2;
+      ctx.drawImage(img, ox, oy, side, side, 0, 0, SIZE, SIZE);
+      callback(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function _onMatchPhotoSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _compressProfilePhoto(file, base64 => {
+    if (!base64) return;
+    _matchRegData.profilePhoto = base64;
+    const wrap = document.getElementById('photo-preview-wrap');
+    if (wrap) wrap.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;">`;
+    renderMatchRegStep(); // 버튼 텍스트와 미리보기 갱신
+  });
 }
 
 function _onSidoChange() {
@@ -524,15 +582,24 @@ function skipMatchRegStep() {
 
 function finishMatchRegister() {
  const steps = _getMatchSteps();
- const input = document.getElementById('match-reg-input');
- if (input) _matchRegData[steps[_matchRegStep].key] = input.value.trim();
+ const lastStep = steps[_matchRegStep];
+ // photo 타입은 match-reg-input 없음, 나머지 타입만 읽기
+ if (lastStep.type !== 'photo' && lastStep.type !== 'location') {
+   const input = document.getElementById('match-reg-input');
+   if (input) _matchRegData[lastStep.key] = input.value.trim();
+ }
 
  const user = AuthService.getCurrentUser();
  if (!user) return;
 
+ const photo = _matchRegData.profilePhoto || '';
+
  if (_matchRegRole === 'walker') {
  handleRegisterMatchProfile('walker', {
  location: _matchRegData.location,
+ locationSido: _matchRegData.locationSido || '',
+ locationSigungu: _matchRegData.locationSigungu || '',
+ locationDong: _matchRegData.locationDong || '',
  preferredTime: _matchRegData.preferredTime,
  careerYears: _matchRegData.careerYears || '',
  ownPetExp: _matchRegData.ownPetExp || '',
@@ -542,7 +609,8 @@ function finishMatchRegister() {
  problemBehavior: _matchRegData.problemBehavior || [],
  message: _matchRegData.message || '',
  canWalkLarge: _matchRegData.largeDogExp !== 'none',
- canWalkMultiple: true
+ canWalkMultiple: true,
+ profilePhoto: photo
  });
  } else {
  handleRegisterMatchProfile('requester', {
@@ -552,8 +620,12 @@ function finishMatchRegister() {
  dogPersonality: _matchRegData.dogPersonality || 'normal',
  walkDifficulty: _matchRegData.walkDifficulty || 'easy',
  location: _matchRegData.location,
+ locationSido: _matchRegData.locationSido || '',
+ locationSigungu: _matchRegData.locationSigungu || '',
+ locationDong: _matchRegData.locationDong || '',
  preferredTime: _matchRegData.preferredTime,
- notes: _matchRegData.notes || ''
+ notes: _matchRegData.notes || '',
+ profilePhoto: photo
  });
  }
  closeMatchRegisterFlow();
@@ -714,6 +786,9 @@ function handleRegisterMatchProfile(role, flowData) {
  name: user.name || user.nickname,
  nickname: user.nickname || user.name,
  location: location.trim(),
+ locationSido: flowData?.locationSido || '',
+ locationSigungu: flowData?.locationSigungu || '',
+ locationDong: flowData?.locationDong || '',
  preferredTime: preferredTime,
  experience: extra.experience || '',
  message: message.trim(),
@@ -723,6 +798,7 @@ function handleRegisterMatchProfile(role, flowData) {
  largeDogExp: extra.largeDogExp || 'none',
  aggressionHandle: extra.aggressionHandle || 'no',
  ownPetExp: extra.ownPetExp || 'none',
+ profilePhoto: flowData?.profilePhoto || '',
  })
  }).then(() => MatchingService.refreshFromServer()).catch(() => {});
  }
@@ -1436,6 +1512,17 @@ function renderRequesterActiveWalkScreen(user, req) {
 }
 
 /** 요청자 실시간 지도 초기화 */
+/** 프로필 사진 기반 원형 지도 마커 아이콘 생성 */
+function _makePhotoMarker(photoUrl, fallbackChar, borderColor, size, pulse) {
+  const inner = photoUrl
+    ? `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+    : `<div style="width:100%;height:100%;background:${borderColor};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:${Math.round(size*0.3)}px;">${fallbackChar}</div>`;
+  return L.divIcon({
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid #fff;outline:2px solid ${borderColor};overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,0.3);${pulse?'animation:wsmWalkerPulse 2s ease infinite;':''}background:${borderColor};">${inner}</div>`,
+    className: '', iconSize: [size, size], iconAnchor: [size/2, size/2]
+  });
+}
+
 function _initRequesterLiveMap(req) {
  const container = document.getElementById('requester-live-map');
  if (!container) return;
@@ -1447,9 +1534,13 @@ function _initRequesterLiveMap(req) {
    attribution: 'ⓒ OpenStreetMap'
  }).addTo(map);
 
- // 내 위치 마커 — GPS로 실제 위치 업데이트
- const myIcon = L.divIcon({ html: '<div style="width:14px;height:14px;background:#3182CE;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>', className: '', iconSize: [14,14], iconAnchor: [7,7] });
- let myMarker = L.marker([lat, lng], { icon: myIcon }).bindPopup('내 위치').addTo(map);
+ // 내 위치 마커 (요청자 사진)
+ const user = AuthService.getCurrentUser();
+ const myProfile = user ? MatchingService.getMyProfile(user.id) : null;
+ const myPhoto = myProfile?.profilePhoto || '';
+ const myName  = user ? (user.nickname || user.name || '나') : '나';
+ const myIcon  = _makePhotoMarker(myPhoto, myName.charAt(0), '#3182CE', 36, false);
+ let myMarker  = L.marker([lat, lng], { icon: myIcon }).bindPopup('내 위치').addTo(map);
  let myLat = lat, myLng = lng;
 
  navigator.geolocation.getCurrentPosition((pos) => {
@@ -1459,9 +1550,19 @@ function _initRequesterLiveMap(req) {
    map.setView([myLat, myLng], 16);
  }, () => {}, { timeout: 5000, enableHighAccuracy: true });
 
- // 도우미 마커 (실시간 업데이트) — 내 위치보다 크고 눈에 띄게
- const walkerIcon = L.divIcon({ html: '<div style="width:28px;height:28px;background:#F59E0B;border:3px solid #fff;border-radius:50%;box-shadow:0 3px 12px rgba(245,158,11,0.5);animation:pulse 2s infinite;z-index:1000;position:relative;"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.65rem;font-weight:800;">도</div></div>', className: '', iconSize: [28,28], iconAnchor: [14,14] });
+ // 도우미 마커 (도우미 사진 — walkers API에서 로드)
+ let walkerPhoto = '';
  let walkerMarker = null;
+
+ // 도우미 사진 미리 로드
+ fetch('/api/walkers').then(r => r.json()).then(walkers => {
+   const w = walkers.find(w => w.userId === req.walkerId);
+   if (w?.profilePhoto) walkerPhoto = w.profilePhoto;
+ }).catch(() => {});
+
+ const _getWalkerIcon = (pulse) => _makePhotoMarker(
+   walkerPhoto, (req.walkerName || '도').charAt(0), '#F59E0B', 44, pulse
+ );
 
  // 두 마커가 모두 보이도록 줌 조정 (서울 전역 확대 방지: 최소 zoom 13 유지)
  function fitBothMarkers(walkerLat, walkerLng) {
@@ -1481,19 +1582,20 @@ function _initRequesterLiveMap(req) {
      const data = await res.json();
      if (data.success && data.lat && data.lng) {
        if (!walkerMarker) {
-         walkerMarker = L.marker([data.lat, data.lng], { icon: walkerIcon }).bindPopup(`${req.walkerName || '도우미'} 위치`).addTo(map);
+         walkerMarker = L.marker([data.lat, data.lng], { icon: _getWalkerIcon(true) }).bindPopup(`${req.walkerName || '도우미'} 위치`).addTo(map);
          fitBothMarkers(data.lat, data.lng);
        } else {
          walkerMarker.setLatLng([data.lat, data.lng]);
        }
      } else if (!walkerMarker) {
-       // fallback: walkers.json에서 도우미 마지막 위치 사용
+       // fallback: walkers.json에서 도우미 마지막 위치 + 사진 로드
        try {
          const wRes = await fetch('/api/walkers');
          const walkers = await wRes.json();
          const walker = walkers.find(w => w.userId === req.walkerId);
          if (walker && walker.lat && walker.lng) {
-           walkerMarker = L.marker([walker.lat, walker.lng], { icon: walkerIcon }).bindPopup(`${req.walkerName || '도우미'} (마지막 위치)`).addTo(map);
+           if (walker.profilePhoto) walkerPhoto = walker.profilePhoto;
+           walkerMarker = L.marker([walker.lat, walker.lng], { icon: _getWalkerIcon(true) }).bindPopup(`${req.walkerName || '도우미'} (마지막 위치)`).addTo(map);
            fitBothMarkers(walker.lat, walker.lng);
          }
        } catch(e2) {}
@@ -1509,7 +1611,7 @@ function _initRequesterLiveMap(req) {
    RealtimeService.on('walker-location-update', (data) => {
      if (data.requestId !== req.id) return;
      if (!walkerMarker) {
-       walkerMarker = L.marker([data.lat, data.lng], { icon: walkerIcon }).bindPopup(`${req.walkerName || '도우미'} 위치`).addTo(map);
+       walkerMarker = L.marker([data.lat, data.lng], { icon: _getWalkerIcon(true) }).bindPopup(`${req.walkerName || '도우미'} 위치`).addTo(map);
        fitBothMarkers(data.lat, data.lng);
      } else {
        walkerMarker.setLatLng([data.lat, data.lng]);
