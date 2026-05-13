@@ -2163,18 +2163,17 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .walker-popup .leaflet-popup-content-wrapper {
   border-radius: 20px;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;   /* 좌우는 숨겨서 border-radius 유지 */
+  overflow-y: auto;     /* 세로는 스크롤 허용 */
   box-shadow: 0 12px 40px rgba(0,0,0,0.2);
   border: none;
-  max-height: 75vh;
+  max-height: 70vh;
 }
 .walker-popup .leaflet-popup-tip-container { display: none; }
 .walker-popup .leaflet-popup-content {
-  margin: 0;
-  width: auto !important;
-  max-height: 75vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 300px !important;
 }
 
 .walker-card-popup { width: 260px; font-family: inherit; }

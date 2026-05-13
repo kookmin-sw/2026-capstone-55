@@ -155,9 +155,9 @@ async function _renderDiscMap(userLat, userLng, radiusKm) {
  ].filter(Boolean).join('');
 
  const popupHtml = `
- <div style="font-family:inherit;width:300px;border-radius:20px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-height:80vh;overflow-y:auto;">
-   <!-- 상단: 얼굴 사진 크게 -->
-   <div style="position:relative;background:linear-gradient(160deg,#1a1a1a 0%,#2d2d2d 100%);padding:24px 20px 20px;text-align:center;position:sticky;top:0;z-index:1;">
+ <div style="font-family:inherit;width:300px;">
+   <!-- 상단: 얼굴 사진 크게 (sticky) -->
+   <div style="background:linear-gradient(160deg,#1a1a1a 0%,#2d2d2d 100%);padding:24px 20px 20px;text-align:center;position:sticky;top:0;z-index:2;border-radius:20px 20px 0 0;">
      <div style="width:88px;height:88px;border-radius:50%;margin:0 auto 12px;border:3px solid #fff;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.35);background:#333;">
        ${photo
          ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;display:block;">`
