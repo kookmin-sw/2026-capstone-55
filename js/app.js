@@ -2264,7 +2264,8 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
      }
    }
  }
-}
+} // end requester walking block
+} // end _initWalkSessionMap
 
 function _updateRouteStats(pointCount, distKm) {
  const pcEl = document.getElementById('route-point-count');
@@ -3373,4 +3374,3 @@ function clearAllNotifications() {
   const panel = document.getElementById('notification-panel');
   if (panel) { panel.remove(); toggleNotificationPanel(); }
 }
-} // close _initWalkSessionMap
