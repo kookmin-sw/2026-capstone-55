@@ -24,6 +24,19 @@ router.get('/:key', (req, res) => {
 });
 
 /**
+ * POST /api/data/broadcast-notice — 공지사항 전체 브로드캐스트
+ */
+router.post('/broadcast-notice', (req, res) => {
+  const { text } = req.body;
+  if (!text) return res.status(400).json({ error: '공지 내용이 필요합니다.' });
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('admin-notice', { text, createdAt: new Date().toISOString() });
+  }
+  res.json({ success: true });
+});
+
+/**
  * POST /api/data/:key — 데이터 저장
  */
 router.post('/:key', (req, res) => {

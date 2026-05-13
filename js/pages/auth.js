@@ -595,6 +595,7 @@ async function handleLogin() {
  }
  }
  updateNavAuth();
+ getNotifications(); updateBellBadge(); loadServerNotices();
  Router.navigate('/');
  } else {
  if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
