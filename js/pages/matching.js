@@ -345,17 +345,57 @@ const _matchRequesterSteps = [
  { key: 'profilePhoto', question: '프로필 사진을 등록해주세요', sub: '매칭 시 꼭 필요해요! 도우미 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
 ];
 
+// 반려견 등록돼있을 때 요청자 스텝 (dogName/dogSize 대신 dog-select)
+const _matchRequesterStepsWithDogs = [
+ { key: 'selectedDogs', question: '어떤 반려견과 산책할까요?', sub: '여러 마리도 선택 가능해요', type: 'dog-select', required: true },
+ { key: 'dogAggression', question: '반려견에게 공격성이 있나요?', sub: '정확할수록 더 잘 맞는 도우미를 찾아드려요', type: 'cards', options: [
+   { value: 'high', label: '공격성 강함', desc: '다른 개/사람에게 반응함' },
+   { value: 'medium', label: '약간 있어요', desc: '특정 상황에서만' },
+   { value: 'none', label: '온순해요', desc: '공격성 없음' }
+ ]},
+ { key: 'dogPersonality', question: '반려견 성격은 어때요?', sub: '가장 가까운 항목을 선택해주세요', type: 'cards', options: [
+   { value: 'active', label: '활발해요', desc: '에너지가 넘쳐요' },
+   { value: 'normal', label: '보통이에요', desc: '평균적인 편' },
+   { value: 'shy', label: '겁이 많아요', desc: '낯선 환경에 예민함' }
+ ]},
+ { key: 'walkDifficulty', question: '산책 난이도는 어느 정도예요?', sub: '줄 당김, 돌발행동 등을 고려해주세요', type: 'cards', options: [
+   { value: 'hard', label: '어려운 편', desc: '통제가 쉽지 않아요' },
+   { value: 'medium', label: '보통이에요', desc: '가끔 말 안 들어요' },
+   { value: 'easy', label: '쉬워요', desc: '순한 편이에요' }
+ ]},
+ { key: 'location', question: '어디서 산책하고 싶으세요?', sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true },
+ { key: 'preferredTime', question: '원하는 산책 시간은요?', sub: '', type: 'cards', options: [
+   { value: '오전 (7-9시)', label: '이른 아침', desc: '7~9시' },
+   { value: '오전 (9-11시)', label: '오전', desc: '9~11시' },
+   { value: '오후 (2-4시)', label: '오후', desc: '2~4시' },
+   { value: '오후 (5-7시)', label: '늦은 오후', desc: '5~7시' },
+   { value: '저녁 (7-9시)', label: '저녁', desc: '7~9시' }
+ ]},
+ { key: 'notes', question: '추가 요청사항이 있나요?', sub: '없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '예: 목줄 빼지 말아주세요, 간식 챙겨드릴게요', required: false },
+ { key: 'profilePhoto', question: '프로필 사진을 등록해주세요', sub: '매칭 시 꼭 필요해요! 도우미 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
+];
+
 function openMatchRegisterFlow(role) {
  _matchRegRole = role;
  _matchRegStep = 0;
  _matchRegData = {};
+
+ // 요청자이고 이미 반려견이 등록돼 있으면 dog-select 플로우 사용
+ if (role === 'requester') {
+   const user = AuthService.getCurrentUser();
+   const dogs = user?.dogs || [];
+   if (dogs.length > 0) {
+     _matchRegData._hasDogProfile = true;
+     _matchRegData._registeredDogs = dogs;
+   }
+ }
 
  const app = document.getElementById('app');
  app.innerHTML += `
  <div id="match-reg-modal" style="position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
  <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
  <div style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
- <button onclick="closeMatchRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">?</button>
+ <button onclick="closeMatchRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; line-height:1; color:#999; cursor:pointer; padding:4px 8px;">&times;</button>
  <div id="match-reg-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
  <div id="match-reg-content" style="flex:1; display:flex; flex-direction:column;"></div>
  </div>
@@ -371,7 +411,8 @@ function closeMatchRegisterFlow() {
 }
 
 function _getMatchSteps() {
- return _matchRegRole === 'walker' ? _matchWalkerSteps : _matchRequesterSteps;
+ if (_matchRegRole === 'walker') return _matchWalkerSteps;
+ return _matchRegData._hasDogProfile ? _matchRequesterStepsWithDogs : _matchRequesterSteps;
 }
 
 function renderMatchRegStep() {
@@ -409,6 +450,29 @@ function renderMatchRegStep() {
    `).join('')}
    </div>
    <p style="font-size:0.75rem; color:#aaa; margin-top:10px;">해당 없으면 건너뛰기를 눌러주세요</p>`;
+ } else if (step.type === 'dog-select') {
+   const dogs = _matchRegData._registeredDogs || [];
+   const selected = _matchRegData.selectedDogIds || [];
+   const sizeMap = { small:'소형', medium:'중형', large:'대형' };
+   inputHtml = `
+   <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+     ${dogs.map(d => {
+       const isSel = selected.includes(d.id);
+       return `<button onclick="toggleDogSelect('${d.id}')" style="padding:14px 16px;border:2px solid ${isSel?'#1a1a1a':'#e5e3e0'};border-radius:14px;background:${isSel?'#f5f3f0':'#fff'};text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.15s;">
+         <div style="width:44px;height:44px;border-radius:50%;background:#f0f0ee;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+           ${d.photo ? `<img src="${d.photo}" style="width:100%;height:100%;object-fit:cover;">` : '<span style="font-size:1.4rem;">🐶</span>'}
+         </div>
+         <div style="flex:1;">
+           <div style="font-weight:700;font-size:0.95rem;">${d.name}</div>
+           <div style="font-size:0.78rem;color:#999;margin-top:2px;">${d.breed||''}${d.size?` · ${sizeMap[d.size]||d.size}`:''}${d.age?` · ${d.age}살`:''}</div>
+         </div>
+         <div style="width:24px;height:24px;border-radius:50%;border:2px solid ${isSel?'#1a1a1a':'#ddd'};background:${isSel?'#1a1a1a':'#fff'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+           ${isSel?'<svg width="12" height="12" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>':''}
+         </div>
+       </button>`;
+     }).join('')}
+     ${selected.length > 0 ? `<div style="font-size:0.8rem;color:#00AA76;font-weight:600;padding:8px 12px;background:#f0fdf4;border-radius:10px;text-align:center;">✓ ${selected.length}마리 선택됨${selected.length>1?' (다견 산책)':''}</div>` : ''}
+   </div>`;
  } else if (step.type === 'photo') {
    const existing = _matchRegData.profilePhoto || '';
    const isWalker = _matchRegRole === 'walker';
@@ -515,6 +579,14 @@ function _onMatchPhotoSelect(input) {
   });
 }
 
+function toggleDogSelect(dogId) {
+  if (!_matchRegData.selectedDogIds) _matchRegData.selectedDogIds = [];
+  const idx = _matchRegData.selectedDogIds.indexOf(dogId);
+  if (idx === -1) _matchRegData.selectedDogIds.push(dogId);
+  else _matchRegData.selectedDogIds.splice(idx, 1);
+  renderMatchRegStep();
+}
+
 function _onSidoChange() {
   const sido = document.getElementById('loc-sido')?.value || '';
   _matchRegData.locationSido = sido;
@@ -548,7 +620,18 @@ function nextMatchRegStep() {
  const steps = _getMatchSteps();
  const step = steps[_matchRegStep];
 
- if (step.type === 'location') {
+ if (step.type === 'dog-select') {
+   const selectedIds = _matchRegData.selectedDogIds || [];
+   if (selectedIds.length === 0) { showToast('반려견을 최소 1마리 선택해주세요.', 'error'); return; }
+   const dogs = _matchRegData._registeredDogs || [];
+   const selected = dogs.filter(d => selectedIds.includes(d.id));
+   const primary = selected[0] || {};
+   _matchRegData.dogName  = selected.map(d => d.name).join(', ');
+   _matchRegData.dogSize  = primary.size  || 'small';
+   _matchRegData.dogBreed = primary.breed || '';
+   _matchRegData.dogIds   = selectedIds;
+   _matchRegData.dogs     = selected;
+ } else if (step.type === 'location') {
    const sido    = document.getElementById('loc-sido')?.value    || _matchRegData.locationSido    || '';
    const sigungu = document.getElementById('loc-sigungu')?.value || _matchRegData.locationSigungu || '';
    const dong    = document.getElementById('loc-dong')?.value    || _matchRegData.locationDong    || '';
@@ -583,8 +666,8 @@ function skipMatchRegStep() {
 function finishMatchRegister() {
  const steps = _getMatchSteps();
  const lastStep = steps[_matchRegStep];
- // photo 타입은 match-reg-input 없음, 나머지 타입만 읽기
- if (lastStep.type !== 'photo' && lastStep.type !== 'location') {
+ // photo/location/dog-select 타입은 match-reg-input 없음
+ if (!['photo', 'location', 'dog-select'].includes(lastStep.type)) {
    const input = document.getElementById('match-reg-input');
    if (input) _matchRegData[lastStep.key] = input.value.trim();
  }
