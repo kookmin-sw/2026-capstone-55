@@ -451,28 +451,5 @@
     "rating": 5,
     "reviewCount": 0,
     "createdAt": "2026-05-06T10:50:40.797Z"
-  },
-  {
-    "userId": "id-mo2s9e1c-2pg3r3v",
-    "userName": "이재준",
-    "role": "requester",
-    "location": "마포구 합정동",
-    "lat": null,
-    "lng": null,
-    "dogSize": "medium",
-    "preferredTime": "오후 (5-7시)",
-    "message": "",
-    "price": 0,
-    "experience": "없음",
-    "acceptedSizes": [
-      "small",
-      "medium",
-      "large"
-    ],
-    "specialty": "",
-    "isAvailable": true,
-    "rating": 5,
-    "reviewCount": 0,
-    "createdAt": "2026-05-07T14:37:23.761Z"
   }
 ]

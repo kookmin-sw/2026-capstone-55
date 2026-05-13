@@ -194,5 +194,116 @@
     "calories": 175,
     "coordinates": [],
     "createdAt": "2026-05-03T08:35:00.000Z"
+  },
+  {
+    "id": "walk_1778114419128_kdktii",
+    "userId": "id-mor6hinh-0al0bjl",
+    "dogId": "개동",
+    "dogName": "개동",
+    "startTime": "2026-05-07T00:40:16.906Z",
+    "endTime": "2026-05-07T00:40:19.088Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [],
+    "createdAt": "2026-05-07T00:40:19.128Z"
+  },
+  {
+    "id": "walk_1778136115793_3vzsyo",
+    "userId": "id-mo2s9e1c-2pg3r3v",
+    "dogId": "초코",
+    "dogName": "초코",
+    "startTime": "2026-05-07T06:41:13.095Z",
+    "endTime": "2026-05-07T06:41:55.756Z",
+    "duration": 1,
+    "distance": 0.01,
+    "avgPace": 0.6,
+    "calories": 1,
+    "coordinates": [
+      {
+        "lat": 37.671649817142715,
+        "lng": 126.73043930092308,
+        "accuracy": 49,
+        "timestamp": 1778136073112
+      },
+      {
+        "lat": 37.67159452249388,
+        "lng": 126.73034585470957,
+        "accuracy": 40,
+        "timestamp": 1778136073867
+      }
+    ],
+    "createdAt": "2026-05-07T06:41:55.793Z"
+  },
+  {
+    "id": "walk_1778161619482_okomtb",
+    "userId": "id-mo2s9e1c-2pg3r3v",
+    "dogId": "초코",
+    "dogName": "초코",
+    "startTime": "2026-05-07T13:46:54.495Z",
+    "endTime": "2026-05-07T13:46:59.471Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [
+      {
+        "lat": 37.67291978212997,
+        "lng": 126.73372688514189,
+        "accuracy": 35,
+        "timestamp": 1778161614502
+      }
+    ],
+    "createdAt": "2026-05-07T13:46:59.482Z"
+  },
+  {
+    "id": "walk_1778599746429_56fjuf",
+    "userId": "id-mo2s9e1c-2pg3r3v",
+    "dogId": "초코",
+    "dogName": "초코",
+    "startTime": "2026-05-12T15:29:04.106Z",
+    "endTime": "2026-05-12T15:29:05.853Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [
+      {
+        "lat": 37.67292128442915,
+        "lng": 126.73373714503057,
+        "accuracy": 35,
+        "timestamp": 1778599744121
+      }
+    ],
+    "createdAt": "2026-05-12T15:29:06.429Z"
+  },
+  {
+    "id": "walk_1778677606613_y5sir5",
+    "userId": "id-mnsm12ov-kpkaldi",
+    "dogId": "치치",
+    "dogName": "치치",
+    "startTime": "2026-05-13T13:06:38.214Z",
+    "endTime": "2026-05-13T13:06:46.608Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [],
+    "createdAt": "2026-05-13T13:06:46.613Z"
+  },
+  {
+    "id": "walk_1778677646665_ja2ttg",
+    "userId": "id-mnsm12ov-kpkaldi",
+    "dogId": "치치",
+    "dogName": "치치",
+    "startTime": "2026-05-13T13:06:58.270Z",
+    "endTime": "2026-05-13T13:07:26.660Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [],
+    "createdAt": "2026-05-13T13:07:26.665Z"
   }
 ]

@@ -2,40 +2,7 @@
 // --- GPS 산책 트래킹 페이지 ---
 function renderWalkTrackingPage() {
   const user = AuthService.getCurrentUser();
-  if (!user) {
-    renderPage(`
-      <div class="page-header">
-        <h1>🏃 산책 트래킹</h1>
-        <p>GPS로 산책을 기록하고 건강 데이터를 수집해요</p>
-      </div>
-      <div class="card" style="padding:24px; margin-bottom:16px; text-align:center;">
-        <div style="font-size:3rem; margin-bottom:8px;">🐾</div>
-        <div style="font-size:1.5rem; font-weight:800; margin-bottom:4px;">00:00:00</div>
-        <div style="font-size:0.85rem; color:var(--color-text-muted);">산책 시간</div>
-      </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:16px;">
-        <div class="card" style="padding:16px; text-align:center;">
-          <div style="font-size:0.75rem; color:var(--color-text-muted);">거리</div>
-          <div style="font-size:1.2rem; font-weight:800;">0.00 km</div>
-        </div>
-        <div class="card" style="padding:16px; text-align:center;">
-          <div style="font-size:0.75rem; color:var(--color-text-muted);">속도</div>
-          <div style="font-size:1.2rem; font-weight:800;">0.0 km/h</div>
-        </div>
-        <div class="card" style="padding:16px; text-align:center;">
-          <div style="font-size:0.75rem; color:var(--color-text-muted);">칼로리</div>
-          <div style="font-size:1.2rem; font-weight:800;">0 kcal</div>
-        </div>
-      </div>
-      <div style="height:250px; border-radius:12px; background:#e8e8e8; display:flex; align-items:center; justify-content:center; color:#999; margin-bottom:16px;">
-        🗺️ 산책 경로가 여기에 표시돼요
-      </div>
-      <button class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;" onclick="showLoginModal('GPS 산책 트래킹을 시작하려면 로그인이 필요해요!\\n산책 경로, 거리, 시간, 칼로리를 기록할 수 있어요.')">🏃 산책 시작하기</button>
-    `);
-    return;
-  }
-
-  const dogs = user.dogs || [];
+  const dogs = user ? (user.dogs || []) : [];
   const selectedIdx = StorageService.get('walkingDogIdx', 0);
   const dog = dogs.length > 0 ? dogs[Math.min(selectedIdx, dogs.length - 1)] : null;
 
@@ -89,7 +56,12 @@ function renderWalkTrackingPage() {
         <div class="walk-hero__sub">GPS로 산책을 기록하세요</div>
       </div>
 
-      ${dogs.length > 1 ? `
+      ${!user ? `
+        <div style="text-align:center; margin-bottom:24px; padding:16px; border:1px dashed var(--color-border); border-radius:12px;">
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:8px;">로그인하면 산책 경로와 건강 데이터를 기록할 수 있어요</p>
+          <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/login')">로그인하기</button>
+        </div>
+      ` : dogs.length > 1 ? `
         <div class="walk-dog-select">
           ${dogs.map((d, i) => `<button class="walk-dog-chip ${i === Math.min(selectedIdx, dogs.length - 1) ? 'active' : ''}" onclick="StorageService.set('walkingDogIdx',${i});renderWalkTrackingPage()">${d.name}</button>`).join('')}
         </div>
@@ -145,7 +117,7 @@ function renderWalkTrackingPage() {
             대기 중
           </div>
         </div>
-        <button class="walk-start-btn walk-start-btn--go" onclick="handleStartTracking()">시작</button>
+        <button class="walk-start-btn walk-start-btn--go" onclick="${user ? 'handleStartTracking()' : "showLoginModal('GPS 산책 트래킹을 시작하려면 로그인이 필요해요!\\n산책 경로, 거리, 시간, 칼로리를 기록할 수 있어요.')"}">시작</button>
         <div class="walk-controls__hint">GPS를 사용하여 경로를 기록합니다</div>
       </div>
 
@@ -167,8 +139,10 @@ function renderWalkTrackingPage() {
     }, () => {});
   }
 
-  const dogId = dog ? dog.name : null;
-  loadWalkHistory(user.id, dogId);
+  if (user) {
+    const dogId = dog ? dog.name : null;
+    loadWalkHistory(user.id, dogId);
+  }
 }
 
 function handleSelectWalkingDog() {
@@ -549,4 +523,3 @@ async function saveWalkName(walkId) {
     if (nameEl) nameEl.textContent = newName;
   } catch(e) { alert('수정에 실패했습니다.'); }
 }
-

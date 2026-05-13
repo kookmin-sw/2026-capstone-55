@@ -8,12 +8,12 @@ function renderBreedListPage() {
       <h1>🐕 품종 정보</h1>
       <p>우리 아이 품종의 특성과 주의사항을 알아봐요~</p>
     </div>
-    <div class="breed-tabs" style="display:flex; gap:0; margin-bottom:20px; border-radius:12px; overflow:hidden; border:2px solid var(--color-primary, #7C4DFF);">
+    <div class="breed-tabs" style="display:flex; gap:0; margin-bottom:20px; border-radius:12px; overflow:hidden; border:2px solid var(--color-primary);">
       <button id="tab-recommend" class="breed-tab ${breedPageTab === 'recommend' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('recommend')" style="flex:1; padding:12px 16px; border:none; cursor:pointer; font-weight:700; font-size:0.95rem; transition:all 0.2s;">
-        🤖 AI 맞춤 추천
+        AI 맞춤 추천
       </button>
       <button id="tab-encyclopedia" class="breed-tab ${breedPageTab === 'encyclopedia' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('encyclopedia')" style="flex:1; padding:12px 16px; border:none; cursor:pointer; font-weight:700; font-size:0.95rem; transition:all 0.2s;">
-        📖 품종 백과사전
+        품종 백과사전
       </button>
     </div>
     <div id="breed-tab-content"></div>
@@ -50,100 +50,211 @@ function renderBreedTabContent() {
 }
 
 // --- AI 맞춤 품종 추천 UI ---
+let _breedRecStep = 0;
+let _breedRecData = {};
+
+const _breedRecommendSteps = [
+  { key: 'size', question: '어떤 크기를 선호하세요?', sub: '아직 모르겠다면 상관없음을 골라도 좋아요', type: 'cards', defaultValue: 'any', options: [
+    { value: 'any', label: '상관없음', desc: '폭넓게 추천' },
+    { value: 'small', label: '소형', desc: '10kg 이하' },
+    { value: 'medium', label: '중형', desc: '10~25kg' },
+    { value: 'large', label: '대형', desc: '25kg 이상' }
+  ]},
+  { key: 'exercise', question: '산책과 활동량은 어느 정도가 좋아요?', sub: '보호자 생활 리듬에 맞춰주세요', type: 'cards', defaultValue: 'any', options: [
+    { value: 'any', label: '상관없음', desc: '균형 있게' },
+    { value: 'low', label: '적음', desc: '하루 30분 이하' },
+    { value: 'medium', label: '보통', desc: '30분~1시간' },
+    { value: 'high', label: '많음', desc: '1시간 이상' }
+  ]},
+  { key: 'grooming', question: '미용 관리는 어느 정도 가능하세요?', sub: '빗질, 목욕, 미용 주기를 기준으로 골라주세요', type: 'cards', defaultValue: 'any', options: [
+    { value: 'any', label: '상관없음', desc: '제한 없음' },
+    { value: 'low', label: '적음', desc: '관리 편한 견종' },
+    { value: 'medium', label: '보통', desc: '주기적 관리' },
+    { value: 'high', label: '많음', desc: '미용도 가능' }
+  ]},
+  { key: 'trainability', question: '훈련 난이도는 어떤 쪽이 좋아요?', sub: '처음 키운다면 쉬운 쪽을 추천해요', type: 'cards', defaultValue: 'any', options: [
+    { value: 'any', label: '상관없음', desc: '성향 우선' },
+    { value: 'high', label: '쉬운 편', desc: '초보자 추천' },
+    { value: 'medium', label: '보통', desc: '꾸준히 가능' },
+    { value: 'low', label: '어려워도 OK', desc: '경험자 추천' }
+  ]},
+  { key: 'barking', question: '짖음 정도는 얼마나 중요해요?', sub: '주거 환경을 생각해서 골라주세요', type: 'cards', defaultValue: 'any', options: [
+    { value: 'any', label: '상관없음', desc: '환경과 함께 판단' },
+    { value: 'low', label: '적음', desc: '조용한 견종' },
+    { value: 'medium', label: '보통', desc: '일반적인 수준' },
+    { value: 'high', label: '많아도 OK', desc: '표현 활발' }
+  ]},
+  { key: 'environment', question: '생활 환경을 알려주세요', sub: '해당되는 항목을 선택해주세요', type: 'flags', required: false, options: [
+    { key: 'childFriendly', label: '아이와 함께', desc: '아이 친화 우선' },
+    { key: 'apartmentFriendly', label: '아파트 거주', desc: '실내 생활 적합' }
+  ]},
+  { key: 'count', question: '몇 종을 추천받을까요?', sub: '원하는 추천 품종 수를 숫자로 입력해주세요', type: 'number', defaultValue: '3', min: 1, max: 20, required: true },
+  { key: 'freeText', question: '추가 조건이 있나요?', sub: '없으면 바로 추천받아도 돼요', type: 'textarea', placeholder: '예: 털이 잘 안 빠지는 견종, 혼자 있는 시간이 많아요, 처음 키우는 초보예요...', required: false }
+];
+
 function renderBreedRecommendUI() {
   return `
-    <div class="card" style="padding:24px; margin-bottom:20px;">
-      <h2 style="margin-bottom:4px;">🐾 나에게 맞는 반려견 찾기</h2>
-      <p style="color:var(--color-text-muted); margin-bottom:20px; font-size:0.9rem;">생활 환경과 선호도를 선택하면 AI가 딱 맞는 품종을 추천해드려요!</p>
+    <input type="hidden" id="rec-size" value="any">
+    <input type="hidden" id="rec-exercise" value="any">
+    <input type="hidden" id="rec-grooming" value="any">
+    <input type="hidden" id="rec-trainability" value="any">
+    <input type="hidden" id="rec-barking" value="any">
+    <input type="hidden" id="rec-count" value="3">
+    <input type="checkbox" id="rec-child" style="display:none;">
+    <input type="checkbox" id="rec-apartment" style="display:none;">
+    <textarea id="rec-freetext" style="display:none;"></textarea>
 
-      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px;">
-        <!-- 크기 -->
-        <div class="recommend-field">
-          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🐕 선호 크기</label>
-          <select id="rec-size" class="form-input" style="width:100%;">
-            <option value="any">상관없음</option>
-            <option value="small">🐕 소형 (10kg 이하)</option>
-            <option value="medium">🐕 중형 (10~25kg)</option>
-            <option value="large">🐕 대형 (25kg 이상)</option>
-          </select>
-        </div>
-
-        <!-- 운동량 -->
-        <div class="recommend-field">
-          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🏃 운동량</label>
-          <select id="rec-exercise" class="form-input" style="width:100%;">
-            <option value="any">상관없음</option>
-            <option value="low">적음 (하루 30분 이하)</option>
-            <option value="medium">보통 (하루 30분~1시간)</option>
-            <option value="high">많음 (하루 1시간 이상)</option>
-          </select>
-        </div>
-
-        <!-- 미용 관리 -->
-        <div class="recommend-field">
-          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">✂️ 미용 관리</label>
-          <select id="rec-grooming" class="form-input" style="width:100%;">
-            <option value="any">상관없음</option>
-            <option value="low">적음 (관리 편한 견종)</option>
-            <option value="medium">보통</option>
-            <option value="high">많음 (미용 즐기는 편)</option>
-          </select>
-        </div>
-
-        <!-- 훈련 용이성 -->
-        <div class="recommend-field">
-          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🎓 훈련 용이성</label>
-          <select id="rec-trainability" class="form-input" style="width:100%;">
-            <option value="any">상관없음</option>
-            <option value="high">높음 (초보자도 쉽게)</option>
-            <option value="medium">보통</option>
-            <option value="low">낮음 (경험자 추천)</option>
-          </select>
-        </div>
-
-        <!-- 짖음 -->
-        <div class="recommend-field">
-          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">🔊 짖음 정도</label>
-          <select id="rec-barking" class="form-input" style="width:100%;">
-            <option value="any">상관없음</option>
-            <option value="low">적음 (조용한 견종)</option>
-            <option value="medium">보통</option>
-            <option value="high">많음</option>
-          </select>
-        </div>
-
-        <!-- 추천 마릿수 -->
-        <div class="recommend-field">
-          <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">📋 추천 마릿수</label>
-          <input type="number" id="rec-count" class="form-input" style="width:100%;" value="3" min="1" placeholder="원하는 마릿수 입력">
-        </div>
-      </div>
-
-      <!-- 체크박스 옵션 -->
-      <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:16px;">
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.9rem;">
-          <input type="checkbox" id="rec-child"> 👶 아이가 있는 가정
-        </label>
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.9rem;">
-          <input type="checkbox" id="rec-apartment"> 🏢 아파트 거주
-        </label>
-      </div>
-
-      <!-- 자유 입력 -->
-      <div style="margin-top:16px;">
-        <label style="font-weight:700; font-size:0.85rem; margin-bottom:6px; display:block;">💬 추가로 원하는 조건 (선택)</label>
-        <textarea id="rec-freetext" class="form-input" rows="2" placeholder="예: 털이 잘 안 빠지는 견종이 좋아요, 혼자 있는 시간이 많아요, 처음 키우는 초보예요..." style="width:100%; resize:vertical;"></textarea>
-      </div>
-
-      <!-- 추천 버튼 -->
-      <button id="rec-submit-btn" class="btn btn-primary" onclick="handleBreedRecommend()" style="width:100%; margin-top:20px; padding:14px; font-size:1rem; font-weight:800;">
-        🤖 AI 맞춤 추천 받기
-      </button>
+    <div class="card" style="padding:28px; margin-bottom:20px; text-align:center;">
+      <div style="font-size:2.4rem; margin-bottom:12px;">🐾</div>
+      <h2 style="margin-bottom:6px;">나에게 맞는 반려견 찾기</h2>
+      <p style="color:var(--color-text-muted); font-size:0.9rem; line-height:1.6; margin:0 auto 20px; max-width:360px;">생활 패턴, 주거 환경, 선호도를 바탕으로 383종 중 딱 맞는 견종을 골라드려요.</p>
+      <button id="rec-submit-btn" class="btn btn-primary" onclick="openBreedRecommendFlow()" style="width:100%; max-width:320px; padding:14px; font-weight:800;">추천 시작하기</button>
     </div>
 
-    <!-- 추천 결과 영역 -->
     <div id="breed-recommend-result"></div>
   `;
+}
+
+function openBreedRecommendFlow() {
+  _breedRecStep = 0;
+  _breedRecData = {
+    size: 'any',
+    exercise: 'any',
+    grooming: 'any',
+    trainability: 'any',
+    barking: 'any',
+    childFriendly: false,
+    apartmentFriendly: false,
+    count: '3',
+    freeText: ''
+  };
+
+  document.getElementById('breed-rec-modal')?.remove();
+  const app = document.getElementById('app');
+  app.innerHTML += `
+    <div id="breed-rec-modal" style="position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+          <button onclick="closeBreedRecommendFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
+          <div id="breed-rec-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
+          <div id="breed-rec-content" style="flex:1; display:flex; flex-direction:column;"></div>
+        </div>
+      </div>
+    </div>
+  `;
+  renderBreedRecStep();
+}
+
+function closeBreedRecommendFlow() {
+  document.getElementById('breed-rec-modal')?.remove();
+}
+
+function renderBreedRecStep() {
+  const step = _breedRecommendSteps[_breedRecStep];
+  const total = _breedRecommendSteps.length;
+  const content = document.getElementById('breed-rec-content');
+  const progress = document.getElementById('breed-rec-progress');
+  if (!step || !content || !progress) return;
+
+  progress.innerHTML = Array.from({ length: total }, (_, i) =>
+    `<div style="flex:1; height:3px; border-radius:2px; background:${i <= _breedRecStep ? '#1a1a1a' : '#e5e3e0'}; transition:background 0.3s;"></div>`
+  ).join('');
+
+  let inputHtml = '';
+  if (step.type === 'cards') {
+    const current = _breedRecData[step.key] || step.defaultValue || '';
+    inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">
+      ${step.options.map(opt => `
+        <button onclick="selectBreedRecCard('${step.key}','${opt.value}')" style="flex:1; min-width:90px; padding:16px 12px; border:1.5px solid ${current === opt.value ? '#1a1a1a' : '#e5e3e0'}; border-radius:14px; background:${current === opt.value ? '#f5f3f0' : '#fff'}; text-align:center; cursor:pointer; transition:all 0.15s;">
+          <div style="font-size:0.92rem; font-weight:700; color:#1a1a1a;">${opt.label}</div>
+          <div style="font-size:0.7rem; color:#999; margin-top:3px;">${opt.desc}</div>
+        </button>
+      `).join('')}
+    </div>`;
+  } else if (step.type === 'flags') {
+    inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">
+      ${step.options.map(opt => `
+        <button onclick="toggleBreedRecFlag('${opt.key}')" style="flex:1; min-width:120px; padding:16px 12px; border:1.5px solid ${_breedRecData[opt.key] ? '#1a1a1a' : '#e5e3e0'}; border-radius:14px; background:${_breedRecData[opt.key] ? '#f5f3f0' : '#fff'}; text-align:center; cursor:pointer; transition:all 0.15s;">
+          <div style="font-size:0.92rem; font-weight:700; color:#1a1a1a;">${opt.label}</div>
+          <div style="font-size:0.7rem; color:#999; margin-top:3px;">${opt.desc}</div>
+        </button>
+      `).join('')}
+    </div>`;
+  } else if (step.type === 'number') {
+    inputHtml = `<input type="number" id="breed-rec-input" class="form-input" min="${step.min || 1}" max="${step.max || 20}" value="${_breedRecData[step.key] || step.defaultValue || '3'}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; margin-top:24px; text-align:center; font-weight:800;" autofocus onkeydown="if(event.key==='Enter')nextBreedRecStep()">
+      <p style="text-align:center; color:#999; font-size:0.78rem; margin:8px 0 0;">${step.min || 1}~${step.max || 20}종 입력 가능</p>`;
+  } else if (step.type === 'textarea') {
+    inputHtml = `<textarea id="breed-rec-input" class="form-input" placeholder="${step.placeholder || ''}" rows="3" style="font-size:1rem; padding:14px 16px; border-radius:12px; margin-top:24px; resize:none;">${_breedRecData[step.key] || ''}</textarea>`;
+  }
+
+  const isLast = _breedRecStep === total - 1;
+  const canSkip = !step.required;
+
+  content.innerHTML = `
+    <div style="flex:1;">
+      <h2 style="font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; line-height:1.3;">${step.question}</h2>
+      ${step.sub ? `<p style="font-size:0.88rem; color:#999; margin-top:6px;">${step.sub}</p>` : ''}
+      ${inputHtml}
+    </div>
+    <div style="display:flex; gap:8px; margin-top:24px;">
+      ${_breedRecStep > 0 ? `<button onclick="prevBreedRecStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; cursor:pointer;">이전</button>` : ''}
+      ${canSkip ? `<button onclick="skipBreedRecStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; color:#999; cursor:pointer;">건너뛰기</button>` : ''}
+      <button onclick="${isLast ? 'finishBreedRecommendFlow()' : 'nextBreedRecStep()'}" style="flex:2; padding:14px; border:none; border-radius:12px; background:#1a1a1a; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">${isLast ? 'AI 맞춤 추천 받기' : '다음'}</button>
+    </div>
+  `;
+  setTimeout(() => document.getElementById('breed-rec-input')?.focus(), 100);
+}
+
+function selectBreedRecCard(key, value) {
+  _breedRecData[key] = value;
+  renderBreedRecStep();
+  setTimeout(() => nextBreedRecStep(), 300);
+}
+
+function toggleBreedRecFlag(key) {
+  _breedRecData[key] = !_breedRecData[key];
+  renderBreedRecStep();
+}
+
+function nextBreedRecStep() {
+  const step = _breedRecommendSteps[_breedRecStep];
+  const input = document.getElementById('breed-rec-input');
+  if (input) _breedRecData[step.key] = input.value.trim();
+  if (step.required && !_breedRecData[step.key]) { if (input) input.style.borderColor = '#e53e3e'; return; }
+  if (_breedRecStep < _breedRecommendSteps.length - 1) { _breedRecStep++; renderBreedRecStep(); }
+}
+
+function prevBreedRecStep() {
+  const step = _breedRecommendSteps[_breedRecStep];
+  const input = document.getElementById('breed-rec-input');
+  if (input) _breedRecData[step.key] = input.value.trim();
+  if (_breedRecStep > 0) { _breedRecStep--; renderBreedRecStep(); }
+}
+
+function skipBreedRecStep() {
+  const step = _breedRecommendSteps[_breedRecStep];
+  if (step.type === 'textarea') _breedRecData[step.key] = '';
+  if (_breedRecStep < _breedRecommendSteps.length - 1) { _breedRecStep++; renderBreedRecStep(); }
+  else finishBreedRecommendFlow();
+}
+
+function finishBreedRecommendFlow() {
+  const step = _breedRecommendSteps[_breedRecStep];
+  const input = document.getElementById('breed-rec-input');
+  if (input) _breedRecData[step.key] = input.value.trim();
+
+  document.getElementById('rec-size').value = _breedRecData.size || 'any';
+  document.getElementById('rec-exercise').value = _breedRecData.exercise || 'any';
+  document.getElementById('rec-grooming').value = _breedRecData.grooming || 'any';
+  document.getElementById('rec-trainability').value = _breedRecData.trainability || 'any';
+  document.getElementById('rec-barking').value = _breedRecData.barking || 'any';
+  document.getElementById('rec-count').value = String(Math.min(20, Math.max(1, parseInt(_breedRecData.count, 10) || 3)));
+  document.getElementById('rec-child').checked = !!_breedRecData.childFriendly;
+  document.getElementById('rec-apartment').checked = !!_breedRecData.apartmentFriendly;
+  document.getElementById('rec-freetext').value = _breedRecData.freeText || '';
+
+  closeBreedRecommendFlow();
+  handleBreedRecommend();
 }
 
 // --- AI 품종 추천 요청 핸들러 ---
@@ -161,7 +272,7 @@ async function handleBreedRecommend() {
     apartmentFriendly: document.getElementById('rec-apartment')?.checked || false,
     freeText: document.getElementById('rec-freetext')?.value?.trim() || ''
   };
-  const count = parseInt(document.getElementById('rec-count')?.value) || 3;
+  const count = Math.min(20, Math.max(1, parseInt(document.getElementById('rec-count')?.value, 10) || 3));
 
   if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></div> AI가 분석 중...'; }
   if (resultEl) resultEl.innerHTML = `
@@ -201,42 +312,40 @@ async function handleBreedRecommend() {
 // --- 추천 결과 렌더링 ---
 function renderBreedRecommendResult(data) {
   const { recommendations, summary, totalCandidates } = data;
-
   let html = '';
 
   if (summary) {
-    html += `<div class="card" style="padding:16px 20px; margin-bottom:16px; background:var(--color-bg-warm);">
-      <p style="font-size:0.95rem; margin:0;"><strong>📊 AI 분석 결과</strong> — ${summary}</p>
-      <p style="font-size:0.8rem; color:var(--color-text-muted); margin:4px 0 0;">총 ${totalCandidates || '?'}종 후보 중 ${recommendations.length}종 추천</p>
+    html += `
+    <div class="breed-rec-summary">
+      <p>${summary}</p>
+      <span>${totalCandidates || '?'}종 중 ${recommendations.length}종</span>
     </div>`;
   }
 
   recommendations.forEach((rec, idx) => {
     const breed = BreedService.getById(rec.id);
     const sizeMap = { small: '소형', medium: '중형', large: '대형' };
+    const rankLabel = String(idx + 1).padStart(2, '0');
+
+    const prosHtml = (rec.pros || []).map(p => `<span class="breed-trait breed-trait--pro">${p}</span>`).join('');
+    const consHtml = (rec.cons || []).map(c => `<span class="breed-trait breed-trait--con">${c}</span>`).join('');
 
     html += `
-    <div class="card" style="padding:0; margin-bottom:16px; overflow:hidden;">
-      <!-- 이미지 상단 배치 -->
-      <div style="position:relative;">
-        <div class="breed-img" data-breed-id="${rec.id}" data-fit-contain style="width:100%; height:220px; background:linear-gradient(135deg, #FFB3C6, #C9A9E9); display:flex; align-items:center; justify-content:center; font-size:4rem;">🐕</div>
-        <div style="position:absolute; top:10px; left:10px; background:var(--color-primary, #7C4DFF); color:white; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.2);">${idx + 1}</div>
-        ${rec.matchScore ? `<div style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.7); color:#FFD700; padding:4px 10px; border-radius:10px; font-size:0.85rem; font-weight:700;">⭐ ${rec.matchScore}점</div>` : ''}
+    <div class="breed-rec-result-card">
+      <div class="breed-rec-result-card__img-wrap">
+        <div class="breed-img" data-breed-id="${rec.id}" data-fit-contain style="width:100%; height:200px; background:#F5F3F0; display:flex; align-items:center; justify-content:center; font-size:3.5rem;">🐾</div>
+        <span class="breed-rec-result-card__rank">${rankLabel}</span>
       </div>
-      <!-- 정보 -->
-      <div style="padding:16px 20px;">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
-          <h3 style="margin:0; font-size:1.15rem;">${rec.name}</h3>
-          <span style="font-size:0.8rem; color:var(--color-text-muted);">${rec.nameEn || ''}</span>
-          ${breed ? `<span class="badge badge-primary" style="font-size:0.7rem;">${sizeMap[breed.size] || ''}</span>` : ''}
+      <div class="breed-rec-result-card__body">
+        <div class="breed-rec-result-card__name-row">
+          <h3>${rec.name}</h3>
+          ${rec.nameEn ? `<span class="breed-rec-result-card__name-en">${rec.nameEn}</span>` : ''}
+          ${breed ? `<span class="breed-rec-result-card__size">${sizeMap[breed.size] || ''}</span>` : ''}
         </div>
-        <p style="font-size:0.9rem; line-height:1.7; margin-bottom:12px; color:var(--color-text);">${rec.reason}</p>
-        <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:12px;">
-          ${rec.pros ? `<div style="flex:1; min-width:140px;"><div style="font-size:0.8rem; font-weight:700; color:#4CAF50; margin-bottom:6px;">👍 장점</div>${rec.pros.map(p => `<div style="font-size:0.85rem; padding:2px 0;">• ${p}</div>`).join('')}</div>` : ''}
-          ${rec.cons ? `<div style="flex:1; min-width:140px;"><div style="font-size:0.8rem; font-weight:700; color:#FF9800; margin-bottom:6px;">⚠️ 주의점</div>${rec.cons.map(c => `<div style="font-size:0.85rem; padding:2px 0;">• ${c}</div>`).join('')}</div>` : ''}
-        </div>
-        ${rec.tip ? `<div style="background:var(--color-bg-warm); padding:10px 14px; border-radius:10px; font-size:0.85rem; margin-bottom:12px;">💡 <strong>꿀팁:</strong> ${rec.tip}</div>` : ''}
-        <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds/${rec.id}')" style="margin-top:2px;">상세 정보 보기 →</button>
+        <p class="breed-rec-result-card__reason">${rec.reason}</p>
+        ${prosHtml || consHtml ? `<div class="breed-rec-result-card__traits">${prosHtml}${consHtml}</div>` : ''}
+        ${rec.tip ? `<p class="breed-rec-result-card__tip">${rec.tip}</p>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds/${rec.id}')">상세 정보 →</button>
       </div>
     </div>`;
   });
@@ -255,7 +364,7 @@ function renderBreedCards(breeds) {
   const exerciseMap = { low: '낮음', medium: '보통', high: '높음' };
   return breeds.map(breed => `
     <div class="card" onclick="Router.navigate('/breeds/${breed.id}')" style="cursor:pointer;">
-      <div class="card__image breed-img" data-breed-id="${breed.id}" style="background: linear-gradient(135deg, #FFB3C6, #C9A9E9); display:flex; align-items:center; justify-content:center; font-size:3rem; position:relative;">🐕</div>
+      <div class="card__image breed-img" data-breed-id="${breed.id}" style="background: #F5F3F0; display:flex; align-items:center; justify-content:center; font-size:2.8rem; position:relative;">🐾</div>
       <div class="card__body">
         <div class="card__title">${breed.name}</div>
         <div class="card__subtitle">
@@ -301,7 +410,7 @@ function renderBreedDetailPage(params) {
   renderPage(`
     <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds')" style="margin-bottom:16px;">← 목록으로</button>
     <div class="detail-header">
-      <div id="breed-detail-img" data-breed-id="${breed.id}" data-fit-contain style="width:100%; height:300px; background: linear-gradient(135deg, #FFB3C6, #C9A9E9); border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:5rem; margin-bottom:16px; position:relative;">🐕</div>
+      <div id="breed-detail-img" data-breed-id="${breed.id}" data-fit-contain style="width:100%; height:300px; background: #F5F3F0; border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:4.5rem; margin-bottom:16px; position:relative;">🐾</div>
       <h1>${breed.name} ${breed.nameEn ? '<span style="font-size:0.9rem; color:var(--color-text-light); font-weight:600;">' + breed.nameEn + '</span>' : ''}</h1>
       <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
         <span class="badge badge-primary">${sizeMap[breed.size]}</span>
@@ -400,4 +509,3 @@ async function handleBreedAiQuestion(breedName) {
 
   if (btn) { btn.disabled = false; btn.textContent = '질문하기'; }
 }
-

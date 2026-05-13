@@ -38,13 +38,34 @@ const CommunityService = (() => {
   }
 
   /**
+   * 특정 작성자의 피드 조회 (최신순 정렬)
+   * @param {string} authorId
+   * @returns {Post[]}
+   */
+  function getUserFeed(authorId) {
+    if (!authorId) return [];
+    return getAllPosts()
+      .filter(post => post.authorId === authorId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  /**
+   * 게시물 단건 조회
+   * @param {string} postId
+   * @returns {Post|null}
+   */
+  function getPostById(postId) {
+    return getAllPosts().find(post => post.id === postId) || null;
+  }
+
+  /**
    * 게시물 생성
    * @param {{ authorId: string, authorName: string, text: string }} newPost
    * @returns {Post}
    * @throws {Error} 텍스트가 비어있거나 공백만 있는 경우
    */
   function createPost(newPost) {
-    if ((!newPost.text || !newPost.text.trim()) && !newPost.imageData && !newPost.walkData) {
+    if ((!newPost.text || !newPost.text.trim()) && !newPost.imageData && !newPost.walkData && !newPost.oneSecondData) {
       throw new Error('게시물 내용을 입력하세요.');
     }
 
@@ -56,6 +77,7 @@ const CommunityService = (() => {
       imageUrls: newPost.imageUrls || [],
       imageData: newPost.imageData || null,
       walkData: newPost.walkData || null,
+      oneSecondData: newPost.oneSecondData || null,
       likes: 0,
       likedBy: [],
       comments: [],
@@ -132,6 +154,8 @@ const CommunityService = (() => {
 
   return {
     getFeed,
+    getUserFeed,
+    getPostById,
     createPost,
     toggleLike,
     addComment

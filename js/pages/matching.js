@@ -751,4 +751,3 @@ function handleSubmitReview(scheduleId, targetId) {
     setTimeout(() => { alertEl.innerHTML = ''; }, 3000);
   }
 }
-

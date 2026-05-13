@@ -44,19 +44,25 @@ function calculateWalkPrice(dogSizes) {
   return { total, fee, walkerPayout, breakdown };
 }
 
-async function requestTossPayment({ amount, orderId, orderName, customerName }) {
+async function requestTossPayment({ amount, orderId, orderName, customerName, successHash, failHash }) {
   const TOSS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
   try {
     const tossPayments = TossPayments(TOSS_CLIENT_KEY);
     const payment = tossPayments.payment({ customerKey: orderId });
+    const successUrl = successHash
+      ? window.location.origin + '/' + successHash + (successHash.includes('?') ? '&' : '?') + 'paymentSuccess=true&orderId=' + orderId
+      : window.location.origin + '/#/matching?paymentSuccess=true&orderId=' + orderId;
+    const failUrl = failHash
+      ? window.location.origin + '/' + failHash + (failHash.includes('?') ? '&' : '?') + 'paymentFail=true'
+      : window.location.origin + '/#/matching?paymentFail=true';
     await payment.requestPayment({
       method: 'CARD',
       amount: { currency: 'KRW', value: amount },
       orderId,
       orderName,
       customerName: customerName || '요청자',
-      successUrl: window.location.origin + '/#/matching?paymentSuccess=true&orderId=' + orderId,
-      failUrl: window.location.origin + '/#/matching?paymentFail=true'
+      successUrl,
+      failUrl
     });
   } catch (e) {
     if (e.code === 'USER_CANCEL') {
@@ -64,6 +70,7 @@ async function requestTossPayment({ amount, orderId, orderName, customerName }) 
     } else {
       showToast('결제 중 오류가 발생했어요: ' + (e.message || ''), 'error');
     }
+    throw e;
   }
 }
 

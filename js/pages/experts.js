@@ -114,6 +114,7 @@ const EXPERT_PROFILES = [
 
 let _expertCategory = 'all';
 let _activeExpertSessionId = null;
+let _expertSessionTab = 'active';
 let _expertPendingAttachments = {};
 
 function escapeHtml(value) {
@@ -139,7 +140,18 @@ function getExpertById(expertId) {
 }
 
 function getExistingExpertSession(expertId, userId) {
- return getExpertSessions().find(session => session.userId === userId && session.expertId === expertId);
+ return getExpertSessions().find(session => session.userId === userId && session.expertId === expertId && isExpertSessionActive(session));
+}
+
+function isExpertSessionActive(session) {
+ return session && session.status !== 'ended';
+}
+
+function formatExpertSessionDate(value) {
+ if (!value) return '';
+ const date = new Date(value);
+ if (Number.isNaN(date.getTime())) return '';
+ return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 }
 
 function getUniqueExpertSessions(sessions) {
@@ -154,7 +166,8 @@ function getUniqueExpertSessions(sessions) {
 function renderExpertsPage() {
  const user = AuthService.getCurrentUser();
  const sessions = user ? getExpertSessions().filter(s => s.userId === user.id) : [];
- const visibleSessions = getUniqueExpertSessions(sessions);
+ const activeSessions = getUniqueExpertSessions(sessions.filter(isExpertSessionActive));
+ const endedSessions = sessions.filter(session => !isExpertSessionActive(session));
  const activeSession = _activeExpertSessionId ? sessions.find(s => s.id === _activeExpertSessionId) : null;
  const activeExpert = activeSession ? getExpertById(activeSession.expertId) : null;
  const visibleExperts = _expertCategory === 'all'
@@ -179,24 +192,7 @@ function renderExpertsPage() {
  </div>
  </div>
 
- ${visibleSessions.length ? `
- <section class="expert-session-strip">
- <div class="expert-section-head">
- <h2>진행 중인 상담</h2>
- <span>${visibleSessions.length}건</span>
- </div>
- <div class="expert-session-list">
- ${visibleSessions.map(session => {
- const expert = getExpertById(session.expertId);
- if (!expert) return '';
- return `
- <button class="expert-session-chip" onclick="openExpertChat('${session.id}')">
- <span class="expert-session-chip__avatar">${expert.avatar}</span>
- <span><strong>${expert.name}</strong><small>${expert.categoryLabel} 상담</small></span>
- </button>`;
- }).join('')}
- </div>
- </section>` : ''}
+ ${user && (activeSessions.length || endedSessions.length) ? renderExpertSessionTabs(activeSessions, endedSessions) : ''}
 
  ${activeSession && activeExpert ? renderExpertChat(activeSession, activeExpert) : ''}
 
@@ -220,6 +216,45 @@ function renderExpertsPage() {
  </div>
  </div>
  `);
+}
+
+function renderExpertSessionTabs(activeSessions, endedSessions) {
+ const visibleSessions = _expertSessionTab === 'history' ? endedSessions : activeSessions;
+ const title = _expertSessionTab === 'history' ? '상담 기록' : '진행 중인 상담';
+ return `
+ <section class="expert-session-strip">
+ <div class="expert-section-head">
+ <h2>${title}</h2>
+ <span>${visibleSessions.length}건</span>
+ </div>
+ <div class="expert-session-tabs">
+ <button class="${_expertSessionTab === 'active' ? 'active' : ''}" onclick="setExpertSessionTab('active')">진행 중 <strong>${activeSessions.length}</strong></button>
+ <button class="${_expertSessionTab === 'history' ? 'active' : ''}" onclick="setExpertSessionTab('history')">상담 기록 <strong>${endedSessions.length}</strong></button>
+ </div>
+ <div class="expert-session-list">
+ ${visibleSessions.length ? visibleSessions.map(renderExpertSessionChip).join('') : `<div class="expert-session-empty">${_expertSessionTab === 'history' ? '아직 종료된 상담 기록이 없어요.' : '진행 중인 상담이 없어요.'}</div>`}
+ </div>
+ </section>`;
+}
+
+function renderExpertSessionChip(session) {
+ const expert = getExpertById(session.expertId);
+ if (!expert) return '';
+ const isEnded = !isExpertSessionActive(session);
+ const dateText = formatExpertSessionDate(isEnded ? session.endedAt : session.paidAt);
+ return `
+ <button class="expert-session-chip ${isEnded ? 'expert-session-chip--ended' : ''}" onclick="openExpertChat('${session.id}')">
+ <span class="expert-session-chip__avatar">${expert.avatar}</span>
+ <span>
+ <strong>${expert.name}</strong>
+ <small>${expert.categoryLabel} 상담${dateText ? ` · ${dateText}` : ''}</small>
+ </span>
+ </button>`;
+}
+
+function setExpertSessionTab(tab) {
+ _expertSessionTab = tab === 'history' ? 'history' : 'active';
+ renderExpertsPage();
 }
 
 function renderExpertCard(expert, idx = 0) {
@@ -308,21 +343,63 @@ function startExpertCheckout(expertId) {
  </div>
  <label class="expert-modal__label" for="expert-first-message">처음 남길 메시지</label>
  <textarea id="expert-first-message" class="form-input" rows="4" placeholder="아이 나이, 증상이나 고민, 이미 해본 조치를 적어주세요."></textarea>
- <div class="expert-modal__notice">현재는 데모용 예시 결제입니다. 완료하면 상담방이 바로 열려요.</div>
- <button class="btn btn-primary expert-modal__pay" onclick="completeExpertPayment('${expert.id}')">${expert.price.toLocaleString()}원 결제하고 상담 시작</button>
+ <div class="expert-modal__notice">결제가 완료되면 상담방이 바로 열려요.</div>
+ <button class="btn btn-primary expert-modal__pay" onclick="requestExpertPayment('${expert.id}')">${expert.price.toLocaleString()}원 결제하고 상담 시작</button>
  </div>`;
  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
  document.body.appendChild(modal);
  document.getElementById('expert-first-message')?.focus();
 }
 
-function completeExpertPayment(expertId) {
+async function requestExpertPayment(expertId) {
+ const user = AuthService.getCurrentUser();
+ const expert = getExpertById(expertId);
+ if (!user || !expert) return;
+
+ const firstMessage = document.getElementById('expert-first-message')?.value.trim() || '상담을 시작하고 싶어요.';
+ const orderId = 'expert_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+ const pendingPayment = {
+ orderId,
+ amount: expert.price,
+ expertId,
+ firstMessage,
+ requestType: 'expert',
+ timestamp: Date.now()
+ };
+
+ localStorage.setItem('pawsitive_pending_payment', JSON.stringify(pendingPayment));
+
+ const btn = document.querySelector('.expert-modal__pay');
+ if (btn) {
+ btn.disabled = true;
+ btn.textContent = '결제 처리 중...';
+ }
+
+ try {
+ await requestTossPayment({
+ amount: expert.price,
+ orderId,
+ orderName: `${expert.name} ${expert.categoryLabel} 상담`,
+ customerName: user.name || user.nickname || '요청자',
+ successHash: '#/experts',
+ failHash: '#/experts'
+ });
+ } catch(e) {
+ localStorage.removeItem('pawsitive_pending_payment');
+ if (btn) {
+ btn.disabled = false;
+ btn.textContent = `${expert.price.toLocaleString()}원 결제하고 상담 시작`;
+ }
+ }
+}
+
+function completeExpertPayment(expertId, payment = {}) {
  const user = AuthService.getCurrentUser();
  const expert = getExpertById(expertId);
  if (!user || !expert) return;
 
  const sessions = getExpertSessions();
- const existingSession = sessions.find(session => session.userId === user.id && session.expertId === expertId);
+ const existingSession = sessions.find(session => session.userId === user.id && session.expertId === expertId && isExpertSessionActive(session));
  if (existingSession) {
  document.getElementById('expert-payment-modal')?.remove();
  showToast('이미 진행 중인 상담이 있어요. 기존 상담방을 열게요.', 'info');
@@ -330,13 +407,15 @@ function completeExpertPayment(expertId) {
  return;
  }
 
- const firstMessage = document.getElementById('expert-first-message')?.value.trim() || '상담을 시작하고 싶어요.';
+ const firstMessage = payment.firstMessage || document.getElementById('expert-first-message')?.value.trim() || '상담을 시작하고 싶어요.';
  const session = {
  id: 'expert_' + Date.now().toString(36),
  userId: user.id,
  expertId,
+ status: 'active',
  paidAt: new Date().toISOString(),
  amount: expert.price,
+ paymentOrderId: payment.orderId || '',
  messages: [
  { from: 'system', text: `${expert.name} ${expert.categoryLabel}와 상담이 연결됐어요.`, createdAt: new Date().toISOString() },
  { from: 'user', text: firstMessage, createdAt: new Date().toISOString() },
@@ -384,7 +463,29 @@ function closeExpertChat() {
  renderExpertsPage();
 }
 
+function endExpertSession(sessionId) {
+ if (!confirm('상담을 종료할까요? 종료 후에는 이 상담방에 메시지를 보낼 수 없어요.')) return;
+
+ const sessions = getExpertSessions();
+ const session = sessions.find(s => s.id === sessionId);
+ if (!session || !isExpertSessionActive(session)) return;
+
+ session.status = 'ended';
+ session.endedAt = new Date().toISOString();
+ session.messages.push({
+ from: 'system',
+ text: '상담이 종료됐어요. 같은 전문가와 새 상담이 필요하면 다시 결제 후 시작할 수 있어요.',
+ createdAt: session.endedAt
+ });
+ _expertPendingAttachments[sessionId] = [];
+ saveExpertSessions(sessions);
+ _expertSessionTab = 'history';
+ showToast('상담을 종료했어요.', 'success');
+ openExpertChat(sessionId);
+}
+
 function renderExpertChat(session, expert) {
+ const isEnded = !isExpertSessionActive(session);
  return `
  <section class="expert-chat-panel" id="expert-chat-panel">
  <div class="expert-chat">
@@ -392,13 +493,21 @@ function renderExpertChat(session, expert) {
  <div class="expert-avatar expert-avatar--${expert.category}">${expert.avatar}</div>
  <div>
  <h3>${expert.name}</h3>
- <p>${expert.categoryLabel} · 결제 완료 상담</p>
+ <p>${expert.categoryLabel} · ${isEnded ? '종료된 상담' : '결제 완료 상담'}</p>
  </div>
- <button onclick="closeExpertChat()" aria-label="닫기">×</button>
+ <div class="expert-chat__actions">
+ ${isEnded ? '' : `<button class="expert-chat__end" onclick="endExpertSession('${session.id}')" type="button">상담 종료</button>`}
+ <button class="expert-chat__close" onclick="closeExpertChat()" aria-label="닫기" type="button">×</button>
+ </div>
  </div>
  <div class="expert-chat__messages" id="expert-chat-messages">
  ${session.messages.map(renderExpertMessage).join('')}
  </div>
+ ${isEnded ? `
+ <div class="expert-chat__ended">
+ <strong>상담이 종료됐어요.</strong>
+ <span>대화 내용은 보관되며, 새 상담은 전문가 카드에서 다시 시작할 수 있어요.</span>
+ </div>` : `
  <div class="expert-chat__composer">
  <div class="expert-chat__attachments" id="expert-chat-attachments">${renderExpertAttachmentPreview(session.id)}</div>
  <div class="expert-chat__input">
@@ -408,6 +517,7 @@ function renderExpertChat(session, expert) {
  <button class="btn btn-primary btn-sm" onclick="sendExpertMessage('${session.id}')">전송</button>
  </div>
  </div>
+ `}
  </div>
  </section>`;
 }
@@ -492,6 +602,10 @@ function sendExpertMessage(sessionId) {
  const session = sessions.find(s => s.id === sessionId);
  const expert = session ? getExpertById(session.expertId) : null;
  if (!session || !expert) return;
+ if (!isExpertSessionActive(session)) {
+ showToast('종료된 상담에는 메시지를 보낼 수 없어요.', 'info');
+ return;
+ }
 
  session.messages.push({
  from: 'user',
@@ -511,4 +625,3 @@ function sendExpertMessage(sessionId) {
  _expertPendingAttachments[sessionId] = [];
  openExpertChat(sessionId);
 }
-
