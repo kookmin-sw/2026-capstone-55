@@ -629,19 +629,23 @@ async function handleAiChat() {
       const healthPrefix = '[건강/질병 상담 모드] ';
       const breedInfo = breed ? '품종: ' + breed + '. ' : '';
       const ageInfo = age ? '나이: ' + age + '. ' : '';
+      const user = AuthService.getCurrentUser();
       body = JSON.stringify({
         message: healthPrefix + breedInfo + ageInfo + message,
         history: _aiCurrentSession.messages,
         mode: 'health',
-        aiName: getAiName()
+        aiName: getAiName(),
+        userId: user?.id || null
       });
     } else {
       apiUrl = '/api/ai/consult';
+      const user = AuthService.getCurrentUser();
       body = JSON.stringify({
         message,
         history: _aiCurrentSession.messages,
         mode: 'training',
-        aiName: getAiName()
+        aiName: getAiName(),
+        userId: user?.id || null
       });
     }
 

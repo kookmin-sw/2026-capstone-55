@@ -5,7 +5,7 @@ async function renderHealthDashboardPage() {
   if (!user) {
     renderPage(`
       <div class="page-header">
-        <h1>건강 분석</h1>
+        <h1>AI 건강 분석</h1>
         <p>반려견의 건강 리포트</p>
       </div>
 
@@ -52,9 +52,9 @@ async function renderHealthDashboardPage() {
   }
 
   const dogs = user.dogs || [];
-  const selectedDogId = StorageService.get('selectedDogId', '_all');
-  const dog = selectedDogId !== '_all' ? dogs.find(d => d.name === selectedDogId) : null;
-  const displayName = dog ? dog.name : '전체';
+  const selectedDogId = StorageService.get('selectedDogId', dogs.length > 0 ? dogs[0].name : '_all');
+  const dog = dogs.find(d => d.name === selectedDogId) || dogs[0] || null;
+  const displayName = dog ? dog.name : '반려견';
 
   renderPage(`
     <style>
@@ -93,13 +93,12 @@ async function renderHealthDashboardPage() {
 
     <div class="health-page">
       <div class="health-header">
-        <div class="health-header__title">건강 분석</div>
-        <div class="health-header__sub">${displayName === '전체' ? '전체 반려견' : dog.name + '의'} 건강 리포트</div>
+        <div class="health-header__title">AI 건강 분석</div>
+        <div class="health-header__sub">${dog ? dog.name + '의' : ''} 건강 리포트</div>
       </div>
 
       ${dogs.length > 0 ? `
         <div class="health-dog-chips">
-          <button class="health-dog-chip ${selectedDogId === '_all' ? 'active' : ''}" onclick="StorageService.set('selectedDogId','_all');renderHealthDashboardPage()">전체</button>
           ${dogs.map(d => `<button class="health-dog-chip ${selectedDogId === d.name ? 'active' : ''}" onclick="StorageService.set('selectedDogId','${d.name}');renderHealthDashboardPage()">${d.name}</button>`).join('')}
         </div>
       ` : ''}
@@ -131,9 +130,9 @@ async function loadHealthDashboard(user) {
   const analysisSection = document.getElementById('health-analysis-section');
 
   const dogs = user.dogs || [];
-  const selectedDogId = StorageService.get('selectedDogId', '_all');
-  const dog = selectedDogId !== '_all' ? dogs.find(d => d.name === selectedDogId) : null;
-  const dogFilter = selectedDogId !== '_all' ? selectedDogId : null;
+  const selectedDogId = StorageService.get('selectedDogId', dogs.length > 0 ? dogs[0].name : '_all');
+  const dog = dogs.find(d => d.name === selectedDogId) || dogs[0] || null;
+  const dogFilter = dog ? dog.id : null;
 
   // 선택된 반려견의 산책 통계 로드
   const stats = await GPSTrackingService.getWalkStats(user.id, dogFilter);
@@ -204,8 +203,8 @@ async function handleRunHealthAnalysis() {
   if (!user) return;
 
   const dogs = user.dogs || [];
-  const selectedDogId = StorageService.get('selectedDogId', '_all');
-  const dog = selectedDogId !== '_all' ? dogs.find(d => d.name === selectedDogId) : null;
+  const selectedDogId = StorageService.get('selectedDogId', dogs.length > 0 ? dogs[0].name : '_all');
+  const dog = dogs.find(d => d.name === selectedDogId) || dogs[0] || null;
   const alertEl = document.getElementById('health-alert');
   const section = document.getElementById('health-analysis-section');
 
@@ -258,7 +257,7 @@ function renderHealthAnalysisResult(analysis, container, dogId) {
         <div class="health-section__title">AI 분석 결과</div>
         <div style="display:flex; align-items:center; gap:8px;">
           ${analyzedTime ? `<span style="font-size:0.68rem; color:var(--color-text-muted);">${analyzedTime}</span>` : ''}
-          <button onclick="handleRunHealthAnalysis()" style="font-size:0.72rem; color:var(--color-text-muted); background:none; border:none; cursor:pointer; text-decoration:underline;">새로 분석</button>
+          <button onclick="handleRunHealthAnalysis()" style="font-size:0.78rem; color:#fff; background:#1a1a1a; border:none; cursor:pointer; padding:7px 16px; border-radius:20px; font-weight:700; transition:all 0.2s;" onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='none'">분석 갱신</button>
         </div>
       </div>
 
@@ -268,6 +267,7 @@ function renderHealthAnalysisResult(analysis, container, dogId) {
           <span class="health-insight__title">종합 건강 점수</span>
           <span class="health-insight__badge" style="background:${analysis.overallScore >= 70 ? '#f0fff4;color:#38a169' : analysis.overallScore >= 40 ? '#fffff0;color:#d69e2e' : '#fff5f5;color:#e53e3e'}">${analysis.overallScore}/100</span>
         </div>
+        ${analysis.summaryKeywords && analysis.summaryKeywords.length > 0 ? `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">${analysis.summaryKeywords.map(k => '<span style="font-size:0.72rem; padding:2px 8px; background:var(--color-bg-section); border-radius:8px; color:var(--color-text-light);">' + k + '</span>').join('')}</div>` : ''}
         ${analysis.summary ? `<div class="health-insight__text">${analysis.summary}</div>` : ''}
       </div>` : ''}
 
@@ -275,9 +275,10 @@ function renderHealthAnalysisResult(analysis, container, dogId) {
       <div class="health-insight">
         <div class="health-insight__header">
           <span class="health-insight__title">행동 패턴</span>
-          <span class="health-insight__badge" style="background:var(--color-bg-section); color:var(--color-text-light);">${analysis.behaviorAnalysis.consistency || '-'}</span>
+          <span class="health-insight__badge" style="background:var(--color-bg-section); color:var(--color-text-light);">${({'상':'매우 규칙적','중':'규칙적','하':'불규칙'})[analysis.behaviorAnalysis.consistency] || analysis.behaviorAnalysis.consistency || '-'}</span>
         </div>
-        <div class="health-insight__text">${analysis.behaviorAnalysis.pattern || ''}</div>
+        ${analysis.behaviorAnalysis.keywords && analysis.behaviorAnalysis.keywords.length > 0 ? `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">${analysis.behaviorAnalysis.keywords.map(k => '<span style="font-size:0.72rem; padding:2px 8px; background:var(--color-bg-section); border-radius:8px; color:var(--color-text-light);">' + k + '</span>').join('')}</div>` : ''}
+        ${analysis.behaviorAnalysis.pattern ? `<div class="health-insight__text">${analysis.behaviorAnalysis.pattern}</div>` : ''}
         ${analysis.behaviorAnalysis.recommendation ? `<div class="health-insight__text" style="margin-top:8px; padding-top:8px; border-top:1px solid var(--color-border-light);">${analysis.behaviorAnalysis.recommendation}</div>` : ''}
       </div>` : ''}
 

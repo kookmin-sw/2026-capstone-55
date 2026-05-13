@@ -122,7 +122,7 @@ function refreshDrawer() {
  <div class="nav-drawer__divider"></div>
  <div class="nav-drawer__section-label">AI 서비스</div>
  ${item('', 'AI 반려견 상담', '/ai')}
- ${item('activity', '건강 분석', '/health')}
+ ${item('activity', 'AI 건강 분석', '/health')}
  <div class="nav-drawer__divider"></div>
  <div class="nav-drawer__section-label">정보</div>
  ${item('paw-print', '품종 정보', '/breeds')}
