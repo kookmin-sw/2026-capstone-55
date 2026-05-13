@@ -1696,17 +1696,27 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
    className:'',iconSize:[34,34],iconAnchor:[17,17]
  });
 
- // ── 내 GPS 위치 (타임아웃 7초, 실패시 null) ──
+ // ── 내 GPS 위치: 캐시(30s) 우선 → 실패 시 정밀 재시도 ──
  let myLat=null, myLng=null;
  try {
-   const pos = await new Promise((res,rej) => navigator.geolocation.getCurrentPosition(res,rej,{timeout:7000,enableHighAccuracy:true,maximumAge:0}));
+   // 1단계: 캐시된 위치 즉시 수신 (빠름)
+   const pos = await new Promise((res,rej) =>
+     navigator.geolocation.getCurrentPosition(res,rej,{timeout:3000,enableHighAccuracy:false,maximumAge:30000})
+   );
    myLat=pos.coords.latitude; myLng=pos.coords.longitude;
- } catch(e) {}
+ } catch(e) {
+   try {
+     // 2단계: 캐시 없으면 정밀 GPS 재시도
+     const pos = await new Promise((res,rej) =>
+       navigator.geolocation.getCurrentPosition(res,rej,{timeout:10000,enableHighAccuracy:true,maximumAge:0})
+     );
+     myLat=pos.coords.latitude; myLng=pos.coords.longitude;
+   } catch(e2) {}
+ }
 
  const _hasGps = myLat !== null;
- // GPS 실패 시 서울 기본값 zoom 14 (너무 좁지도 넓지도 않게)
  const _initLat = myLat ?? 37.5665, _initLng = myLng ?? 126.9780;
- const _initZoom = _hasGps ? 16 : 14;
+ const _initZoom = _hasGps ? 17 : 14;
 
  // ── 지도 생성 ──
  _walkRouteMap = L.map('walk-session-map',{zoomControl:true,attributionControl:true}).setView([_initLat,_initLng],_initZoom);
@@ -1804,12 +1814,11 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
      } catch(e) {}
 
      if (!lastPt) {
-       // 저장된 경로 없음 → GPS fallback 마커 배치 금지, watchPosition에서 처리
        if (_hasGps) {
-         _walkRouteMap.setView([myLat,myLng],16);
+         // 캐시 GPS로 즉시 위치 설정 (watchPosition이 정확한 위치로 갱신)
+         _walkRouteMap.setView([myLat,myLng],17);
        }
-       // 배너로 GPS 대기 안내
-       if (sessionStatus==='walking') _showBanner('📡 GPS 신호 잡는 중…');
+       if (sessionStatus==='walking') _showBanner('📡 GPS 위치 확인 중…');
      }
 
      // 산책 중: watchPosition으로 경로 그리기
