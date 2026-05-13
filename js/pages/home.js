@@ -140,19 +140,19 @@ function renderHomePage() {
  <div class="svc-card__illust">
  <div class="illust-match">
  <div class="illust-match__card">
- <img class="illust-match__avatar" src="/images/cards/avatar-minser.png" alt="김민서">
+ <img class="illust-match__avatar" src="/images/walkers/dummy-walker-001.png" alt="김지은">
  <div class="illust-match__score">${icon('star', 10, '#6c47ff')} 88점</div>
- <div class="illust-match__name">김민서</div>
+ <div class="illust-match__name">김지은</div>
  </div>
  <div class="illust-match__card">
- <img class="illust-match__avatar" src="/images/cards/avatar-suyeon.png" alt="이수연">
+ <img class="illust-match__avatar" src="/images/walkers/dummy-walker-003.png" alt="이하은">
  <div class="illust-match__score">${icon('star', 10, '#6c47ff')} 96점</div>
- <div class="illust-match__name">이수연</div>
+ <div class="illust-match__name">이하은</div>
  </div>
  <div class="illust-match__card">
- <img class="illust-match__avatar" src="/images/cards/avatar-jihun.png" alt="박지훈">
+ <img class="illust-match__avatar" src="/images/walkers/dummy-walker-002.png" alt="박서준">
  <div class="illust-match__score">${icon('star', 10, '#6c47ff')} 91점</div>
- <div class="illust-match__name">박지훈</div>
+ <div class="illust-match__name">박서준</div>
  </div>
  </div>
  </div>
