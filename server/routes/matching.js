@@ -75,7 +75,7 @@ router.post('/requests', (req, res) => {
   }
 
   // 쿨다운 체크: 최근 30분 내 같은 도우미에게 거절/자동거절/취소된 이력이 있으면 차단
-  const COOLDOWN_MS = 30 * 60 * 1000;
+  const COOLDOWN_MS = 0; // 테스트 중: 최근 거절/취소 후 재요청 제한 비활성화
   const now = Date.now();
   const blockedStatuses = ['rejected', 'walker_busy', 'cancelled', 'rejected_matched'];
   const recentBlocked = requests

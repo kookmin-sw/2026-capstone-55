@@ -90,6 +90,7 @@ async function requestTossPayment({ amount, orderId, orderName, customerName }) 
     } else {
       showToast('결제 중 오류가 발생했어요: ' + (e.message || ''), 'error');
      }
+  }
 }
 
 /**
@@ -201,8 +202,9 @@ function showPaymentConfirmModal({ dogSize, dogName, duration = 40 }) {
           payBtn.textContent = '반려견을 선택해주세요';
           payBtn.disabled = true;
           payBtn.style.opacity = '0.5';
-     }
-}
+        }
+      }
+    }
 
     // 이벤트 바인딩
     modal.querySelectorAll('.pay-dog-cb').forEach(cb => cb.addEventListener('change', updateSummary));
@@ -1519,7 +1521,6 @@ async function startActualWalk(sessionId) {
  } catch(e) {
  showToast('오류가 발생했습니다.', 'error');
       }
-      }
 }
 
 /** 도우미: 산책 종료 */
@@ -2262,7 +2263,8 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
        RealtimeService.on('walker-position', _walkPositionHandler);
      }
    }
- }
+  }
+}
 }
 
 function _updateRouteStats(pointCount, distKm) {

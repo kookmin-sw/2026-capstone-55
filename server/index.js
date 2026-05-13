@@ -82,7 +82,15 @@ app.use('/api/payments',      paymentRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
-app.use(express.static(path.join(__dirname, '..')));
+app.use(express.static(path.join(__dirname, '..'), {
+  setHeaders: (res, filePath) => {
+    if (/\.(html|js|css|mp4)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
