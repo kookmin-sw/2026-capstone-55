@@ -322,14 +322,17 @@ const MatchingService = (() => {
         acceptedSizes: w.acceptedSizes || ['small', 'medium', 'large'],
       }));
 
-      // 서버에서 새 워커 목록을 가져왔으면, localStorage의 구형 더미 워커 프로필을 제거
-      // (userId가 'dummy-walker-'로 시작하는 항목은 walkers.json에서만 관리)
+      // 서버 워커 목록을 기준으로 localStorage 구형 더미 워커 정리
+      // dummy- 접두사 워커는 walkers.json에서만 관리하므로 localStorage에서 전부 제거
       if (_serverWalkersCache.length > 0) {
         const serverIds = new Set(_serverWalkersCache.map(w => w.userId));
         const profiles = StorageService.get('matchProfiles', []);
         const cleaned = profiles.filter(p => {
-          if (p.role === 'walker' && p.userId && p.userId.startsWith('dummy-')) {
-            return serverIds.has(p.userId); // 서버에 없는 더미 워커 제거
+          if (p.role === 'walker' && p.userId) {
+            // dummy- 또는 test- 접두사 워커는 localStorage에서 제거 (서버가 단일 소스)
+            if (p.userId.startsWith('dummy-') || p.userId.startsWith('test-')) return false;
+            // 서버에 동일 userId가 있는 워커도 로컬에서 제거 (서버 데이터 우선)
+            if (serverIds.has(p.userId)) return false;
           }
           return true;
         });
@@ -477,14 +480,16 @@ const MatchingService = (() => {
     return user ? user.name : '알 수 없음';
   }
 
-  /** 산책 매칭 가능 상태인 도우미 반환 (로컬 matchProfiles + 서버 walkers 합산) */
+  /** 산책 매칭 가능 상태인 도우미 반환 — 서버 데이터 우선, 로컬은 보완 */
   function getAvailableWalkers() {
     const localWalkers = getAllProfiles().filter(p => p.role === 'walker' && p.isAvailable);
 
     if (_serverWalkersCache !== null && _serverWalkersCache.length > 0) {
-      const localIds = new Set(localWalkers.map(w => w.userId));
-      const serverAvailable = _serverWalkersCache.filter(w => w.isAvailable && !localIds.has(w.userId));
-      return [...localWalkers, ...serverAvailable];
+      const serverAvailable = _serverWalkersCache.filter(w => w.isAvailable);
+      const serverIds = new Set(serverAvailable.map(w => w.userId));
+      // 서버에 없는 로컬 전용 워커만 추가 (서버 데이터가 항상 우선)
+      const localOnly = localWalkers.filter(w => !serverIds.has(w.userId));
+      return [...serverAvailable, ...localOnly];
     }
 
     return localWalkers;
