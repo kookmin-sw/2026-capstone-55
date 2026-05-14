@@ -1,5 +1,5 @@
 // Pawsitive - Home Page
-// --- 홈 페이지 ---
+
 function renderHomePage() {
   _cleanupMaps();
   window.scrollTo(0, 0);
@@ -30,30 +30,8 @@ function renderHomePage() {
       .modern-footer__bottom { text-align:left; }
       .modern-footer-item { font-size:0.72rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:1.5px; font-weight:500; }
       .modern-footer-item--email { text-transform:none; }
-      /* 서비스 소개 버블 */
-      .service-intro { display:flex; justify-content:center; align-items:center; padding:56px 24px; background:#fafaf8; }
-      .service-bubble { position:relative; display:inline-flex; align-items:center; gap:6px; padding:18px 36px; background:#fff; border:none; border-radius:999px; box-shadow:0 6px 32px rgba(0,0,0,0.1); cursor:pointer; font-size:1rem; font-weight:600; color:#222; letter-spacing:-0.3px; transition:all 0.25s cubic-bezier(0.16,1,0.3,1); }
-      .service-bubble:hover { transform:translateY(-3px); box-shadow:0 12px 40px rgba(0,0,0,0.14); }
-      .service-bubble::after { content:''; position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); border:6px solid transparent; border-top-color:#fff; filter:drop-shadow(0 3px 3px rgba(0,0,0,0.06)); }
-      .service-bubble__logo { height:56px; width:auto; margin-right:0; margin-left:-19px; object-fit:contain; }
-      /* 서비스 패널 */
-      .service-panel { position:fixed; top:0; right:-480px; width:min(480px,100vw); height:100vh; background:#fff; z-index:2100; box-shadow:-8px 0 48px rgba(0,0,0,0.12); transition:right 0.45s cubic-bezier(0.16,1,0.3,1); overflow-y:auto; display:flex; flex-direction:column; }
-      .service-panel.open { right:0; }
-      .service-panel__head { padding:32px 32px 0; display:flex; align-items:center; justify-content:space-between; }
-      .service-panel__logo { height:28px; width:auto; margin-left:-8px; }
-      .service-panel__close { width:36px; height:36px; border:none; background:#f4f4f2; border-radius:50%; cursor:pointer; font-size:1.1rem; color:#666; display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
-      .service-panel__close:hover { background:#eee; }
-      .service-panel__body { padding:28px 32px 48px; flex:1; }
-      .service-panel__tag { display:inline-block; padding:4px 12px; border-radius:999px; background:#f0f0ec; font-size:0.72rem; font-weight:700; color:#888; letter-spacing:1px; text-transform:uppercase; margin-bottom:16px; }
-      .service-panel__title { font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; line-height:1.35; margin-bottom:24px; }
-      .service-panel__item { display:flex; gap:16px; padding:20px 0; border-bottom:1px solid #f0f0ee; }
-      .service-panel__item:last-child { border-bottom:none; }
-      .service-panel__item-icon { width:44px; height:44px; border-radius:12px; background:#f8f8f6; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
-      .service-panel__item-text h4 { font-size:0.92rem; font-weight:700; margin:0 0 4px; }
-      .service-panel__item-text p { font-size:0.82rem; color:#888; line-height:1.6; margin:0; }
-      .service-panel-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.28); z-index:2099; opacity:0; pointer-events:none; transition:opacity 0.3s; backdrop-filter:blur(2px); }
-      .service-panel-overlay.open { opacity:1; pointer-events:all; }
     </style>
+
     <div class="hero-banner">
       <div class="hero-banner__bg"></div>
       <div class="hero-banner__overlay"></div>
@@ -62,7 +40,7 @@ function renderHomePage() {
         <p class="hero-banner__sub">AI 건강 상담부터 산책 매칭까지,<br>당신과 반려견을 위한 공간.</p>
         ${!user
           ? `<button class="hero-banner__btn" onclick="Router.navigate('/register')">시작하기 →</button>`
-          : `<button class="hero-banner__btn" onclick="Router.navigate('/dog-walker')">도그워커 찾기 →</button>`
+          : `<button class="hero-banner__btn" onclick="Router.navigate('/matching')">산책 매칭 →</button>`
         }
       </div>
       <div class="hero-banner__scroll">
@@ -72,52 +50,177 @@ function renderHomePage() {
         </svg>
       </div>
     </div>
-    <div class="service-intro">
-      <button class="service-bubble" onclick="openServicePanel()">
-        <img src="/pawsitive_logo_transparent.png" class="service-bubble__logo" alt="Pawsitive">
-        는 어떤 서비스일까요?
-      </button>
-    </div>
 
-    <div id="service-panel" class="service-panel">
-      <div class="service-panel__head">
-        <img src="/pawsitive_logo_transparent.png" class="service-panel__logo" alt="Pawsitive">
-        <button class="service-panel__close" onclick="closeServicePanel()">✕</button>
+    <section class="svc-section">
+      <style>
+        .svc-section { padding:80px 24px 96px; background:#f7f6f3; }
+        .svc-header { text-align:center; margin-bottom:56px; }
+        .svc-header__eyebrow { display:inline-block; font-size:0.72rem; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:#7c6ff7; margin-bottom:14px; }
+        .svc-header__title { font-size:clamp(1.6rem,3vw,2.2rem); font-weight:800; letter-spacing:-1px; color:#111; line-height:1.25; }
+        .svc-header__title span { color:#7c6ff7; }
+        .svc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; max-width:1080px; margin:0 auto; }
+        .svc-grid--bottom { grid-template-columns:repeat(2,1fr); max-width:720px; margin:20px auto 0; }
+        .svc-card { background:#fff; border-radius:20px; padding:32px 28px 0; overflow:hidden; box-shadow:0 2px 16px rgba(0,0,0,0.06); transition:transform 0.25s cubic-bezier(0.16,1,0.3,1),box-shadow 0.25s; cursor:pointer; display:flex; flex-direction:column; min-height:300px; }
+        .svc-card:hover { transform:translateY(-6px); box-shadow:0 12px 40px rgba(0,0,0,0.1); }
+        .svc-card__tag { display:inline-block; padding:4px 12px; border-radius:999px; font-size:0.72rem; font-weight:700; letter-spacing:0.5px; margin-bottom:14px; }
+        .svc-card__title { font-size:1.12rem; font-weight:800; letter-spacing:-0.5px; line-height:1.35; color:#111; margin-bottom:10px; }
+        .svc-card__title em { font-style:normal; }
+        .svc-card__desc { font-size:0.82rem; color:#888; line-height:1.7; margin-bottom:24px; flex:1; }
+        .svc-card__illust { margin:0 -28px; height:130px; position:relative; overflow:hidden; border-radius:0 0 20px 20px; }
+        .svc-card--match .svc-card__tag { background:#ede9ff; color:#6c47ff; }
+        .svc-card--match .svc-card__title em { color:#6c47ff; }
+        .svc-card--match .svc-card__illust { background:linear-gradient(135deg,#ede9ff 0%,#d4caff 100%); }
+        .svc-card--gps .svc-card__tag { background:#e0f2fe; color:#0284c7; }
+        .svc-card--gps .svc-card__title em { color:#0284c7; }
+        .svc-card--gps .svc-card__illust { background:linear-gradient(135deg,#e0f2fe 0%,#bae6fd 100%); }
+        .svc-card--ai .svc-card__tag { background:#fce7f3; color:#be185d; }
+        .svc-card--ai .svc-card__title em { color:#be185d; }
+        .svc-card--ai .svc-card__illust { background:linear-gradient(135deg,#fce7f3 0%,#fbcfe8 100%); }
+        .svc-card--edu .svc-card__tag { background:#fef3c7; color:#b45309; }
+        .svc-card--edu .svc-card__title em { color:#b45309; }
+        .svc-card--edu .svc-card__illust { background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%); }
+        .svc-card--breed .svc-card__tag { background:#dcfce7; color:#15803d; }
+        .svc-card--breed .svc-card__title em { color:#15803d; }
+        .svc-card--breed .svc-card__illust { background:linear-gradient(135deg,#dcfce7 0%,#bbf7d0 100%); }
+        .illust-match { position:absolute; bottom:0; left:50%; transform:translateX(-50%); display:flex; gap:10px; align-items:flex-end; }
+        .illust-match__card { background:#fff; border-radius:12px 12px 0 0; padding:10px 14px; box-shadow:0 4px 16px rgba(108,71,255,0.15); display:flex; flex-direction:column; align-items:center; gap:6px; width:80px; }
+        .illust-match__card:nth-child(2) { transform:translateY(-12px); box-shadow:0 8px 24px rgba(108,71,255,0.25); }
+        .illust-match__avatar { width:40px; height:40px; border-radius:50%; object-fit:cover; object-position:top; border:2px solid #ede9ff; }
+        .illust-match__score { font-size:0.6rem; font-weight:700; color:#6c47ff; background:#ede9ff; padding:2px 7px; border-radius:999px; }
+        .illust-match__name { font-size:0.6rem; font-weight:600; color:#555; }
+        .illust-gps { position:absolute; inset:0; }
+        .illust-gps__grid { position:absolute; inset:0; background-image:linear-gradient(rgba(2,132,199,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(2,132,199,0.08) 1px,transparent 1px); background-size:24px 24px; }
+        .illust-gps__route { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); }
+        .illust-gps__badge { position:absolute; top:16px; right:20px; background:#0284c7; color:#fff; font-size:0.62rem; font-weight:700; padding:5px 10px; border-radius:999px; white-space:nowrap; box-shadow:0 3px 10px rgba(2,132,199,0.35); animation:gpsPulse 2s ease-in-out infinite; }
+        @keyframes gpsPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+        .illust-ai { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:7px; width:220px; }
+        .illust-ai__bubble { padding:8px 14px; border-radius:12px; font-size:0.68rem; font-weight:500; line-height:1.4; max-width:180px; }
+        .illust-ai__bubble--user { background:#fce7f3; color:#be185d; align-self:flex-end; border-radius:12px 12px 4px 12px; }
+        .illust-ai__bubble--ai { background:#fff; color:#555; align-self:flex-start; border-radius:12px 12px 12px 4px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+        .illust-edu { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:260px; }
+        .illust-edu__chip { padding:5px 12px; border-radius:999px; font-size:0.65rem; font-weight:700; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.07); white-space:nowrap; }
+        .illust-breed { position:absolute; bottom:0; left:50%; transform:translateX(-50%); background:#fff; border-radius:14px 14px 0 0; width:220px; padding:14px 16px 0; box-shadow:0 4px 20px rgba(21,128,61,0.15); }
+        .illust-breed__bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+        .illust-breed__label { font-size:0.62rem; font-weight:600; color:#555; width:48px; }
+        .illust-breed__track { flex:1; height:7px; background:#f0fdf4; border-radius:999px; overflow:hidden; }
+        .illust-breed__fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#4ade80,#15803d); }
+        .illust-breed__val { font-size:0.62rem; font-weight:700; color:#15803d; width:26px; text-align:right; }
+        @media(max-width:768px) {
+          .svc-grid { grid-template-columns:1fr; }
+          .svc-grid--bottom { grid-template-columns:1fr; max-width:100%; }
+          .svc-card { min-height:260px; }
+        }
+      </style>
+
+      <div class="svc-header">
+        <span class="svc-header__eyebrow">Pawsitive Services</span>
+        <h2 class="svc-header__title">반려견과의 일상을<br><span>더 특별하게</span> 만드는 5가지</h2>
       </div>
-      <div class="service-panel__body">
-        <span class="service-panel__tag">서비스 소개</span>
-        <h2 class="service-panel__title">반려견과 함께하는<br>더 나은 일상을 만들어요</h2>
-        <div class="service-panel__item">
-          <div class="service-panel__item-icon">🦮</div>
-          <div class="service-panel__item-text">
-            <h4>산책 도우미 매칭</h4>
-            <p>추후 서비스 설명을 입력해주세요.</p>
+
+      <div class="svc-grid">
+        <div class="svc-card svc-card--match" onclick="Router.navigate('/matching')">
+          <span class="svc-card__tag">${icon('handshake', 13, '#6c47ff')} 산책 매칭</span>
+          <h3 class="svc-card__title"><em>AI가 골라주는</em><br>딱 맞는 산책 도우미</h3>
+          <p class="svc-card__desc">반려견 크기·성격·선호 시간대를 분석해<br>가장 잘 맞는 도우미를 추천해드려요</p>
+          <div class="svc-card__illust">
+            <div class="illust-match">
+              <div class="illust-match__card">
+                <img class="illust-match__avatar" src="/images/cards/avatar-minser.png" alt="김민서">
+                <div class="illust-match__score">${icon('star', 10, '#6c47ff')} 88점</div>
+                <div class="illust-match__name">김민서</div>
+              </div>
+              <div class="illust-match__card">
+                <img class="illust-match__avatar" src="/images/cards/avatar-suyeon.png" alt="이수연">
+                <div class="illust-match__score">${icon('star', 10, '#6c47ff')} 96점</div>
+                <div class="illust-match__name">이수연</div>
+              </div>
+              <div class="illust-match__card">
+                <img class="illust-match__avatar" src="/images/cards/avatar-jihun.png" alt="박지훈">
+                <div class="illust-match__score">${icon('star', 10, '#6c47ff')} 91점</div>
+                <div class="illust-match__name">박지훈</div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="service-panel__item">
-          <div class="service-panel__item-icon">🩺</div>
-          <div class="service-panel__item-text">
-            <h4>AI 건강 진단</h4>
-            <p>추후 서비스 설명을 입력해주세요.</p>
+
+        <div class="svc-card svc-card--gps" onclick="Router.navigate('/walk-tracking')">
+          <span class="svc-card__tag">${icon('map-pin', 13, '#0284c7')} GPS 추적</span>
+          <h3 class="svc-card__title"><em>실시간 위치</em>로<br>안심하고 맡기세요</h3>
+          <p class="svc-card__desc">산책 중 도우미 위치를 지도에서 확인하고<br>완료 후 이동 경로와 기록을 저장해요</p>
+          <div class="svc-card__illust">
+            <div class="illust-gps">
+              <div class="illust-gps__grid"></div>
+              <div class="illust-gps__badge">${icon('navigation', 11, '#fff')} 실시간 추적 중</div>
+              <div class="illust-gps__route">
+                <svg width="220" height="70" viewBox="0 0 220 70" fill="none">
+                  <path d="M10 60 Q40 20 70 35 Q100 50 130 25 Q160 5 200 20" stroke="#0284c7" stroke-width="2.5" stroke-dasharray="5 3" stroke-linecap="round" fill="none" opacity="0.5"/>
+                  <path d="M10 60 Q40 20 70 35 Q100 50 130 25 Q160 5 190 18" stroke="#0284c7" stroke-width="3" stroke-linecap="round" fill="none"/>
+                  <circle cx="10" cy="60" r="5" fill="#0284c7" opacity="0.4"/>
+                  <circle cx="190" cy="18" r="7" fill="#0284c7"/>
+                  <circle cx="190" cy="18" r="13" fill="#0284c7" opacity="0.2"/>
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="service-panel__item">
-          <div class="service-panel__item-icon">💬</div>
-          <div class="service-panel__item-text">
-            <h4>AI 반려견 상담</h4>
-            <p>추후 서비스 설명을 입력해주세요.</p>
-          </div>
-        </div>
-        <div class="service-panel__item">
-          <div class="service-panel__item-icon">🐕</div>
-          <div class="service-panel__item-text">
-            <h4>품종 정보 & 교육 센터</h4>
-            <p>추후 서비스 설명을 입력해주세요.</p>
+
+        <div class="svc-card svc-card--ai" onclick="Router.navigate('/ai')">
+          <span class="svc-card__tag">${icon('activity', 13, '#be185d')} AI 건강 상담</span>
+          <h3 class="svc-card__title"><em>증상을 말하면</em><br>AI가 바로 분석해요</h3>
+          <p class="svc-card__desc">사진·텍스트로 증상을 올리면 AI가<br>원인을 분석하고 대처법을 알려드려요</p>
+          <div class="svc-card__illust">
+            <div class="illust-ai">
+              <div class="illust-ai__bubble illust-ai__bubble--user">${icon('paw-print', 12, '#be185d')} 우리 강아지가 자꾸 긁어요</div>
+              <div class="illust-ai__bubble illust-ai__bubble--ai">${icon('bot', 12, '#888')} 피부 알레르기 가능성이 있어요. 식단과 환경 체크가 필요해요</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div id="service-panel-overlay" class="service-panel-overlay" onclick="closeServicePanel()"></div>
+
+      <div class="svc-grid svc-grid--bottom">
+        <div class="svc-card svc-card--edu" onclick="Router.navigate('/education')">
+          <span class="svc-card__tag">${icon('book-open', 13, '#b45309')} 교육 센터</span>
+          <h3 class="svc-card__title"><em>44가지</em> 반려견<br>교육 콘텐츠</h3>
+          <p class="svc-card__desc">기본상식부터 훈련, 건강관리, 영양까지<br>10개 카테고리로 배워볼 수 있어요</p>
+          <div class="svc-card__illust">
+            <div class="illust-edu">
+              <span class="illust-edu__chip" style="color:#b45309;">${icon('paw-print', 11, '#b45309')} 기본상식</span>
+              <span class="illust-edu__chip" style="color:#7c3aed;">${icon('activity', 11, '#7c3aed')} 훈련</span>
+              <span class="illust-edu__chip" style="color:#be185d;">${icon('heart', 11, '#be185d')} 건강관리</span>
+              <span class="illust-edu__chip" style="color:#0369a1;">${icon('utensils', 11, '#0369a1')} 영양/식이</span>
+              <span class="illust-edu__chip" style="color:#15803d;">${icon('wand-2', 11, '#15803d')} 미용/관리</span>
+              <span class="illust-edu__chip" style="color:#b45309;">${icon('shield-check', 11, '#b45309')} 안전</span>
+              <span class="illust-edu__chip" style="color:#6b7280;">${icon('glasses', 11, '#6b7280')} 노견케어</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="svc-card svc-card--breed" onclick="Router.navigate('/breeds')">
+          <span class="svc-card__tag">${icon('paw-print', 13, '#15803d')} 품종 정보</span>
+          <h3 class="svc-card__title"><em>200여 품종</em> 백과사전<br>+ AI 맞춤 추천</h3>
+          <p class="svc-card__desc">생활환경과 선호도를 입력하면 AI가<br>나에게 딱 맞는 품종을 추천해드려요</p>
+          <div class="svc-card__illust">
+            <div class="illust-breed">
+              <div class="illust-breed__bar">
+                <span class="illust-breed__label">${icon('activity', 10, '#15803d')} 활동성</span>
+                <div class="illust-breed__track"><div class="illust-breed__fill" style="width:85%"></div></div>
+                <span class="illust-breed__val">85%</span>
+              </div>
+              <div class="illust-breed__bar">
+                <span class="illust-breed__label">${icon('heart', 10, '#15803d')} 친화성</span>
+                <div class="illust-breed__track"><div class="illust-breed__fill" style="width:92%"></div></div>
+                <span class="illust-breed__val">92%</span>
+              </div>
+              <div class="illust-breed__bar">
+                <span class="illust-breed__label">${icon('star', 10, '#15803d')} 훈련성</span>
+                <div class="illust-breed__track"><div class="illust-breed__fill" style="width:70%"></div></div>
+                <span class="illust-breed__val">70%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <div class="page-content">
       <div class="home-section">

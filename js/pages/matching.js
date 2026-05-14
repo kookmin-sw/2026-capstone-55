@@ -648,7 +648,6 @@ function _onSigunguChange() {
 function selectMatchRegCard(key, value) {
  _matchRegData[key] = value;
  renderMatchRegStep();
- setTimeout(() => nextMatchRegStep(), 300);
 }
 
 function toggleMatchRegMulti(key, value) {
