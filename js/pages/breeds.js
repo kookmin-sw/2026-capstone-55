@@ -104,11 +104,11 @@ function renderBreedRecommendUI() {
     <input type="checkbox" id="rec-apartment" style="display:none;">
     <textarea id="rec-freetext" style="display:none;"></textarea>
 
-    <div class="card" style="padding:28px; margin-bottom:20px; text-align:center;">
+    <div class="card" style="padding:28px; margin-bottom:20px; display:flex; flex-direction:column; align-items:center; text-align:center;">
       <div style="font-size:2.4rem; margin-bottom:12px;">🐾</div>
       <h2 style="margin-bottom:6px;">나에게 맞는 반려견 찾기</h2>
       <p style="color:var(--color-text-muted); font-size:0.9rem; line-height:1.6; margin:0 auto 20px; max-width:360px;">생활 패턴, 주거 환경, 선호도를 바탕으로 383종 중 딱 맞는 견종을 골라드려요.</p>
-      <button id="rec-submit-btn" class="btn btn-primary" onclick="openBreedRecommendFlow()" style="width:100%; max-width:320px; padding:14px; font-weight:800; display:block; margin:0 auto;">추천 시작하기</button>
+      <button id="rec-submit-btn" class="btn btn-primary" onclick="openBreedRecommendFlow()" style="width:min(100%, 320px); padding:14px; font-weight:800;">추천 시작하기</button>
     </div>
 
     <div id="breed-recommend-result"></div>
@@ -274,12 +274,11 @@ async function handleBreedRecommend() {
   };
   const count = Math.min(20, Math.max(1, parseInt(document.getElementById('rec-count')?.value, 10) || 3));
 
-  if (btn) { btn.disabled = true; btn.style.display = 'flex'; btn.style.alignItems = 'center'; btn.style.justifyContent = 'center'; btn.style.gap = '8px'; btn.style.margin = '0 auto'; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0;"></div>AI가 분석 중...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0;"></div>AI가 분석 중...'; }
   if (resultEl) resultEl.innerHTML = `
-    <div class="card" style="padding:60px 40px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:160px;">
-      <div class="spinner" style="margin-bottom:20px;"></div>
-      <p style="color:var(--color-text-muted); margin:0 0 6px;">383종의 품종 데이터를 분석하고 있어요...</p>
-      <p style="color:var(--color-text-muted); font-size:0.85rem; margin:0;">잠시만 기다려주세요 🐾</p>
+    <div class="card" style="padding:32px 40px; display:flex; align-items:center; justify-content:center; gap:12px; min-height:100px;">
+      <div class="spinner" style="flex-shrink:0;"></div>
+      <p style="color:var(--color-text-muted); margin:0; font-size:0.9rem;">AI가 분석 중이에요... 잠시만 기다려주세요 🐾</p>
     </div>
   `;
 
@@ -304,7 +303,7 @@ async function handleBreedRecommend() {
     resultEl.innerHTML = `<div class="alert alert-error">서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.</div>`;
   }
 
-  if (btn) { btn.disabled = false; btn.style.display = 'block'; btn.style.margin = '0 auto'; btn.innerHTML = '🤖 AI 맞춤 추천 받기'; }
+  if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI 맞춤 추천 받기'; }
 }
 
 // --- 추천 결과 렌더링 ---
