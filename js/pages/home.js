@@ -55,13 +55,13 @@ function renderHomePage() {
  .svc-header__title { font-size:clamp(1.6rem,3vw,2.2rem); font-weight:800; letter-spacing:-1px; color:#111; line-height:1.25; }
  .svc-header__title span { color:#7c6ff7; }
  .svc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; max-width:1080px; margin:0 auto; }
- .svc-grid--bottom { grid-template-columns:repeat(2,1fr); max-width:720px; margin:20px auto 0; }
+ .svc-grid--bottom { grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; max-width:1160px; margin:20px auto 0; }
  .svc-card { background:#fff; border-radius:20px; padding:32px 28px 0; overflow:hidden; box-shadow:0 2px 16px rgba(0,0,0,0.06); transition:transform 0.25s cubic-bezier(0.16,1,0.3,1),box-shadow 0.25s; cursor:pointer; display:flex; flex-direction:column; min-height:300px; }
  .svc-card:hover { transform:translateY(-6px); box-shadow:0 12px 40px rgba(0,0,0,0.1); }
- .svc-card__tag { display:inline-block; padding:4px 12px; border-radius:999px; font-size:0.72rem; font-weight:700; letter-spacing:0.5px; margin-bottom:14px; }
- .svc-card__title { font-size:1.12rem; font-weight:800; letter-spacing:-0.5px; line-height:1.35; color:#111; margin-bottom:10px; }
+ .svc-card__tag { display:inline-flex; align-items:center; gap:5px; width:max-content; max-width:100%; padding:4px 12px; border-radius:999px; font-size:0.72rem; font-weight:700; letter-spacing:0.5px; margin-bottom:14px; }
+ .svc-card__title { font-size:1.12rem; font-weight:800; letter-spacing:-0.5px; line-height:1.35; color:#111; margin-bottom:10px; word-break:keep-all; overflow-wrap:break-word; }
  .svc-card__title em { font-style:normal; }
- .svc-card__desc { font-size:0.82rem; color:#888; line-height:1.7; margin-bottom:24px; flex:1; }
+ .svc-card__desc { font-size:0.82rem; color:#888; line-height:1.7; margin-bottom:24px; flex:1; word-break:keep-all; overflow-wrap:break-word; }
  .svc-card__illust { margin:0 -28px; height:130px; position:relative; overflow:hidden; border-radius:0 0 20px 20px; }
 
  /* 카드별 컬러 테마 */
@@ -84,6 +84,14 @@ function renderHomePage() {
  .svc-card--breed .svc-card__tag { background:#dcfce7; color:#15803d; }
  .svc-card--breed .svc-card__title em { color:#15803d; }
  .svc-card--breed .svc-card__illust { background:linear-gradient(135deg,#dcfce7 0%,#bbf7d0 100%); }
+
+ .svc-card--expert .svc-card__tag { background:#ccfbf1; color:#0f766e; }
+ .svc-card--expert .svc-card__title em { color:#0f766e; }
+ .svc-card--expert .svc-card__illust { background:linear-gradient(135deg,#ccfbf1 0%,#99f6e4 100%); }
+
+ .svc-card--health .svc-card__tag { background:#ffedd5; color:#c2410c; }
+ .svc-card--health .svc-card__title em { color:#c2410c; }
+ .svc-card--health .svc-card__illust { background:linear-gradient(135deg,#ffedd5 0%,#fed7aa 100%); }
 
  /* 일러스트: 매칭 카드 */
  .illust-match { position:absolute; bottom:0; left:50%; transform:translateX(-50%); display:flex; gap:10px; align-items:flex-end; padding-bottom:0; }
@@ -118,16 +126,40 @@ function renderHomePage() {
  .illust-breed__fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#4ade80,#15803d); }
  .illust-breed__val { font-size:0.62rem; font-weight:700; color:#15803d; width:26px; text-align:right; }
 
+ /* 일러스트: 전문가 카드 */
+ .illust-expert { position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center; gap:8px; padding:0 16px 14px; }
+ .illust-expert__card { width:72px; min-height:92px; border-radius:14px; background:rgba(255,255,255,.92); box-shadow:0 5px 18px rgba(15,118,110,.14); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
+ .illust-expert__card:nth-child(2) { transform:translateY(-10px); box-shadow:0 10px 26px rgba(15,118,110,.22); }
+ .illust-expert__avatar { width:38px; height:38px; border-radius:50%; display:block; background:#ecfdf5; border:2px solid #ccfbf1; object-fit:cover; object-position:center top; box-shadow:0 3px 10px rgba(15,118,110,.12); }
+ .illust-expert__role { font-size:.62rem; color:#0f766e; font-weight:800; }
+ .illust-expert__badge { display:flex; align-items:center; gap:3px; padding:2px 6px; border-radius:999px; background:#f0fdfa; color:#0f766e; font-size:.56rem; font-weight:800; white-space:nowrap; }
+
+ /* 일러스트: AI 건강 분석 카드 */
+ .illust-health { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:14px; padding:14px 16px; }
+ .illust-health__ring { width:82px; height:82px; border-radius:50%; background:conic-gradient(#c2410c 0 74%, rgba(255,255,255,.85) 74% 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 22px rgba(194,65,12,.14); }
+ .illust-health__ring-inner { width:60px; height:60px; border-radius:50%; background:#fffaf5; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#c2410c; font-weight:900; }
+ .illust-health__ring-inner strong { font-size:1.25rem; line-height:1; }
+ .illust-health__ring-inner span { margin-top:4px; font-size:.54rem; color:#9a3412; font-weight:800; }
+ .illust-health__metrics { display:grid; gap:6px; width:96px; }
+ .illust-health__metric { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-radius:10px; background:rgba(255,255,255,.9); color:#7c2d12; font-size:.6rem; font-weight:800; box-shadow:0 3px 12px rgba(194,65,12,.09); }
+ .illust-health__metric strong { color:#c2410c; font-size:.68rem; }
+
+ @media(max-width:1100px) {
+ .svc-grid { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:720px; }
+ .svc-grid--bottom { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:720px; }
+ .svc-grid > .svc-card:nth-child(3) { grid-column:1 / -1; width:100%; max-width:350px; justify-self:center; }
+ }
  @media(max-width:768px) {
  .svc-grid { grid-template-columns:1fr; }
  .svc-grid--bottom { grid-template-columns:1fr; max-width:100%; }
+ .svc-grid > .svc-card:nth-child(3) { grid-column:auto; max-width:none; }
  .svc-card { min-height:260px; }
  }
  </style>
 
  <div class="svc-header">
  <span class="svc-header__eyebrow">Pawsitive Services</span>
- <h2 class="svc-header__title">반려견과의 일상을<br><span>더 특별하게</span> 만드는 5가지</h2>
+ <h2 class="svc-header__title">반려견과의 일상을<br><span>더 특별하게</span> 만드는 7가지</h2>
  </div>
 
  <div class="svc-grid">
@@ -201,7 +233,7 @@ function renderHomePage() {
  <div class="svc-card svc-card--edu" onclick="Router.navigate('/education')">
  <span class="svc-card__tag">${icon('book-open', 13, '#b45309')} 교육 센터</span>
  <h3 class="svc-card__title"><em>44가지</em> 반려견<br>교육 콘텐츠</h3>
- <p class="svc-card__desc">기본상식부터 훈련, 건강관리, 영양까지<br>10개 카테고리로 배워볼 수 있어요</p>
+ <p class="svc-card__desc">기본상식·훈련·건강관리까지<br>10개 카테고리로 배워요</p>
  <div class="svc-card__illust">
  <div class="illust-edu">
  <span class="illust-edu__chip" style="color:#b45309;">${icon('paw-print', 11, '#b45309')} 기본상식</span>
@@ -218,8 +250,8 @@ function renderHomePage() {
  <!-- 카드 5: 품종 정보 -->
  <div class="svc-card svc-card--breed" onclick="Router.navigate('/breeds')">
  <span class="svc-card__tag">${icon('paw-print', 13, '#15803d')} 품종 정보</span>
- <h3 class="svc-card__title"><em>200여 품종</em> 백과사전<br>+ AI 맞춤 추천</h3>
- <p class="svc-card__desc">생활환경과 선호도를 입력하면 AI가<br>나에게 딱 맞는 품종을 추천해드려요</p>
+ <h3 class="svc-card__title"><em>400여 품종</em> 백과사전<br>+ AI 맞춤 추천</h3>
+ <p class="svc-card__desc">생활환경과 선호도를 입력하면<br>어울리는 품종을 추천해드려요</p>
  <div class="svc-card__illust">
  <div class="illust-breed">
  <div class="illust-breed__bar">
@@ -236,6 +268,54 @@ function renderHomePage() {
  <span class="illust-breed__label">${icon('star', 10, '#15803d')} 훈련성</span>
  <div class="illust-breed__track"><div class="illust-breed__fill" style="width:70%"></div></div>
  <span class="illust-breed__val">70%</span>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- 카드 6: 전문가 상담 -->
+ <div class="svc-card svc-card--expert" onclick="Router.navigate('/experts')">
+ <span class="svc-card__tag">${icon('users', 13, '#0f766e')} 전문가 상담</span>
+ <h3 class="svc-card__title"><em>검증 전문가</em> 상담을<br>바로 이어가요</h3>
+ <p class="svc-card__desc">수의사·훈련사·미용사에게<br>필요한 상담을 신청해요</p>
+ <div class="svc-card__illust">
+ <div class="illust-expert">
+ <div class="illust-expert__card">
+ <img class="illust-expert__avatar" src="/images/experts/yoon-seojin.png" alt="윤서진 수의사">
+ <div class="illust-expert__role">수의사</div>
+ <div class="illust-expert__badge">${icon('check-circle', 9, '#0f766e')} 검증</div>
+ </div>
+ <div class="illust-expert__card">
+ <img class="illust-expert__avatar" src="/images/experts/kang-doyoon.png" alt="강도윤 훈련사">
+ <div class="illust-expert__role">훈련사</div>
+ <div class="illust-expert__badge">${icon('check-circle', 9, '#0f766e')} 승인</div>
+ </div>
+ <div class="illust-expert__card">
+ <img class="illust-expert__avatar" src="/images/experts/jung-yumin.png" alt="정유민 미용사">
+ <div class="illust-expert__role">미용사</div>
+ <div class="illust-expert__badge">${icon('check-circle', 9, '#0f766e')} 심사</div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- 카드 7: AI 건강 분석 -->
+ <div class="svc-card svc-card--health" onclick="Router.navigate('/health')">
+ <span class="svc-card__tag">${icon('heart', 13, '#c2410c')} AI 건강 분석</span>
+ <h3 class="svc-card__title"><em>산책 데이터</em>로<br>건강 신호를 읽어요</h3>
+ <p class="svc-card__desc">산책 기록을 바탕으로<br>활동 점수와 케어 힌트를 확인해요</p>
+ <div class="svc-card__illust">
+ <div class="illust-health">
+ <div class="illust-health__ring">
+ <div class="illust-health__ring-inner">
+ <strong>74</strong>
+ <span>활동 점수</span>
+ </div>
+ </div>
+ <div class="illust-health__metrics">
+ <div class="illust-health__metric"><span>산책</span><strong>13회</strong></div>
+ <div class="illust-health__metric"><span>시간</span><strong>48분</strong></div>
+ <div class="illust-health__metric"><span>거리</span><strong>2.4km</strong></div>
  </div>
  </div>
  </div>
@@ -345,14 +425,63 @@ function renderHomePage() {
  </div>
  </section>
 
+ <style>
+ .home-breed-showcase { max-width:1120px; margin:80px auto 0; padding:0; }
+ .home-breed-showcase__head { position:relative; overflow:hidden; display:flex; justify-content:space-between; gap:26px; align-items:flex-end; margin-bottom:16px; padding:28px 30px; border:1px solid #DDE6F0; border-radius:8px; background-color:#fff; background-image:linear-gradient(90deg,rgba(255,255,255,.98) 0%,rgba(255,255,255,.94) 44%,rgba(255,255,255,.72) 72%,rgba(255,255,255,.34) 100%),url('/breed-atlas-hero-bg.png'); background-size:cover,auto 100%; background-position:center,right center; background-repeat:no-repeat,no-repeat; box-shadow:0 18px 44px rgba(15,23,42,.065); }
+ .home-breed-showcase__copy { position:relative; z-index:1; max-width:650px; }
+ .home-breed-showcase__eyebrow { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:999px; background:#EFF6FF; color:#175CD3; font-size:.72rem; font-weight:950; margin-bottom:12px; }
+ .home-breed-showcase__head h2 { margin:0 0 8px; color:#0B1220; font-size:1.72rem; line-height:1.18; font-weight:950; letter-spacing:0; word-break:keep-all; }
+ .home-breed-showcase__head p { margin:0; max-width:560px; color:#52637A; font-size:.88rem; line-height:1.68; font-weight:750; word-break:keep-all; }
+ .home-breed-showcase__more { position:relative; z-index:1; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 16px; border:1px solid #DDE6F0; border-radius:999px; background:rgba(255,255,255,.9); color:#0B1220; font-size:.78rem; font-weight:950; cursor:pointer; box-shadow:0 12px 26px rgba(15,23,42,.06); transition:transform .16s, box-shadow .16s; }
+ .home-breed-showcase__more:hover { transform:translateY(-1px); box-shadow:0 16px 34px rgba(15,23,42,.1); }
+ .home-breed-showcase__stats { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+ .home-breed-showcase__stats span { display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border-radius:999px; background:#fff; border:1px solid #E2E8F0; color:#64748B; font-size:.72rem; font-weight:900; box-shadow:0 8px 18px rgba(15,23,42,.035); }
+ .home-breed-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+ .home-breed-grid .breed-atlas-card { overflow:hidden; border:1px solid #DDE6F0; border-radius:8px; background:#fff; cursor:pointer; box-shadow:0 16px 38px rgba(15,23,42,.055); transition:transform .16s, box-shadow .16s, border-color .16s; }
+ .home-breed-grid .breed-atlas-card:hover { transform:translateY(-2px); border-color:#CBD5E1; box-shadow:0 22px 46px rgba(15,23,42,.095); }
+ .home-breed-grid .breed-atlas-card__image { position:relative; height:190px; background:#F8FAFC; display:flex; align-items:center; justify-content:center; font-size:2.8rem; }
+ .home-breed-grid .breed-atlas-card__badge { position:absolute; top:12px; left:12px; padding:5px 9px; border-radius:999px; background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.9); color:#334155; font-size:.68rem; font-weight:950; }
+ .home-breed-grid .breed-atlas-card__body { padding:17px 18px 18px; }
+ .home-breed-grid .breed-atlas-card__name { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:4px; }
+ .home-breed-grid .breed-atlas-card__name strong { color:#0B1220; font-size:1.02rem; font-weight:950; word-break:keep-all; }
+ .home-breed-grid .breed-atlas-card__name span { color:#94A3B8; font-size:.72rem; font-weight:800; text-align:right; }
+ .home-breed-grid .breed-atlas-card__text { min-height:42px; color:#64748B; font-size:.8rem; line-height:1.55; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:keep-all; }
+ .home-breed-grid .breed-trait-bars { display:grid; gap:8px; margin-top:14px; }
+ .home-breed-grid .breed-trait-bar { display:grid; grid-template-columns:56px minmax(0,1fr) 32px; gap:8px; align-items:center; color:#64748B; font-size:.68rem; font-weight:900; }
+ .home-breed-grid .breed-trait-bar__track { height:6px; overflow:hidden; border-radius:999px; background:#E2E8F0; }
+ .home-breed-grid .breed-trait-bar__track span { display:block; height:100%; border-radius:999px; background:#2563EB; }
+ .home-breed-grid .breed-trait-bar:nth-child(2) .breed-trait-bar__track span { background:#0F766E; }
+ .home-breed-grid .breed-trait-bar:nth-child(3) .breed-trait-bar__track span { background:#F97316; }
+ @media(max-width:920px) {
+   .home-breed-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+   .home-breed-showcase__head { display:block; background-position:center,64% center; }
+   .home-breed-showcase__more { margin-top:18px; }
+ }
+ @media(max-width:640px) {
+   .home-breed-showcase { margin-top:56px; }
+   .home-breed-showcase__head { padding:24px 18px; }
+   .home-breed-showcase__head h2 { font-size:1.38rem; }
+   .home-breed-grid { grid-template-columns:1fr; }
+ }
+ </style>
+
  <div class="page-content">
- <div class="home-section">
- <div class="home-section__hd">
- <span class="home-section__title">품종 정보</span>
- <button class="home-section__more" onclick="Router.navigate('/breeds')">전체보기 →</button>
+ <section class="home-breed-showcase">
+ <div class="home-breed-showcase__head">
+ <div class="home-breed-showcase__copy">
+ <div class="home-breed-showcase__eyebrow">${icon('book-open', 13, '#175CD3')} 품종 탐색 도감</div>
+ <h2>궁금한 견종의 성격과 케어 정보를 한눈에 살펴봐요</h2>
+ <p>좋아하는 품종의 성향, 활동량, 미용과 관리 포인트를 실사 이미지와 함께 차분히 비교해보세요.</p>
  </div>
- <div class="grid-3" id="home-breed-grid">${renderBreedCards(BreedService.getAll().slice(0, 6))}</div>
+ <button class="home-breed-showcase__more" onclick="Router.navigate('/breeds')">전체보기 →</button>
  </div>
+ <div class="home-breed-showcase__stats">
+ <span>${icon('database', 12, '#64748B')} 400여 품종 데이터</span>
+ <span>${icon('activity', 12, '#64748B')} 성격·활동량 요약</span>
+ <span>${icon('paw-print', 12, '#64748B')} 케어 포인트 비교</span>
+ </div>
+ <div class="home-breed-grid" id="home-breed-grid">${renderBreedCards(BreedService.getAll().slice(0, 6))}</div>
+ </section>
  <div class="home-section">
  <div class="home-section__hd">
  <span class="home-section__title">교육 센터</span>

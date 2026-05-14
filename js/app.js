@@ -83,6 +83,7 @@ async function _handlePaymentRedirect() {
 
   history.replaceState(null, '', redirect.cleanHash || '#/matching');
   const orderId = redirect.params.get('orderId');
+  const isPaymentRoute = /^#\/(matching|experts)(\b|\/|\?)/.test(redirect.cleanHash || '');
 
   const raw = localStorage.getItem('pawsitive_pending_payment');
   const user = AuthService.getCurrentUser();
@@ -92,7 +93,7 @@ async function _handlePaymentRedirect() {
       renderMatchingPage();
       return;
     }
-    showToast('결제 정보를 찾을 수 없어요.', 'error');
+    if (isPaymentRoute) showToast('결제 정보를 찾을 수 없어요.', 'error');
     return;
   }
 

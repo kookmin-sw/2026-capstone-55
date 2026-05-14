@@ -36,10 +36,14 @@ function renderAiPage() {
       .ai-sidebar__item:hover .ai-sidebar__item-del { opacity:1; }
       .ai-sidebar__item-del:hover { color:#e53e3e; }
       .ai-sidebar__footer { padding:14px 16px; border-top:1px solid #EEF2F7; }
-      .ai-main { position:relative; flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden; }
-      .ai-main::before { content:''; position:absolute; inset:0; background:
-        linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.86) 45%, rgba(255,255,255,.72) 100%),
-        url('/AI반려견상담탭배경.png') center / cover no-repeat; opacity:.78; pointer-events:none; }
+      .ai-main { --ai-welcome-width:1120px; --ai-context-width:1040px; --ai-chat-width:1120px; position:relative; flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden; }
+      .ai-main::before { content:''; position:absolute; inset:0; z-index:0; background-color:#fff; background-image:
+        radial-gradient(ellipse 34% 82% at 56% 50%, rgba(255,255,255,.98) 0%, rgba(255,255,255,.72) 45%, rgba(255,255,255,.10) 74%, rgba(255,255,255,0) 100%),
+        linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.92) 42%, rgba(255,255,255,.56) 68%, rgba(255,255,255,.22) 100%),
+        url('/ai-dog-consult-bg.png'); background-position:56% center, center, calc(100% + clamp(140px, 12vw, 220px)) center; background-size:cover, cover, auto 100%; background-repeat:no-repeat, no-repeat, no-repeat; opacity:1; pointer-events:none; }
+      .ai-main::after { content:''; position:absolute; inset:0; z-index:0; background:
+        linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.90) 36%, rgba(255,255,255,.30) 58%, rgba(255,255,255,.08) 100%),
+        radial-gradient(ellipse 24% 92% at 54% 50%, rgba(255,255,255,.86) 0%, rgba(255,255,255,.38) 48%, rgba(255,255,255,0) 78%); pointer-events:none; }
       .ai-main__header { position:relative; z-index:1; padding:14px 26px; border-bottom:1px solid rgba(226,232,240,.86); display:flex; justify-content:flex-start; align-items:center; gap:14px; flex-shrink:0; backdrop-filter:blur(12px); background:rgba(255,255,255,.72); }
       .ai-main__brand { display:flex; align-items:center; gap:10px; min-width:0; }
       .ai-main__mark { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#E8F4FF; color:#2563EB; font-weight:950; }
@@ -49,12 +53,22 @@ function renderAiPage() {
       .ai-main__tab { min-width:92px; padding:8px 15px; border-radius:999px; font-size:0.78rem; font-weight:900; color:#64748B; background:none; border:none; transition:all 0.2s; cursor:pointer; }
       .ai-main__tab:hover { color:#0B1220; }
       .ai-main__tab.active { color:#fff; background:#0B1220; box-shadow:0 8px 18px rgba(15,23,42,.14); }
-      .ai-chat-area { position:relative; z-index:1; flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+      .ai-chat-area { position:relative; z-index:1; flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; }
       .ai-chat-area::-webkit-scrollbar { width:4px; }
       .ai-chat-area::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:2px; }
-      .ai-chat-center { max-width:860px; width:100%; margin:0 auto; padding:28px 26px; flex:1; display:flex; flex-direction:column; }
-      .ai-welcome-shell { display:grid; grid-template-columns:minmax(0,1.1fr) 240px; gap:18px; align-items:stretch; margin:auto 0; }
-      .ai-welcome-center { min-width:0; padding:34px; border:1px solid rgba(221,230,240,.9); border-radius:8px; background:rgba(255,255,255,.86); box-shadow:0 24px 58px rgba(15,23,42,.09); backdrop-filter:blur(16px); }
+      .ai-chat-center { max-width:var(--ai-chat-width); width:100%; box-sizing:border-box; margin:0 auto; padding:28px 26px; flex:1; min-height:0; display:flex; flex-direction:column; }
+      .ai-welcome-shell { width:100%; max-width:var(--ai-welcome-width); margin:auto; display:grid; grid-template-columns:minmax(284px,.38fr) minmax(0,1fr); gap:16px; align-items:start; }
+      .ai-escalation-card { min-width:0; display:flex; flex-direction:column; justify-content:space-between; gap:18px; padding:22px; border:1px solid rgba(221,230,240,.9); border-radius:8px; background:rgba(255,255,255,.82); box-shadow:0 20px 46px rgba(15,23,42,.075); backdrop-filter:blur(16px); }
+      .ai-escalation-card__eyebrow { display:inline-flex; width:max-content; align-items:center; gap:7px; padding:6px 10px; border-radius:999px; background:#F4FBF8; color:#0F766E; font-size:.7rem; font-weight:950; }
+      .ai-escalation-card h3 { margin:0; color:#0B1220; font-size:1.12rem; line-height:1.32; font-weight:950; letter-spacing:0; word-break:keep-all; overflow-wrap:break-word; }
+      .ai-escalation-card p { margin:0; color:#52637A; font-size:.8rem; line-height:1.62; font-weight:750; word-break:keep-all; overflow-wrap:break-word; }
+      .ai-escalation-list { display:grid; gap:8px; margin:2px 0 0; }
+      .ai-escalation-list span { display:flex; gap:8px; align-items:flex-start; color:#334155; font-size:.75rem; line-height:1.42; font-weight:850; word-break:keep-all; overflow-wrap:break-word; }
+      .ai-escalation-list span::before { content:''; width:6px; height:6px; margin-top:7px; border-radius:50%; background:#0F766E; flex-shrink:0; }
+      .ai-escalation-cta { width:100%; min-height:44px; display:flex; align-items:center; justify-content:center; gap:8px; border-radius:8px; border:1px solid #0B1220; background:#0B1220; color:#fff; font-size:.82rem; font-weight:950; cursor:pointer; transition:transform .15s, box-shadow .15s; box-shadow:0 12px 26px rgba(15,23,42,.14); }
+      .ai-escalation-cta:hover { transform:translateY(-1px); box-shadow:0 16px 32px rgba(15,23,42,.18); }
+      .ai-escalation-foot { padding-top:12px; border-top:1px solid #E2E8F0; color:#8290A3; font-size:.69rem; line-height:1.5; font-weight:750; }
+      .ai-welcome-center { min-width:0; box-sizing:border-box; padding:34px; border:1px solid rgba(221,230,240,.9); border-radius:8px; background:rgba(255,255,255,.92); box-shadow:0 24px 58px rgba(15,23,42,.09); backdrop-filter:blur(16px); }
       .ai-welcome-kicker { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:999px; background:#E8F4FF; color:#175CD3; font-size:.72rem; font-weight:950; margin-bottom:14px; }
       .ai-welcome-center h2 { font-size:2rem; line-height:1.18; font-weight:950; color:#0B1220; letter-spacing:0; margin:0 0 10px; }
       .ai-welcome-center p { font-size:0.92rem; color:#52637A; line-height:1.7; margin:0; max-width:560px; }
@@ -67,46 +81,54 @@ function renderAiPage() {
       .ai-quick-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:16px; }
       .ai-quick-chip { border:1px solid #DDE6F0; border-radius:8px; background:#fff; padding:10px 12px; color:#334155; font-size:.78rem; font-weight:900; text-align:left; cursor:pointer; }
       .ai-quick-chip:hover { border-color:#0B1220; color:#0B1220; }
-      .ai-side-photo { position:relative; overflow:hidden; min-height:360px; border-radius:8px; border:1px solid rgba(221,230,240,.9); background:url('/Ai상담채팅내부용서브이미지.png') center / cover no-repeat; box-shadow:0 24px 58px rgba(15,23,42,.1); }
-      .ai-side-photo::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,18,32,.05), rgba(11,18,32,.52)); }
-      .ai-side-photo__copy { position:absolute; left:16px; right:16px; bottom:16px; z-index:1; color:#fff; }
-      .ai-side-photo__copy strong { display:block; font-size:1rem; font-weight:950; margin-bottom:4px; }
-      .ai-side-photo__copy span { display:block; font-size:.78rem; line-height:1.5; opacity:.9; }
+      .ai-feature-strip { display:flex; gap:8px; align-items:flex-start; margin-top:14px; padding:12px 13px; border-radius:8px; background:#F8FAFC; border:1px solid #E2E8F0; color:#52637A; font-size:.76rem; line-height:1.55; font-weight:800; }
+      .ai-feature-strip strong { display:inline-flex; align-items:center; gap:6px; color:#175CD3; white-space:nowrap; }
       .ai-disclaimer { margin-top:14px; padding:11px 12px; border-radius:8px; background:#F8FAFC; border:1px solid #E2E8F0; color:#64748B; font-size:.74rem; line-height:1.55; font-weight:750; }
       .ai-input-area { position:relative; z-index:1; padding:16px 26px 24px; flex-shrink:0; background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.92) 30%, rgba(255,255,255,.98)); }
-      .ai-input-box { max-width:860px; margin:0 auto; display:flex; gap:10px; align-items:flex-end; border:1.5px solid #DDE6F0; border-radius:8px; padding:12px 14px; background:#fff; transition:border-color 0.15s, box-shadow .15s; box-shadow:0 16px 38px rgba(15,23,42,0.08); }
+      .ai-input-box { max-width:var(--ai-chat-width); width:100%; box-sizing:border-box; margin:0 auto; display:flex; gap:10px; align-items:flex-end; border:1.5px solid #DDE6F0; border-radius:8px; padding:12px 14px; background:#fff; transition:border-color 0.15s, box-shadow .15s; box-shadow:0 16px 38px rgba(15,23,42,0.08); }
       .ai-input-box:focus-within { border-color:#0B1220; box-shadow:0 18px 46px rgba(15,23,42,0.12); }
-      .ai-input-box input { flex:1; border:none; background:transparent; font-size:0.94rem; outline:none; padding:6px 0; font-family:inherit; color:#0B1220; }
-      .ai-input-box input::placeholder { color:#94A3B8; }
+      .ai-composer-field { flex:1; min-width:0; }
+      .ai-composer-textarea { display:block; width:100%; min-width:0; min-height:36px; max-height:132px; box-sizing:border-box; border:none; background:transparent; resize:none; overflow-y:auto; font-size:0.94rem; line-height:1.55; outline:none; padding:7px 0 5px; font-family:inherit; color:#0B1220; white-space:pre-wrap; overflow-wrap:anywhere; }
+      .ai-composer-textarea::placeholder { color:#94A3B8; }
+      .ai-composer-textarea::-webkit-scrollbar { width:4px; }
+      .ai-composer-textarea::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:2px; }
       .ai-send-circle { width:36px; height:36px; border-radius:8px; background:#0B1220; color:#fff; border:none; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:opacity 0.15s, transform .15s; }
       .ai-send-circle:hover { transform:translateY(-1px); }
       .ai-send-circle:hover { opacity:0.8; }
       .ai-send-circle:disabled { opacity:0.2; }
       .ai-attach-btn { width:36px; height:36px; border-radius:8px; background:#F8FAFC; border:1px solid #E2E8F0; font-size:1.1rem; padding:0; color:#64748B; flex-shrink:0; transition:color 0.15s, background .15s; }
       .ai-attach-btn:hover { color:#0B1220; background:#F1F5F9; }
-      .ai-msg-row { max-width:860px; width:100%; margin:0 auto; padding:14px 26px; }
+      .ai-msg-row { max-width:var(--ai-chat-width); width:100%; box-sizing:border-box; margin:0 auto; padding:14px 26px; }
       .ai-msg-row--user { text-align:right; }
       .ai-msg-row--ai { }
       .ai-msg-label { font-size:0.72rem; font-weight:950; color:#64748B; margin-bottom:6px; }
       .ai-msg-row--user .ai-msg-label { color:#94A3B8; }
-      .ai-msg-text { display:inline-block; max-width:min(720px, 88%); font-size:0.92rem; line-height:1.75; text-align:left; border-radius:8px; padding:14px 16px; box-shadow:0 12px 28px rgba(15,23,42,.06); }
-      .ai-msg-row--user .ai-msg-text { background:#0B1220; color:#fff; }
-      .ai-msg-row--ai .ai-msg-text { background:rgba(255,255,255,.92); border:1px solid #E2E8F0; color:#253044; }
+      .ai-msg-text { display:inline-block; max-width:100%; box-sizing:border-box; font-size:0.92rem; line-height:1.75; text-align:left; border-radius:8px; padding:14px 16px; box-shadow:0 12px 28px rgba(15,23,42,.06); overflow-wrap:anywhere; word-break:keep-all; }
+      .ai-msg-row--user .ai-msg-text { max-width:min(680px, 82%); background:#0B1220; color:#fff; }
+      .ai-msg-row--ai .ai-msg-text { display:block; width:100%; background:rgba(255,255,255,.92); border:1px solid #E2E8F0; color:#253044; }
       .ai-msg-text img { max-width:100%; max-height:240px; border-radius:8px; margin:8px 0; }
-      .ai-health-bar { position:relative; z-index:2; max-width:860px; margin:0 auto; padding:0 26px 12px; }
-      .ai-health-bar__inner { display:flex; gap:8px; padding-top:12px; }
-      .ai-health-bar .form-input { background:rgba(255,255,255,.92); border-color:#DDE6F0; }
+      .ai-context-panel { position:relative; z-index:2; padding:12px 26px 0; }
+      .ai-context-panel__inner { max-width:var(--ai-context-width); width:100%; box-sizing:border-box; margin:0 auto; display:grid; grid-template-columns:minmax(0,.75fr) minmax(520px,1.25fr); gap:14px; align-items:end; padding:14px; border:1px solid rgba(221,230,240,.94); border-radius:8px; background:rgba(255,255,255,.92); box-shadow:0 12px 28px rgba(15,23,42,.06); backdrop-filter:blur(14px); }
+      .ai-context-panel__copy strong { display:block; color:#0B1220; font-size:.9rem; font-weight:950; margin-bottom:4px; }
+      .ai-context-panel__copy span { display:block; color:#64748B; font-size:.75rem; line-height:1.5; font-weight:750; }
+      .ai-context-fields { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 96px; gap:8px; align-items:end; }
+      .ai-context-field { display:block; position:relative; min-width:0; }
+      .ai-context-field span { display:block; margin-bottom:5px; color:#64748B; font-size:.68rem; font-weight:950; }
+      .ai-context-field .form-input { background:#fff; border-color:#DDE6F0; font-size:0.82rem; padding:8px 10px; border-radius:8px; width:100%; }
       @media (max-width:768px) {
+        .ai-main { --ai-welcome-width:100%; --ai-context-width:100%; --ai-chat-width:100%; }
         .ai-sidebar { display:none; }
         .ai-main__header { padding:12px 16px; align-items:flex-start; flex-direction:column; }
         .ai-main__tabs { width:100%; }
         .ai-main__tab { flex:1; min-width:0; }
-        .ai-chat-center, .ai-msg-row, .ai-health-bar { padding-left:16px; padding-right:16px; }
+        .ai-chat-center, .ai-msg-row, .ai-context-panel { padding-left:16px; padding-right:16px; }
         .ai-welcome-shell { grid-template-columns:1fr; }
-        .ai-side-photo { display:none; }
+        .ai-escalation-card { order:2; padding:18px; }
         .ai-welcome-center { padding:24px 18px; }
         .ai-welcome-center h2 { font-size:1.5rem; }
         .ai-mode-grid, .ai-quick-grid { grid-template-columns:1fr; }
+        .ai-feature-strip { flex-direction:column; }
+        .ai-context-panel__inner, .ai-context-fields { grid-template-columns:1fr; }
         .ai-input-area { padding:12px 16px 16px; }
       }
     </style>
@@ -126,8 +148,8 @@ function renderAiPage() {
           <div class="ai-main__brand">
             <div class="ai-main__mark">${icon('sparkles', 17, '#2563EB')}</div>
             <div>
-              <strong>반려견 상담</strong>
-              <span>사진, 증상, 행동 고민을 한 곳에서 정리해요</span>
+              <strong>AI 반려견 상담</strong>
+              <span>증상과 행동 고민을 사진과 함께 상담해요</span>
             </div>
           </div>
           <div class="ai-main__tabs">
@@ -136,15 +158,27 @@ function renderAiPage() {
           </div>
         </div>
 
-        <div id="ai-health-fields" style="display:none;">
-          <div class="ai-health-bar">
-            <div class="ai-health-bar__inner" style="padding-top:12px;">
-              <div style="position:relative; flex:1;">
-                <input type="text" id="ai-breed" class="form-input" placeholder="품종 검색..." autocomplete="off" style="font-size:0.82rem; padding:6px 10px; border-radius:8px; width:100%;" oninput="filterBreedDropdown(this.value)" onfocus="showBreedDropdown()" onblur="setTimeout(()=>hideBreedDropdown(),200)">
+        <div id="ai-context-panel" class="ai-context-panel">
+          <div class="ai-context-panel__inner">
+            <div class="ai-context-panel__copy">
+              <strong id="ai-context-title">훈련 상담 정보</strong>
+              <span id="ai-context-desc">견종, 나이, 고민 유형을 알려주면 생활 루틴에 맞춰 더 구체적으로 정리할 수 있어요.</span>
+            </div>
+            <div class="ai-context-fields">
+              <label class="ai-context-field">
+                <span>견종</span>
+                <input type="text" id="ai-breed" class="form-input" placeholder="예: 포메라니안" autocomplete="off" oninput="filterBreedDropdown(this.value)" onfocus="showBreedDropdown()" onblur="setTimeout(()=>hideBreedDropdown(),200)">
                 <div id="ai-breed-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; max-height:180px; overflow-y:auto; background:#fff; border:1px solid #e5e3e0; border-radius:8px; margin-top:4px; z-index:10; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
                 </div>
-              </div>
-              <input type="text" id="ai-age" class="form-input" placeholder="나이" style="font-size:0.82rem; padding:6px 10px; border-radius:8px; width:80px;">
+              </label>
+              <label class="ai-context-field">
+                <span id="ai-context-topic-label">고민 유형</span>
+                <input type="text" id="ai-topic" class="form-input" placeholder="예: 분리불안">
+              </label>
+              <label class="ai-context-field">
+                <span>나이</span>
+                <input type="text" id="ai-age" class="form-input" placeholder="예: 3살">
+              </label>
             </div>
           </div>
         </div>
@@ -155,9 +189,9 @@ function renderAiPage() {
             <div class="ai-input-box" id="ai-input-wrap" ondragover="event.preventDefault();this.style.borderColor='#0B1220'" ondragleave="this.style.borderColor='#DDE6F0'" ondrop="event.preventDefault();this.style.borderColor='#DDE6F0';handleAiDrop(event)">
             <button class="ai-attach-btn" onclick="document.getElementById('ai-file').click()" title="사진 첨부">+</button>
             <input type="file" id="ai-file" accept="image/*,video/*" style="display:none;" onchange="handleAiFileSelect(this)">
-            <div style="flex:1; min-width:0;">
+            <div class="ai-composer-field">
               <div id="ai-file-preview" style="display:none; margin-bottom:6px;"></div>
-              <input type="text" id="ai-input" placeholder="무엇이든 물어보세요" onkeydown="if(event.key==='Enter')handleAiChat()" onpaste="handleAiPaste(event)">
+              <textarea id="ai-input" class="ai-composer-textarea" rows="1" placeholder="무엇이든 물어보세요" oninput="resizeAiComposer(this)" onkeydown="handleAiComposerKeydown(event)" onpaste="handleAiPaste(event)"></textarea>
             </div>
             <button class="ai-send-circle" onclick="handleAiChat()" id="ai-send-btn">&#x2191;</button>
           </div>
@@ -168,6 +202,7 @@ function renderAiPage() {
   }
 
   updateAiModeDesc();
+  updateAiContextPanel(_aiChatMode);
   restoreAiChat();
   _renderAiSidebar();
 
@@ -297,9 +332,8 @@ async function loadAiSession(sessionId) {
       // 탭 상태 업데이트
       document.getElementById('ai-tab-training')?.classList.toggle('active', _aiChatMode === 'training');
       document.getElementById('ai-tab-health')?.classList.toggle('active', _aiChatMode === 'health');
-      const healthFields = document.getElementById('ai-health-fields');
-      if (healthFields) healthFields.style.display = _aiChatMode === 'health' ? 'block' : 'none';
       updateAiModeDesc();
+      updateAiContextPanel(_aiChatMode);
       restoreAiChat();
       const sessionsPanel = document.getElementById('ai-sessions-panel');
       if (sessionsPanel) sessionsPanel.style.display = 'none';
@@ -357,6 +391,27 @@ function updateAiModeDesc() {
   // ChatGPT 스타일에서는 모드 설명을 별도로 표시하지 않음
 }
 
+function updateAiContextPanel(mode) {
+  const title = document.getElementById('ai-context-title');
+  const desc = document.getElementById('ai-context-desc');
+  const topicLabel = document.getElementById('ai-context-topic-label');
+  const topicInput = document.getElementById('ai-topic');
+  if (!title || !desc || !topicLabel || !topicInput) return;
+
+  hideBreedDropdown();
+  if (mode === 'health') {
+    title.textContent = '건강 상담 정보';
+    desc.textContent = '견종, 나이, 증상 키워드를 알려주면 답변을 더 정확하게 정리할 수 있어요.';
+    topicLabel.textContent = '증상 키워드';
+    topicInput.placeholder = '예: 구토 / 피부 가려움';
+  } else {
+    title.textContent = '훈련 상담 정보';
+    desc.textContent = '견종, 나이, 고민 유형을 알려주면 생활 루틴에 맞춰 더 구체적으로 정리할 수 있어요.';
+    topicLabel.textContent = '고민 유형';
+    topicInput.placeholder = '예: 분리불안';
+  }
+}
+
 function restoreAiChat() {
   const chatEl = document.getElementById('ai-chat');
   if (!chatEl) return;
@@ -366,8 +421,24 @@ function restoreAiChat() {
     chatEl.innerHTML = `
     <div class="ai-chat-center">
       <div class="ai-welcome-shell">
+        <aside class="ai-escalation-card">
+          <div>
+            <div class="ai-escalation-card__eyebrow">${icon('badge-check', 13, '#0F766E')} 전문가 연결</div>
+            <h3>전문가 판단이 필요할 때 바로 이어가요</h3>
+            <p>AI 상담으로 상황을 먼저 정리하고, 반복 증상이나 행동 문제가 이어지면 검증 전문가 상담으로 넘길 수 있어요.</p>
+            <div class="ai-escalation-list">
+              <span>반복되는 건강 증상</span>
+              <span>분리불안·공격성·산책 문제</span>
+              <span>사진 상담 후 다음 조치가 필요할 때</span>
+            </div>
+          </div>
+          <div>
+            <button class="ai-escalation-cta" onclick="Router.navigate('/experts')">${icon('stethoscope', 15, '#FFFFFF')} 전문가 매칭으로 이동</button>
+            <div class="ai-escalation-foot">응급 증상은 가까운 동물병원 진료를 우선해주세요.</div>
+          </div>
+        </aside>
         <div class="ai-welcome-center">
-          <div class="ai-welcome-kicker">${icon('message-circle', 14, '#175CD3')} AI CARE ROOM</div>
+          <div class="ai-welcome-kicker">${icon('message-circle', 14, '#175CD3')} 무엇이든 물어보세요.</div>
           <h2>오늘 아이에게 어떤 신호가 있었나요?</h2>
           <p>행동 고민부터 건강 증상, 사진 상담까지 한 화면에서 정리해요. 답변은 보호자의 판단을 돕는 참고 정보이며, 응급 상황은 병원 진료를 우선해요.</p>
           <div class="ai-mode-grid">
@@ -389,11 +460,9 @@ function restoreAiChat() {
           <div id="ai-mode-detail" class="ai-disclaimer">
             훈련/행동 모드가 선택되어 있어요. 생활 환경, 산책 루틴, 반복되는 상황을 함께 적으면 더 구체적으로 답해요.
           </div>
-        </div>
-        <div class="ai-side-photo">
-          <div class="ai-side-photo__copy">
-            <strong>사진도 함께 볼 수 있어요</strong>
-            <span>피부, 눈, 귀처럼 시각 정보가 중요한 상담은 이미지를 첨부해 주세요.</span>
+          <div class="ai-feature-strip">
+            <strong>${icon('image', 14, '#175CD3')} 사진 첨부 가능</strong>
+            <span>피부, 눈, 귀, 발바닥처럼 시각 정보가 중요한 상담은 + 버튼으로 이미지를 함께 보내주세요.</span>
           </div>
         </div>
       </div>
@@ -426,19 +495,15 @@ function switchAiMode(mode) {
   if (tabT) tabT.classList.toggle('active', mode === 'training');
   if (tabH) tabH.classList.toggle('active', mode === 'health');
 
-  const healthFields = document.getElementById('ai-health-fields');
-  if (healthFields) healthFields.style.display = mode === 'health' ? 'block' : 'none';
   updateAiModeDesc();
+  updateAiContextPanel(mode);
+  updateAiModeCards(mode);
 
   const input = document.getElementById('ai-input');
   if (input) input.placeholder = mode === 'training' ? '훈련/행동 관련 질문을 입력해주세요...' : '증상이나 건강 관련 질문을 입력해주세요...';
 }
 
-function selectAiModeCard(mode) {
-  _aiChatMode = mode;
-  if (_aiCurrentSession) _aiCurrentSession.mode = mode;
-
-  // 카드 하이라이트
+function updateAiModeCards(mode) {
   const cards = document.querySelectorAll('.ai-mode-card');
   cards.forEach(c => { c.classList.remove('selected'); c.style.borderColor = ''; c.style.background = ''; });
   const selected = document.getElementById('ai-mode-card-' + mode);
@@ -448,24 +513,26 @@ function selectAiModeCard(mode) {
     selected.style.background = '#F8FAFC';
   }
 
+  const detail = document.getElementById('ai-mode-detail');
+  if (detail) {
+    detail.innerHTML = mode === 'training'
+      ? '훈련/행동 모드가 선택되어 있어요. 생활 환경, 산책 루틴, 반복되는 상황을 함께 적으면 더 구체적으로 답해요.'
+      : '건강/증상 모드가 선택되어 있어요. 견종, 나이, 증상 시작 시점, 식욕/활력 변화를 같이 적으면 좋아요.';
+  }
+}
+
+function selectAiModeCard(mode) {
+  _aiChatMode = mode;
+  if (_aiCurrentSession) _aiCurrentSession.mode = mode;
+
   // 상단 탭도 동기화
   const tabT = document.getElementById('ai-tab-training');
   const tabH = document.getElementById('ai-tab-health');
   if (tabT) tabT.classList.toggle('active', mode === 'training');
   if (tabH) tabH.classList.toggle('active', mode === 'health');
 
-  const healthFields = document.getElementById('ai-health-fields');
-  if (healthFields) healthFields.style.display = mode === 'health' ? 'block' : 'none';
-
-  // 설명 표시
-  const detail = document.getElementById('ai-mode-detail');
-  if (detail) {
-    if (mode === 'training') {
-      detail.innerHTML = '훈련/행동 모드가 선택되어 있어요. 생활 환경, 산책 루틴, 반복되는 상황을 함께 적으면 더 구체적으로 답해요.';
-    } else {
-      detail.innerHTML = '건강/증상 모드가 선택되어 있어요. 품종, 나이, 증상 시작 시점, 식욕/활력 변화를 같이 적으면 좋아요.';
-    }
-  }
+  updateAiContextPanel(mode);
+  updateAiModeCards(mode);
 
   // 입력창 포커스
   const input = document.getElementById('ai-input');
@@ -480,17 +547,33 @@ function prefillAiPrompt(text, mode) {
   const input = document.getElementById('ai-input');
   if (input) {
     input.value = text;
+    resizeAiComposer(input);
     input.focus();
+  }
+}
+
+function resizeAiComposer(input) {
+  if (!input) return;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 132) + 'px';
+}
+
+function handleAiComposerKeydown(event) {
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    handleAiChat();
   }
 }
 
 function showBreedDropdown() {
   filterBreedDropdown(document.getElementById('ai-breed')?.value || '');
-  document.getElementById('ai-breed-dropdown').style.display = 'block';
+  const dropdown = document.getElementById('ai-breed-dropdown');
+  if (dropdown) dropdown.style.display = 'block';
 }
 
 function hideBreedDropdown() {
-  document.getElementById('ai-breed-dropdown').style.display = 'none';
+  const dropdown = document.getElementById('ai-breed-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
 }
 
 function filterBreedDropdown(query) {
@@ -520,6 +603,22 @@ function selectBreed(name) {
   const input = document.getElementById('ai-breed');
   if (input) input.value = name;
   hideBreedDropdown();
+}
+
+function buildAiConsultMessage(message) {
+  const breed = document.getElementById('ai-breed')?.value?.trim() || '';
+  const topic = document.getElementById('ai-topic')?.value?.trim() || '';
+  const age = document.getElementById('ai-age')?.value?.trim() || '';
+  const breedInfo = breed ? '견종: ' + breed + '. ' : '';
+  const ageInfo = age ? '나이: ' + age + '. ' : '';
+
+  if (_aiChatMode === 'health') {
+    const symptomInfo = topic ? '증상 키워드: ' + topic + '. ' : '';
+    return '[건강/질병 상담 모드] ' + breedInfo + ageInfo + symptomInfo + message;
+  }
+
+  const topicInfo = topic ? '고민 유형: ' + topic + '. ' : '';
+  return '[훈련/행동 상담 모드] ' + breedInfo + ageInfo + topicInfo + message;
 }
 
 function clearAiChat() {
@@ -621,6 +720,7 @@ async function handleAiChat() {
   }
 
   input.value = '';
+  resizeAiComposer(input);
 
   // 첫 메시지면 환영 카드 제거
   if (_aiCurrentSession.messages.length === 0) chatEl.innerHTML = '';
@@ -651,7 +751,7 @@ async function handleAiChat() {
       // 이미지 첨부 → 멀티모달 API
       apiUrl = '/api/ai/consult-with-image';
       body = JSON.stringify({
-        message,
+        message: buildAiConsultMessage(message),
         imageBase64: _aiAttachedFile.base64,
         mimeType: _aiAttachedFile.mimeType,
         history: _aiCurrentSession.messages,
@@ -661,15 +761,10 @@ async function handleAiChat() {
       // 파일 첨부 초기화
       removeAiFile();
     } else if (_aiChatMode === 'health') {
-      const breed = document.getElementById('ai-breed')?.value || '';
-      const age = document.getElementById('ai-age')?.value || '';
       apiUrl = '/api/ai/consult';
-      const healthPrefix = '[건강/질병 상담 모드] ';
-      const breedInfo = breed ? '품종: ' + breed + '. ' : '';
-      const ageInfo = age ? '나이: ' + age + '. ' : '';
       const user = AuthService.getCurrentUser();
       body = JSON.stringify({
-        message: healthPrefix + breedInfo + ageInfo + message,
+        message: buildAiConsultMessage(message),
         history: _aiCurrentSession.messages,
         mode: 'health',
         aiName: 'Pawsitive AI',
@@ -679,7 +774,7 @@ async function handleAiChat() {
       apiUrl = '/api/ai/consult';
       const user = AuthService.getCurrentUser();
       body = JSON.stringify({
-        message,
+        message: buildAiConsultMessage(message),
         history: _aiCurrentSession.messages,
         mode: 'training',
         aiName: 'Pawsitive AI',

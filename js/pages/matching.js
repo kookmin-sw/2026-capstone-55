@@ -6,7 +6,7 @@ async function renderMatchingPage() {
 
  if (!user) {
  renderPage(`
- <div class="page-header">
+ <div class="page-header match-guest-hero">
  <h1>산책 매칭</h1>
  <p>산책 도우미와 요청자를 연결해드려요.</p>
  </div>
@@ -222,14 +222,17 @@ function renderMatchingRoleSelect(selectedRole) {
 
  renderPage(`
  <style>
- .match-flow-hero { text-align:center; padding:48px 0 32px; }
- .match-flow-hero h1 { font-size:1.5rem; font-weight:700; letter-spacing:-0.5px; margin-bottom:6px; }
- .match-flow-hero p { font-size:0.88rem; color:var(--color-text-muted); }
+ .match-flow-hero { position:relative; overflow:hidden; text-align:left; padding:42px 34px 38px; margin-bottom:28px; border:1px solid #DDE6F0; border-radius:8px; background-image:linear-gradient(90deg, rgba(255,255,255,.97) 0%, rgba(255,255,255,.92) 48%, rgba(255,255,255,.68) 72%, rgba(255,255,255,.22) 100%), url('/images/generated/walk-my-hero.png'); background-size:cover, cover; background-position:center, right center; background-repeat:no-repeat; box-shadow:0 18px 44px rgba(15,23,42,.065); }
+ .match-flow-hero h1 { max-width:620px; font-size:1.65rem; font-weight:800; letter-spacing:0; margin-bottom:6px; }
+ .match-flow-hero p { max-width:540px; font-size:0.88rem; line-height:1.65; color:var(--color-text-muted); }
  .match-flow-cards { display:flex; gap:16px; max-width:480px; margin:0 auto; }
  .match-flow-card { flex:1; padding:32px 20px; border:1.5px solid var(--color-border); border-radius:16px; text-align:center; cursor:pointer; transition:all 0.2s; background:#fff; }
  .match-flow-card:hover { border-color:var(--color-text); background:#f9f9f7; }
  .match-flow-card h3 { font-size:1rem; font-weight:700; margin-bottom:6px; }
  .match-flow-card p { font-size:0.78rem; color:var(--color-text-muted); line-height:1.5; }
+ @media (max-width:768px) {
+   .match-flow-hero { padding:30px 22px; background-image:linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.92) 62%, rgba(255,255,255,.72) 100%), url('/images/generated/walk-my-hero.png'); background-position:center, 62% center; }
+ }
  </style>
 
  <div class="match-flow-hero">

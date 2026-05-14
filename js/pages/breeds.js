@@ -5,31 +5,36 @@ let breedPageTab = 'recommend'; // 'encyclopedia' | 'recommend'
 function renderBreedListPage() {
   renderPage(`
     <style>
-      .breed-atlas-page { max-width:1120px; margin:0 auto; padding:10px 0 44px; color:#0B1220; }
-      .breed-atlas-hero { position:relative; overflow:hidden; min-height:300px; border:1px solid #DDE6F0; border-radius:8px; margin-bottom:18px; background:
-        linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.88) 44%, rgba(255,255,255,.38) 100%),
-        url('/품종정보탭히어로배경.png') center / cover no-repeat; box-shadow:0 24px 58px rgba(15,23,42,.08); }
-      .breed-atlas-hero__content { position:relative; z-index:1; max-width:600px; padding:36px 36px 32px; }
+      .breed-atlas-page { max-width:1120px; margin:0 auto; padding:8px 0 44px; color:#0B1220; }
+      .breed-atlas-hero { position:relative; overflow:hidden; min-height:326px; display:flex; align-items:flex-end; border:1px solid #DDE6F0; border-radius:8px; margin-bottom:18px; background-image:
+        linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.92) 45%, rgba(255,255,255,.64) 70%, rgba(255,255,255,.18) 100%),
+        url('/breed-atlas-hero-bg.png'); background-size:cover, cover; background-position:center, right center; background-repeat:no-repeat; box-shadow:0 24px 58px rgba(15,23,42,.08); }
+      .breed-atlas-hero::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(255,255,255,0) 58%, rgba(255,255,255,.18) 100%); pointer-events:none; }
+      .breed-atlas-hero__content { position:relative; z-index:1; max-width:620px; padding:42px 38px 36px; }
       .breed-atlas-hero__eyebrow { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:999px; background:#EFF6FF; color:#175CD3; font-size:.72rem; font-weight:950; margin-bottom:14px; }
-      .breed-atlas-hero h1 { margin:0 0 10px; font-size:2.1rem; line-height:1.16; font-weight:950; letter-spacing:0; color:#0B1220; }
-      .breed-atlas-hero p { margin:0; max-width:520px; color:#52637A; line-height:1.68; font-size:.94rem; }
-      .breed-atlas-hero__search { margin-top:22px; display:flex; align-items:center; gap:10px; max-width:520px; padding:11px 13px; border:1px solid #DDE6F0; border-radius:8px; background:rgba(255,255,255,.92); box-shadow:0 14px 32px rgba(15,23,42,.08); }
-      .breed-atlas-hero__search input { flex:1; min-width:0; border:none; outline:none; background:transparent; color:#0B1220; font-size:.92rem; font-weight:800; }
+      .breed-atlas-hero h1 { margin:0 0 10px; max-width:590px; font-size:2.08rem; line-height:1.18; font-weight:950; letter-spacing:0; color:#0B1220; }
+      .breed-atlas-hero p { margin:0; max-width:540px; color:#52637A; line-height:1.72; font-size:.94rem; }
+      .breed-atlas-hero__search { margin-top:22px; display:flex; align-items:center; gap:10px; max-width:540px; padding:12px 14px; border:1px solid #DDE6F0; border-radius:8px; background:rgba(255,255,255,.94); box-shadow:0 16px 36px rgba(15,23,42,.08); backdrop-filter:blur(10px); }
+      .breed-atlas-hero__search input { flex:1; min-width:0; border:none; outline:none; background:transparent; color:#0B1220; font-size:.92rem; font-weight:850; }
       .breed-atlas-hero__search input::placeholder { color:#94A3B8; }
       .breed-atlas-stats { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
-      .breed-atlas-stats span { padding:6px 10px; border-radius:999px; background:#fff; border:1px solid #E2E8F0; color:#64748B; font-size:.72rem; font-weight:900; }
-      .breed-tabs { display:inline-flex; gap:4px; padding:4px; margin-bottom:18px; border:1px solid #DDE6F0; border-radius:999px; background:#F8FAFC; }
+      .breed-atlas-stats span { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.92); border:1px solid #E2E8F0; color:#64748B; font-size:.72rem; font-weight:900; }
+      .breed-tabs { display:inline-flex; gap:4px; padding:4px; margin-bottom:18px; border:1px solid #DDE6F0; border-radius:999px; background:#F8FAFC; box-shadow:0 12px 28px rgba(15,23,42,.05); }
       .breed-tab { min-width:134px; padding:10px 16px; border:none; border-radius:999px; cursor:pointer; font-weight:950; font-size:.84rem; transition:all .18s; background:transparent; color:#64748B; }
       .breed-tab:hover { color:#0B1220; }
       .breed-tab--active { background:#0B1220 !important; color:#fff !important; box-shadow:0 10px 22px rgba(15,23,42,.14); }
       .breed-tab-panel { animation:breedFadeIn .18s ease; }
       @keyframes breedFadeIn { from{opacity:.7;transform:translateY(4px)} to{opacity:1;transform:none} }
-      .breed-search-panel { display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:13px 15px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; box-shadow:0 14px 34px rgba(15,23,42,.055); }
+      .breed-section-head { display:flex; justify-content:space-between; align-items:flex-end; gap:18px; margin:0 0 14px; }
+      .breed-section-head h2 { margin:0 0 5px; font-size:1.22rem; line-height:1.25; font-weight:950; color:#0B1220; }
+      .breed-section-head p { margin:0; max-width:620px; color:#64748B; font-size:.84rem; line-height:1.62; font-weight:750; }
+      .breed-section-head__count { flex-shrink:0; padding:7px 10px; border-radius:999px; background:#F8FAFC; border:1px solid #E2E8F0; color:#475569; font-size:.72rem; font-weight:950; }
+      .breed-search-panel { display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:14px 15px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; box-shadow:0 14px 34px rgba(15,23,42,.055); }
       .breed-search-panel input { flex:1; min-width:0; border:none; outline:none; font-size:.92rem; font-weight:800; color:#0B1220; }
       .breed-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
       .breed-atlas-card { overflow:hidden; border:1px solid #DDE6F0; border-radius:8px; background:#fff; cursor:pointer; box-shadow:0 16px 38px rgba(15,23,42,.055); transition:transform .16s, box-shadow .16s, border-color .16s; }
       .breed-atlas-card:hover { transform:translateY(-2px); border-color:#CBD5E1; box-shadow:0 22px 46px rgba(15,23,42,.095); }
-      .breed-atlas-card__image { position:relative; height:210px; background:#F8FAFC; display:flex; align-items:center; justify-content:center; font-size:2.8rem; }
+      .breed-atlas-card__image { position:relative; height:218px; background:#F8FAFC; display:flex; align-items:center; justify-content:center; font-size:2.8rem; }
       .breed-atlas-card__badge { position:absolute; top:12px; left:12px; padding:5px 9px; border-radius:999px; background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.9); color:#334155; font-size:.68rem; font-weight:950; }
       .breed-atlas-card__body { padding:17px 18px 18px; }
       .breed-atlas-card__name { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:4px; }
@@ -42,24 +47,28 @@ function renderBreedListPage() {
       .breed-trait-bar__track span { display:block; height:100%; border-radius:999px; background:#2563EB; }
       .breed-trait-bar:nth-child(2) .breed-trait-bar__track span { background:#0F766E; }
       .breed-trait-bar:nth-child(3) .breed-trait-bar__track span { background:#F97316; }
-      .breed-recommend-hero { display:grid; grid-template-columns:minmax(0,1.08fr) minmax(260px,.72fr); gap:16px; align-items:stretch; margin-bottom:20px; }
-      .breed-recommend-card { padding:30px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; box-shadow:0 18px 44px rgba(15,23,42,.065); }
+      .breed-recommend-hero { display:grid; grid-template-columns:minmax(0,1.06fr) minmax(280px,.76fr); gap:16px; align-items:stretch; margin-bottom:20px; }
+      .breed-recommend-card { position:relative; overflow:hidden; padding:34px 32px; border:1px solid #DDE6F0; border-radius:8px; background:linear-gradient(135deg,#fff 0%,#FBFDFB 58%,#F6FAF8 100%); box-shadow:0 18px 44px rgba(15,23,42,.065); }
+      .breed-recommend-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:#0F766E; }
+      .breed-recommend-card > * { position:relative; z-index:1; }
       .breed-recommend-card__kicker { display:inline-flex; padding:6px 10px; border-radius:999px; background:#ECFDF5; color:#047857; font-size:.72rem; font-weight:950; margin-bottom:12px; }
-      .breed-recommend-card h2 { margin:0 0 8px; font-size:1.65rem; line-height:1.22; font-weight:950; }
-      .breed-recommend-card p { margin:0; max-width:560px; color:#64748B; line-height:1.65; font-size:.9rem; }
+      .breed-recommend-card h2 { margin:0 0 9px; max-width:560px; font-size:1.72rem; line-height:1.2; font-weight:950; }
+      .breed-recommend-card p { margin:0; max-width:570px; color:#64748B; line-height:1.68; font-size:.9rem; }
       .breed-recommend-card__features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:18px 0 20px; }
-      .breed-recommend-card__features span { padding:10px; border-radius:8px; background:#F8FAFC; border:1px solid #EEF2F7; color:#334155; font-size:.74rem; font-weight:900; text-align:center; }
+      .breed-recommend-card__features span { padding:11px 10px; border-radius:8px; background:#fff; border:1px solid #E5E7EB; color:#334155; font-size:.74rem; font-weight:900; text-align:center; box-shadow:0 8px 18px rgba(15,23,42,.035); }
       .breed-recommend-card .btn { width:100%; max-width:320px; padding:14px; font-weight:950; }
-      .breed-recommend-photo { position:relative; min-height:286px; overflow:hidden; border-radius:8px; border:1px solid #DDE6F0; background:url('/품종상세페이지용이미지.png') center / cover no-repeat; box-shadow:0 18px 44px rgba(15,23,42,.08); }
-      .breed-recommend-photo::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,18,32,.02), rgba(11,18,32,.52)); }
+      .breed-recommend-photo { position:relative; min-height:286px; overflow:hidden; border-radius:8px; border:1px solid #DDE6F0; background:url('/breed-detail-feature.png') center / cover no-repeat; box-shadow:0 18px 44px rgba(15,23,42,.08); }
+      .breed-recommend-photo::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,18,32,.04), rgba(11,18,32,.58)); }
       .breed-recommend-photo__copy { position:absolute; left:18px; right:18px; bottom:18px; z-index:1; color:#fff; }
       .breed-recommend-photo__copy strong { display:block; font-size:1.02rem; font-weight:950; margin-bottom:5px; }
       .breed-recommend-photo__copy span { display:block; font-size:.78rem; line-height:1.55; opacity:.9; }
       @media (max-width:920px) { .breed-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .breed-recommend-hero { grid-template-columns:1fr; } }
       @media (max-width:640px) {
-        .breed-atlas-hero { min-height:0; }
+        .breed-atlas-hero { min-height:0; background-position:center, 64% center; }
         .breed-atlas-hero__content { padding:26px 18px; }
         .breed-atlas-hero h1 { font-size:1.55rem; }
+        .breed-section-head { display:block; }
+        .breed-section-head__count { display:inline-flex; margin-top:10px; }
         .breed-tabs { display:grid; grid-template-columns:1fr 1fr; width:100%; border-radius:8px; }
         .breed-tab { min-width:0; border-radius:8px; }
         .breed-grid { grid-template-columns:1fr; }
@@ -72,27 +81,27 @@ function renderBreedListPage() {
     <div class="breed-atlas-page">
       <section class="breed-atlas-hero">
         <div class="breed-atlas-hero__content">
-          <div class="breed-atlas-hero__eyebrow">품종 탐색 도감</div>
-          <h1>우리 가족에게 맞는 견종을 더 선명하게 찾아요</h1>
-          <p>성격, 활동량, 미용 관리, 주거 환경까지 함께 보며 품종을 탐색하고 AI 추천을 받을 수 있어요.</p>
+          <div class="breed-atlas-hero__eyebrow">${icon('book-open', 13, '#175CD3')} 품종 탐색 도감</div>
+          <h1>궁금한 견종의 성격과 케어 정보를 한눈에 살펴봐요</h1>
+          <p>좋아하는 품종의 성향, 활동량, 미용과 관리 포인트를 차분히 비교해보세요. 이름을 검색하면 원하는 견종 정보로 바로 들어갈 수 있어요.</p>
           <div class="breed-atlas-hero__search">
-            <span>🔎</span>
+            <span>${icon('search', 15, '#2563EB')}</span>
             <input type="text" placeholder="품종 이름으로 바로 검색..." onfocus="switchBreedTab('encyclopedia'); setTimeout(() => document.getElementById('breed-search')?.focus(), 30)" oninput="switchBreedTab('encyclopedia'); setTimeout(() => { const el = document.getElementById('breed-search'); if (el) { el.value = this.value; handleBreedSearch(this.value); } }, 30)">
           </div>
           <div class="breed-atlas-stats">
-            <span>383종 품종 데이터</span>
-            <span>생활패턴 기반 추천</span>
-            <span>활동량/관리 난이도 비교</span>
+            <span>${icon('database', 12, '#64748B')} 383종 품종 데이터</span>
+            <span>${icon('activity', 12, '#64748B')} 성격·활동량 요약</span>
+            <span>${icon('scissors', 12, '#64748B')} 미용·관리 포인트</span>
           </div>
         </div>
       </section>
 
       <div class="breed-tabs">
         <button id="tab-recommend" class="breed-tab ${breedPageTab === 'recommend' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('recommend')">
-          AI 맞춤 추천
+          AI 맞춤 견종 찾기
         </button>
         <button id="tab-encyclopedia" class="breed-tab ${breedPageTab === 'encyclopedia' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('encyclopedia')">
-          품종 백과사전
+          품종 탐색 도감
         </button>
       </div>
       <div id="breed-tab-content" class="breed-tab-panel"></div>
@@ -115,8 +124,15 @@ function renderBreedTabContent() {
 
   if (breedPageTab === 'encyclopedia') {
     container.innerHTML = `
+      <div class="breed-section-head">
+        <div>
+          <h2>품종 백과사전</h2>
+          <p>이름으로 검색해 성격, 활동량, 훈련 난이도와 관리 포인트를 빠르게 비교해요.</p>
+        </div>
+        <span class="breed-section-head__count">총 ${BreedService.getAll().length}종</span>
+      </div>
       <div class="breed-search-panel">
-        <span>🔍</span>
+        <span>${icon('search', 15, '#2563EB')}</span>
         <input type="text" id="breed-search" placeholder="품종 이름으로 검색..." oninput="handleBreedSearch(this.value)">
       </div>
       <div class="breed-grid" id="breed-list">
@@ -187,8 +203,8 @@ function renderBreedRecommendUI() {
     <section class="breed-recommend-hero">
       <div class="breed-recommend-card">
         <div class="breed-recommend-card__kicker">AI 맞춤 견종 찾기</div>
-        <h2>생활 리듬에 맞는 견종을 추천받아보세요</h2>
-        <p>크기, 활동량, 미용 관리, 주거 환경을 차례로 선택하면 Pawsitive가 품종 후보를 좁혀드려요.</p>
+        <h2>우리 가족에게 맞는 견종을 더 선명하게 찾아요</h2>
+        <p>생활 리듬, 주거 환경, 관리 여유를 차례로 정리하면 Pawsitive가 어울리는 품종 후보를 좁혀드려요.</p>
         <div class="breed-recommend-card__features">
           <span>초보자 적합</span>
           <span>아파트 생활</span>
@@ -198,8 +214,8 @@ function renderBreedRecommendUI() {
       </div>
       <div class="breed-recommend-photo">
         <div class="breed-recommend-photo__copy">
-          <strong>이미지와 데이터가 함께 있는 도감</strong>
-          <span>품종별 성격, 활동량, 관리 포인트를 한눈에 비교해요.</span>
+          <strong>생활 패턴으로 좁혀보는 추천</strong>
+          <span>크기, 활동량, 관리 난이도를 기준으로 후보를 비교해요.</span>
         </div>
       </div>
     </section>

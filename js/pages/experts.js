@@ -37,6 +37,12 @@ const EXPERT_GUIDE = {
   }
 };
 
+const EXPERT_AVATAR_IMAGES = {
+  '윤서진': '/images/experts/yoon-seojin.png',
+  '강도윤': '/images/experts/kang-doyoon.png',
+  '정유민': '/images/experts/jung-yumin.png'
+};
+
 let _expertsPageCategory = 'all';
 let _expertsPageSessionTab = 'active';
 let _expertsPageActiveConsultationId = null;
@@ -45,6 +51,7 @@ let _expertsPageConsultations = [];
 let _expertsPageApplications = [];
 let _expertsPageMeta = null;
 let _expertsPagePendingAttachments = {};
+let _expertsPageFocusChatAfterRender = false;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -54,6 +61,19 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+function getExpertAvatarImage(name) {
+  return EXPERT_AVATAR_IMAGES[String(name || '').trim()] || '';
+}
+
+function renderExpertAvatar({ name, avatar, category, className = '', usePhoto = true } = {}) {
+  const src = usePhoto ? getExpertAvatarImage(name) : '';
+  const classes = ['expert-avatar', category ? `expert-avatar--${category}` : '', src ? 'expert-avatar--image' : '', className]
+    .filter(Boolean)
+    .join(' ');
+  const fallback = escapeHtml(avatar || String(name || '전').charAt(0) || '전');
+  return `<div class="${escapeAttr(classes)}">${src ? `<img src="${escapeAttr(src)}" alt="${escapeAttr(name || '전문가 프로필')}">` : fallback}</div>`;
 }
 
 function formatWon(value) {
@@ -178,7 +198,10 @@ async function renderExpertsPage() {
 
   if (activeConsultation) {
     setTimeout(() => {
-      document.getElementById('expert-chat-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (_expertsPageFocusChatAfterRender) {
+        document.getElementById('expert-chat-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        _expertsPageFocusChatAfterRender = false;
+      }
       const messages = document.getElementById('expert-chat-messages');
       if (messages) messages.scrollTop = messages.scrollHeight;
     }, 50);
@@ -491,7 +514,7 @@ function renderExpertCard(expert, idx, user) {
   const scoreLabel = score >= 90 ? '강력 추천' : score >= 82 ? '추천' : '검증';
   return `
   <article class="dw-card expert-card expert-card--verified">
-    <div class="dw-card__avatar expert-avatar expert-avatar--${expert.category}">${escapeHtml(expert.avatar || expert.name?.charAt(0) || '전')}</div>
+    ${renderExpertAvatar({ name: expert.name, avatar: expert.avatar, category: expert.category, className: 'dw-card__avatar' })}
     <div class="dw-card__body">
       <div class="dw-card__top">
         <div>
@@ -587,7 +610,7 @@ function startExpertCheckout(expertId) {
       <div class="expert-modal__card expert-modal__card--verified">
         <button class="expert-modal__close" onclick="document.getElementById('${modalId}').remove()" aria-label="닫기">×</button>
         <div class="expert-modal__head">
-          <div class="expert-avatar expert-avatar--${expert.category}">${escapeHtml(expert.avatar || expert.name.charAt(0))}</div>
+          ${renderExpertAvatar({ name: expert.name, avatar: expert.avatar, category: expert.category })}
           <div>
             <span class="expert-card__category">${escapeHtml(expert.categoryLabel)}</span>
             <h3>${escapeHtml(expert.name)} 전문가 상담</h3>
@@ -672,6 +695,7 @@ async function completeExpertPayment(expertId, payment = {}) {
       })
     });
     _expertsPageActiveConsultationId = data.consultation.id;
+    _expertsPageFocusChatAfterRender = true;
     document.getElementById('expert-payment-modal')?.remove();
     showToast(data.existing ? '이미 진행 중인 상담방을 열게요.' : '결제가 완료됐어요. 전문가에게 상담 요청을 보냈습니다.', 'success');
     renderExpertsPage();
@@ -682,11 +706,13 @@ async function completeExpertPayment(expertId, payment = {}) {
 
 function openExpertConsultation(consultationId) {
   _expertsPageActiveConsultationId = consultationId;
+  _expertsPageFocusChatAfterRender = true;
   renderExpertsPage();
 }
 
 function closeExpertConsultation() {
   _expertsPageActiveConsultationId = null;
+  _expertsPageFocusChatAfterRender = false;
   renderExpertsPage();
 }
 
@@ -698,6 +724,7 @@ async function setExpertConsultationStatus(consultationId, status) {
       body: JSON.stringify({ status })
     });
     _expertsPageActiveConsultationId = data.consultation.id;
+    _expertsPageFocusChatAfterRender = true;
     showToast(status === 'accepted' ? '상담을 수락했어요.' : status === 'completed' ? '상담을 완료했어요.' : '상담 요청을 정리했어요.', 'success');
     renderExpertsPage();
   } catch (e) {
@@ -718,7 +745,7 @@ function renderExpertConsultationChat(consultation, user) {
   <section class="expert-chat-panel" id="expert-chat-panel">
     <div class="expert-chat expert-chat--verified">
       <div class="expert-chat__head">
-        <div class="expert-avatar expert-avatar--${consultation.category}">${escapeHtml((partner || '?').charAt(0))}</div>
+        ${renderExpertAvatar({ name: partner, category: consultation.category, usePhoto: side !== 'expert' })}
         <div>
           <h3>${escapeHtml(partner || '상담방')}</h3>
           <p>${escapeHtml(consultation.categoryLabel)} · ${getExpertStatusLabel(consultation.status)} · ${escapeHtml(consultation.dogName || '반려견')}</p>
@@ -731,7 +758,6 @@ function renderExpertConsultationChat(consultation, user) {
       </div>
       <div class="expert-chat__case">
         <strong>${escapeHtml(consultation.topic || '상담 요청')}</strong>
-        <span>결제금액 ${formatWon(consultation.amount)} · 주문 ${escapeHtml(consultation.paymentOrderId || '-')}</span>
       </div>
       <div class="expert-chat__messages" id="expert-chat-messages">
         ${(consultation.messages || []).map(msg => renderExpertMessage(msg, side)).join('')}
@@ -840,9 +866,34 @@ async function sendExpertMessage(consultationId) {
     _expertsPageActiveConsultationId = data.consultation.id;
     _expertsPagePendingAttachments[consultationId] = [];
     if (input) input.value = '';
-    await loadExpertPageData(user);
-    renderExpertsPage();
+    updateExpertConsultationCache(data.consultation);
+    refreshActiveExpertChat(data.consultation);
   } catch (e) {
     showToast(e.message || '메시지를 보내지 못했어요.', 'error');
   }
+}
+
+function updateExpertConsultationCache(consultation) {
+  if (!consultation?.id) return;
+  const idx = _expertsPageConsultations.findIndex(c => c.id === consultation.id);
+  if (idx >= 0) _expertsPageConsultations[idx] = consultation;
+  else _expertsPageConsultations.unshift(consultation);
+}
+
+function refreshActiveExpertChat(consultation) {
+  const user = AuthService.getCurrentUser();
+  if (!user || !consultation || _expertsPageActiveConsultationId !== consultation.id) return false;
+  const messages = document.getElementById('expert-chat-messages');
+  if (!messages) return false;
+  const side = getConsultationSide(consultation, user);
+  messages.innerHTML = (consultation.messages || []).map(msg => renderExpertMessage(msg, side)).join('');
+  messages.scrollTop = messages.scrollHeight;
+  const attachments = document.getElementById('expert-chat-attachments');
+  if (attachments) attachments.innerHTML = renderExpertAttachmentPreview(consultation.id);
+  return true;
+}
+
+function handleExpertConsultationRealtime(consultation) {
+  updateExpertConsultationCache(consultation);
+  return refreshActiveExpertChat(consultation);
 }

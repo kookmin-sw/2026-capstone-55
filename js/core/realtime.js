@@ -194,8 +194,10 @@ function initRealtimeListeners() {
     }
   });
 
-  RealtimeService.on('expert-consultation-updated', () => {
+  RealtimeService.on('expert-consultation-updated', (data) => {
     if (Router.getPath && Router.getPath() === '/experts' && typeof renderExpertsPage === 'function') {
+      const c = data?.consultation || {};
+      if (typeof handleExpertConsultationRealtime === 'function' && handleExpertConsultationRealtime(c)) return;
       renderExpertsPage();
     }
   });
@@ -204,6 +206,7 @@ function initRealtimeListeners() {
     const c = data?.consultation || {};
     addNotification(`${c.expertName || c.requesterName || '상담방'}에서 새 메시지가 도착했어요.`, 'expert');
     if (Router.getPath && Router.getPath() === '/experts' && typeof renderExpertsPage === 'function') {
+      if (typeof handleExpertConsultationRealtime === 'function' && handleExpertConsultationRealtime(c)) return;
       renderExpertsPage();
     }
   });

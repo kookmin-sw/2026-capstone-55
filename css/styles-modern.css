@@ -2206,19 +2206,57 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 /* ===== 산책 매칭 페이지 ===== */
 
 .match-hero {
-  padding: 48px 0 36px;
+  position: relative;
+  overflow: hidden;
+  padding: 42px 34px 38px;
   margin-bottom: 32px;
-  border-bottom: 1px solid var(--color-border);
+  border: 1px solid #DDE6F0;
+  border-radius: 8px;
+  background-image:
+    linear-gradient(90deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.92) 48%, rgba(255,255,255,0.68) 72%, rgba(255,255,255,0.22) 100%),
+    url('/images/generated/walk-my-hero.png');
+  background-size: cover, cover;
+  background-position: center, right 76%;
+  background-repeat: no-repeat;
+  box-shadow: 0 18px 44px rgba(15,23,42,0.065);
 }
+.match-hero > * { position: relative; z-index: 1; }
+.match-hero .section-label { color: #0F766E; font-weight: 900; }
 .match-hero__title {
+  max-width: 620px;
   font-size: clamp(1.6rem, 4vw, 2.4rem);
-  font-weight: 700;
-  letter-spacing: -1px;
+  font-weight: 800;
+  letter-spacing: 0;
   line-height: 1.2;
   margin: 6px 0 10px;
 }
-.match-hero__sub { font-size: 0.9rem; color: var(--color-text-light); }
+.match-hero__sub { max-width: 540px; font-size: 0.9rem; line-height: 1.65; color: var(--color-text-light); }
 .match-hero__sub strong { color: var(--color-text); }
+
+.match-guest-hero {
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  padding: 42px 34px 38px;
+  margin-bottom: 28px;
+  border: 1px solid #DDE6F0;
+  border-radius: 8px;
+  background-image:
+    linear-gradient(90deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.92) 48%, rgba(255,255,255,0.68) 72%, rgba(255,255,255,0.22) 100%),
+    url('/images/generated/walk-my-hero.png');
+  background-size: cover, cover;
+  background-position: center, right 76%;
+  background-repeat: no-repeat;
+  box-shadow: 0 18px 44px rgba(15,23,42,0.065);
+}
+.match-guest-hero h1 {
+  max-width: 620px;
+  letter-spacing: 0;
+}
+.match-guest-hero p {
+  max-width: 540px;
+  line-height: 1.65;
+}
 
 .match-role-grid {
   display: grid;
@@ -2566,6 +2604,20 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .match-walker-card__bio { font-size: 0.78rem; color: var(--color-text-light); font-style: italic; }
 
 @media (max-width: 768px) {
+  .match-hero {
+    padding: 30px 22px;
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 62%, rgba(255,255,255,0.72) 100%),
+      url('/images/generated/walk-my-hero.png');
+    background-position: center, 62% 76%;
+  }
+  .match-guest-hero {
+    padding: 30px 22px;
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 62%, rgba(255,255,255,0.72) 100%),
+      url('/images/generated/walk-my-hero.png');
+    background-position: center, 62% 76%;
+  }
   .match-form-grid { grid-template-columns: 1fr; }
   .match-form-card { padding: 24px 18px; }
   .match-role-grid { gap: 10px; }
@@ -2828,6 +2880,20 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   font-size: 1.05rem;
   font-weight: 800;
   flex-shrink: 0;
+  overflow: hidden;
+}
+.expert-avatar--image {
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+.expert-avatar--image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: inherit;
 }
 .expert-avatar--vet { background: #E4EFEF; color: #356C6C; }
 .expert-avatar--trainer { background: #F9EEEB; color: #A5422D; }
@@ -3561,14 +3627,23 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   padding-bottom: 44px;
 }
 .experts-hero--verified {
-  background: #fff;
+  min-height: 270px;
+  display: flex;
+  align-items: flex-end;
+  background-image:
+    linear-gradient(90deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.92) 48%, rgba(255,255,255,0.66) 72%, rgba(255,255,255,0.20) 100%),
+    url('/images/generated/experts-hero.png');
+  background-size: cover, cover;
+  background-position: center, right center;
+  background-repeat: no-repeat;
   color: #111827;
   border: 1px solid #E5E7EB;
   border-radius: 8px;
-  padding: 30px 28px;
+  padding: 36px 32px;
   box-shadow: 0 16px 38px rgba(15,23,42,0.06);
 }
 .experts-hero--verified::before { display: none; }
+.experts-hero--verified .experts-hero__content { max-width: 600px; }
 .experts-hero--verified .experts-hero__eyebrow {
   color: #2563EB;
   letter-spacing: 0;
@@ -3593,12 +3668,40 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   margin-bottom: 16px;
 }
 .expert-verify-card {
+  position: relative;
+  overflow: hidden;
   background: #fff;
   border: 1px solid #E5E7EB;
   border-radius: 8px;
-  padding: 16px;
+  padding: 128px 16px 16px;
   box-shadow: 0 12px 28px rgba(15,23,42,0.05);
 }
+.expert-verify-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 108px;
+  background-size: cover;
+  background-position: center;
+}
+.expert-verify-card::after {
+  content: '';
+  position: absolute;
+  top: 72px;
+  left: 0;
+  right: 0;
+  height: 52px;
+  background: linear-gradient(180deg, rgba(255,255,255,0), #fff 82%);
+}
+.expert-verify-card > * {
+  position: relative;
+  z-index: 1;
+}
+.expert-verify-card--vet::before { background-image: url('/images/generated/expert-vet-card.png'); }
+.expert-verify-card--trainer::before { background-image: url('/images/generated/expert-trainer-card.png'); }
+.expert-verify-card--groomer::before { background-image: url('/images/generated/expert-groomer-card.png'); }
 .expert-verify-card__top {
   display: flex;
   justify-content: space-between;
@@ -4005,7 +4108,12 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 }
 @media (max-width: 640px) {
   .experts-hero--verified {
-    padding: 24px 20px;
+    min-height: 0;
+    padding: 28px 22px;
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 62%, rgba(255,255,255,0.74) 100%),
+      url('/images/generated/experts-hero.png');
+    background-position: center, 62% center;
   }
   .expert-form-grid {
     grid-template-columns: 1fr;

@@ -55,12 +55,13 @@ async function renderWalkTrackingPage() {
       --gps-teal:#0F766E;
       --gps-orange:#F97316;
     }
-    .gps-hero { display:flex; justify-content:space-between; align-items:flex-end; gap:22px; padding:14px 0 24px; }
-    .gps-hero > div:first-child { max-width:720px; }
+    .gps-hero { position:relative; overflow:hidden; min-height:280px; display:flex; justify-content:space-between; align-items:flex-end; gap:22px; padding:38px 32px 34px; margin:0 0 18px; border:1px solid rgba(221,230,240,.95); border-radius:8px; background-image:linear-gradient(90deg, rgba(255,255,255,.97) 0%, rgba(255,255,255,.9) 44%, rgba(255,255,255,.48) 66%, rgba(255,255,255,.08) 100%), url('/images/generated/walk-gps-tracking-run.png'); background-size:cover, cover; background-position:center, 70% center; background-repeat:no-repeat; box-shadow:0 18px 44px rgba(15,23,42,.065); }
+    .gps-hero > * { position:relative; z-index:1; }
+    .gps-hero > div:first-child { max-width:700px; }
     .gps-hero__eyebrow { display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border:1px solid rgba(37,99,235,.16); border-radius:999px; background:#F5FBFF; color:#175CD3; font-size:0.72rem; font-weight:900; margin-bottom:14px; box-shadow:0 8px 18px rgba(37,99,235,.06); }
     .gps-hero__title { font-size:2.08rem; line-height:1.18; font-weight:950; letter-spacing:0; color:var(--gps-ink); margin:0 0 10px; max-width:680px; }
     .gps-hero__sub { font-size:0.94rem; line-height:1.68; color:var(--gps-muted); margin:0; max-width:690px; }
-    .gps-hero__aside { min-width:204px; padding:13px 14px; display:grid; grid-template-columns:36px minmax(0,1fr); align-items:center; gap:11px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; box-shadow:0 14px 34px rgba(15,23,42,.065); }
+    .gps-hero__aside { min-width:204px; padding:13px 14px; display:grid; grid-template-columns:36px minmax(0,1fr); align-items:center; gap:11px; border:1px solid #DDE6F0; border-radius:8px; background:rgba(255,255,255,.92); box-shadow:0 14px 34px rgba(15,23,42,.065); backdrop-filter:blur(10px); }
     .gps-hero__aside-icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#F1F5F9; color:#2563EB; }
     .gps-hero__aside-label { display:flex; align-items:center; gap:7px; font-size:.67rem; color:#8290A3; font-weight:900; text-transform:uppercase; }
     .gps-hero__aside-value { margin-top:5px; color:var(--gps-ink); font-size:1.02rem; font-weight:950; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -150,6 +151,7 @@ async function renderWalkTrackingPage() {
     .gps-health-bar span { display:block; height:100%; border-radius:999px; background:#0F766E; }
     .gps-health-bar:nth-child(2) span { background:#2563EB; }
     .gps-health-bar:nth-child(3) span { background:#F97316; }
+    .walk-history-visual { height:clamp(210px, 26vw, 270px); margin:0 0 20px; border:1px solid #E2E8F0; border-radius:8px; background-color:#F8FAF7; background-image:linear-gradient(90deg, rgba(255,255,255,.34), rgba(255,255,255,.02)), url('/images/generated/walk-gps-tracking-run.png'); background-size:cover, cover; background-position:center, 70% center; background-repeat:no-repeat; box-shadow:inset 0 0 0 1px rgba(255,255,255,.58); }
     .walk-cal { margin-bottom:18px; }
     .walk-cal__header { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
     .walk-cal__nav { display:flex; align-items:center; gap:8px; }
@@ -188,7 +190,8 @@ async function renderWalkTrackingPage() {
     }
     @media (max-width:640px) {
       .gps-page { padding:18px 14px 40px; }
-      .gps-hero { display:block; }
+      .gps-hero { display:block; min-height:250px; padding:28px 20px; background-image:linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.9) 58%, rgba(255,255,255,.52) 100%), url('/images/generated/walk-gps-tracking-run.png'); background-position:center, 68% center; }
+      .walk-history-visual { height:190px; background-size:cover, cover; background-position:center, center; }
       .gps-hero__aside { margin-top:14px; }
       .gps-hero__title { font-size:1.62rem; }
       .gps-hero__sub { font-size:0.86rem; }
@@ -238,6 +241,7 @@ async function renderWalkTrackingPage() {
                 <p class="gps-panel__desc">직접 산책과 도우미 매칭 산책을 함께 확인할 수 있어요.</p>
               </div>
             </div>
+            <div class="walk-history-visual" aria-hidden="true"></div>
             <div id="walk-history-section">
               <div style="padding:22px;text-align:center;"><div class="spinner"></div></div>
             </div>
@@ -266,7 +270,7 @@ function renderWalkTrackingGuest() {
       <p style="font-size:0.9rem;color:var(--color-text-muted);line-height:1.6;">로그인하면 직접 산책 기록과 매칭 산책 기록을 한 곳에서 관리할 수 있어요.</p>
     </div>
     <div class="card" style="padding:22px;text-align:center;">
-      <div style="height:240px;border-radius:8px;background:#E5E7EB;display:flex;align-items:center;justify-content:center;color:#64748B;font-weight:800;margin-bottom:18px;">산책 경로 미리보기</div>
+      <div style="height:260px;border-radius:8px;background-image:linear-gradient(90deg,rgba(255,255,255,.9),rgba(255,255,255,.18)),url('/images/generated/walk-gps-tracking-run.png');background-size:cover,cover;background-position:center,70% center;display:flex;align-items:center;justify-content:center;color:#334155;font-weight:900;margin-bottom:18px;border:1px solid #E2E8F0;">산책 경로 미리보기</div>
       <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="showLoginModal('GPS 산책 트래킹을 시작하려면 로그인이 필요해요!\\n산책 경로, 거리, 시간, 칼로리를 기록할 수 있어요.')">로그인하고 시작하기</button>
     </div>
   </div>
