@@ -784,47 +784,12 @@ function startExpertCheckout(expertId) {
  </div>
  <label class="expert-modal__label" for="expert-first-message">처음 남길 메시지</label>
  <textarea id="expert-first-message" class="form-input" rows="4" placeholder="아이 나이, 증상이나 고민, 이미 해본 조치를 적어주세요."></textarea>
- <div class="expert-modal__notice">현재는 데모용 예시 결제입니다. 완료하면 상담방이 바로 열려요.</div>
- <button class="btn btn-primary expert-modal__pay" onclick="completeExpertPayment('${expert.id}')">${expert.price.toLocaleString()}원 결제하고 상담 시작</button>
+ <div class="expert-modal__notice">결제가 완료되면 상담방이 바로 열려요.</div>
+ <button class="btn btn-primary expert-modal__pay" onclick="requestExpertPayment('${expert.id}')">${expert.price.toLocaleString()}원 결제하고 상담 시작</button>
  </div>`;
  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
  document.body.appendChild(modal);
  document.getElementById('expert-first-message')?.focus();
-}
-
-function completeExpertPayment(expertId) {
- const user = AuthService.getCurrentUser();
- const expert = getExpertById(expertId);
- if (!user || !expert) return;
-
- const sessions = getExpertSessions();
- const existingSession = sessions.find(session => session.userId === user.id && session.expertId === expertId);
- if (existingSession) {
- document.getElementById('expert-payment-modal')?.remove();
- showToast('이미 진행 중인 상담이 있어요. 기존 상담방을 열게요.', 'info');
- openExpertChat(existingSession.id);
- return;
- }
-
- const firstMessage = document.getElementById('expert-first-message')?.value.trim() || '상담을 시작하고 싶어요.';
- const session = {
- id: 'expert_' + Date.now().toString(36),
- userId: user.id,
- expertId,
- paidAt: new Date().toISOString(),
- amount: expert.price,
- messages: [
- { from: 'system', text: `${expert.name} ${expert.categoryLabel}와 상담이 연결됐어요.`, createdAt: new Date().toISOString() },
- { from: 'user', text: firstMessage, createdAt: new Date().toISOString() },
- { from: 'expert', text: getExpertAutoReply(expert), createdAt: new Date().toISOString() }
- ]
- };
-
- sessions.unshift(session);
- saveExpertSessions(sessions);
- document.getElementById('expert-payment-modal')?.remove();
- showToast('결제가 완료됐어요. 상담방을 열게요.', 'success');
- openExpertChat(session.id);
 }
 
 function getExpertAutoReply(expert) {

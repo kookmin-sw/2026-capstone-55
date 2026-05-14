@@ -274,12 +274,12 @@ async function handleBreedRecommend() {
   };
   const count = Math.min(20, Math.max(1, parseInt(document.getElementById('rec-count')?.value, 10) || 3));
 
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></div> AI가 분석 중...'; }
+  if (btn) { btn.disabled = true; btn.style.display = 'flex'; btn.style.alignItems = 'center'; btn.style.justifyContent = 'center'; btn.style.gap = '8px'; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0;"></div>AI가 분석 중...'; }
   if (resultEl) resultEl.innerHTML = `
-    <div class="card" style="padding:40px; text-align:center;">
-      <div class="spinner" style="margin:0 auto 16px;"></div>
-      <p style="color:var(--color-text-muted);">383종의 품종 데이터를 분석하고 있어요...</p>
-      <p style="color:var(--color-text-muted); font-size:0.85rem;">잠시만 기다려주세요 🐾</p>
+    <div class="card" style="padding:60px 40px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:160px;">
+      <div class="spinner" style="margin-bottom:20px;"></div>
+      <p style="color:var(--color-text-muted); margin:0 0 6px;">383종의 품종 데이터를 분석하고 있어요...</p>
+      <p style="color:var(--color-text-muted); font-size:0.85rem; margin:0;">잠시만 기다려주세요 🐾</p>
     </div>
   `;
 
