@@ -58,7 +58,7 @@ function loadDWDiscovery() {
  `;
  if (btn) { btn.textContent = '내 위치로 찾기'; btn.disabled = false; }
  },
- { timeout: 10000, enableHighAccuracy: true }
+ { timeout: 5000, maximumAge: 30000 }
  );
 }
 

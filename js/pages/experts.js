@@ -345,10 +345,17 @@ function startExpertCheckout(expertId) {
  <textarea id="expert-first-message" class="form-input" rows="4" placeholder="아이 나이, 증상이나 고민, 이미 해본 조치를 적어주세요."></textarea>
  <div class="expert-modal__notice">결제가 완료되면 상담방이 바로 열려요.</div>
  <button class="btn btn-primary expert-modal__pay" onclick="requestExpertPayment('${expert.id}')">${expert.price.toLocaleString()}원 결제하고 상담 시작</button>
+ <button class="btn btn-secondary" style="width:100%;margin-top:8px;font-size:0.8rem;color:var(--color-text-muted);" onclick="mockExpertPayment('${expert.id}')">🧪 테스트 결제로 바로 상담 시작</button>
  </div>`;
  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
  document.body.appendChild(modal);
  document.getElementById('expert-first-message')?.focus();
+}
+
+function mockExpertPayment(expertId) {
+ const firstMessage = document.getElementById('expert-first-message')?.value.trim() || '상담을 시작하고 싶어요.';
+ document.getElementById('expert-payment-modal')?.remove();
+ completeExpertPayment(expertId, { orderId: 'mock_' + Date.now().toString(36), firstMessage });
 }
 
 async function requestExpertPayment(expertId) {

@@ -987,9 +987,18 @@ function startWalkerPolling(userId) {
  if (newOnes.length > 0) {
  newOnes.forEach(r => _walkerLastRequestIds.add(r.id));
  showWalkerNotification(newOnes.length);
- const user = AuthService.getCurrentUser();
- const profile = MatchingService.getMyProfile(userId);
- if (user && profile) renderWalkerDashboard(user, profile);
+ // 전체 페이지 재렌더(스크롤 초기화) 대신 요청 섹션만 업데이트
+ const wrap = document.getElementById('walker-new-requests-wrap');
+ if (wrap) {
+   renderWalkerRequestsList(userId).then(({ html, requests }) => {
+     wrap.innerHTML = html;
+     setTimeout(() => initWalkerNavMaps(requests), 100);
+   });
+ } else {
+   const user = AuthService.getCurrentUser();
+   const profile = MatchingService.getMyProfile(userId);
+   if (user && profile) renderWalkerDashboard(user, profile);
+ }
  }
  } catch (e) { /* 네트워크 오류 무시 */ }
  }, 5000);
@@ -2547,12 +2556,15 @@ function handleSendMatchRequest(toUserId) {
 
  showPaymentConfirmModal({ dogSize: selectedDog.size || 'small', dogName: selectedDog.name || '반려견' })
  .then(paymentResult => {
-   // redirect 방식이라 여기 도달 안 함 (토스 결제창으로 이동)
-   // 만약 도달하면 (팝업 방식 등) 직접 요청 전송
    _sendMatchRequestAfterPayment(toUserId, paymentResult);
  })
  .catch(e => {
    if (e === 'cancelled') showToast('결제가 취소되었어요.', 'info');
+   else if (e === 'payment_failed') {
+     if (confirm('결제에 실패했어요.\n🧪 테스트 결제로 요청을 보낼까요?')) {
+       _sendMatchRequestAfterPayment(toUserId, { orderId: 'mock_' + Date.now().toString(36), amount: 0, duration: 40, dogs: [{ name: selectedDog.name, size: selectedDog.size }] });
+     }
+   }
  });
 }
 

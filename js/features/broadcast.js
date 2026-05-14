@@ -39,6 +39,9 @@ function openBroadcastModal() {
   <button onclick="submitBroadcastRequest()" style="width:100%;padding:15px;background:#1a1a1a;color:#fff;border:none;border-radius:14px;font-size:1rem;font-weight:800;cursor:pointer;margin-top:4px;">
   ${icon('navigation',13)} 도우미 찾기
   </button>
+  <button onclick="submitBroadcastMock()" style="width:100%;padding:11px;background:none;border:1.5px solid #e0e0e0;border-radius:14px;font-size:0.8rem;font-weight:600;color:#999;cursor:pointer;margin-top:8px;">
+  🧪 테스트 결제로 요청
+  </button>
   </div>
   `;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
@@ -67,6 +70,7 @@ async function submitBroadcastRequest() {
     await showPaymentConfirmModal({ dogSize: dog.size || 'small', dogName: dog.name, duration: 40 });
   } catch(e) {
     if (e === 'cancelled') showToast('결제가 취소되었어요.', 'info');
+    else if (e === 'payment_failed') showToast('결제에 실패했어요. 🧪 테스트 결제로 요청 버튼을 이용해보세요.', 'error');
     return;
   }
 
@@ -461,4 +465,61 @@ async function showLiveTrackingOverlay(sessionId, walkerId) {
     RealtimeService.on('walker-position', posHandler);
     overlay._cleanupLT = () => RealtimeService.off('walker-position', posHandler);
   }, 300);
+}
+
+// 테스트/데모 환경: 결제 없이 브로드캐스트 요청 직접 전송
+async function submitBroadcastMock() {
+  const user = AuthService.getCurrentUser();
+  if (!user) return;
+
+  const dogSel = document.getElementById('bc-dog');
+  const notes = document.getElementById('bc-notes')?.value?.trim();
+  const dogs = user.dogs || [];
+  const dog = dogs[parseInt(dogSel?.value)] || null;
+
+  if (!dog) {
+    showToast('반려견을 먼저 프로필에서 등록해주세요.', 'error');
+    return;
+  }
+
+  document.getElementById('broadcast-modal')?.remove();
+  showToast('테스트 결제로 요청을 보내는 중...', 'info');
+
+  let lat = null, lng = null;
+  try {
+    const pos = await new Promise((res, rej) =>
+      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000, maximumAge: 30000 })
+    );
+    lat = pos.coords.latitude;
+    lng = pos.coords.longitude;
+  } catch(e) {}
+
+  try {
+    const resp = await fetch('/api/walk-requests/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requesterId: user.id,
+        dogName: dog.name,
+        dogBreed: dog.breed,
+        dogSize: dog.size,
+        dogAggression: dog.aggression || 'none',
+        dogPersonality: dog.personality || 'normal',
+        walkDifficulty: dog.walkDifficulty || 'easy',
+        dogSpecialNotes: notes,
+        pickupLatitude: lat,
+        pickupLongitude: lng,
+        isMockPayment: true
+      })
+    });
+    const data = await resp.json();
+    if (!data.success) { showToast(data.error || '요청 실패', 'error'); return; }
+    if (data.sentCount === 0) {
+      showToast('현재 온라인 도우미가 없어요. 도우미 목록에서 직접 요청해보세요.', 'info');
+      return;
+    }
+    showBroadcastWaitingScreen(data.request.id, data.sentCount);
+  } catch(e) {
+    showToast('요청 전송에 실패했어요.', 'error');
+  }
 }
