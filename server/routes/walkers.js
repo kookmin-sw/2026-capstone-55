@@ -224,10 +224,6 @@ router.patch('/availability', (req, res) => {
       walkers[idx].lng = lng;
       walkers[idx].lastLocationUpdatedAt = nowIso;
     }
-    if (!isAvailable) {
-      walkers[idx].lat = null;
-      walkers[idx].lng = null;
-    }
   }
 
   writeWalkers(walkers);
@@ -255,11 +251,6 @@ router.patch('/toggle', (req, res) => {
     walkers[idx].lat = lat;
     walkers[idx].lng = lng;
     walkers[idx].lastLocationUpdatedAt = nowIso;
-  }
-
-  if (!newState) {
-    walkers[idx].lat = null;
-    walkers[idx].lng = null;
   }
 
   writeWalkers(walkers);

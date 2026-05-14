@@ -16,6 +16,20 @@ const db      = require('../db');
 
 const DATA_DIR = path.join(__dirname, '../data');
 
+function syncWalkRequestStatus(requestId, status, extra = {}) {
+  const walkRequests = db.get('walkRequests', []);
+  const reqIdx = walkRequests.findIndex(r => r.id === requestId);
+  if (reqIdx === -1) return null;
+  walkRequests[reqIdx] = {
+    ...walkRequests[reqIdx],
+    ...extra,
+    status,
+    updatedAt: db.now()
+  };
+  db.set('walkRequests', walkRequests);
+  return walkRequests[reqIdx];
+}
+
 // 세션별 경로 파일 경로
 function routeFilePath(sessionId) {
   return path.join(DATA_DIR, `route_${sessionId}.json`);
@@ -46,7 +60,7 @@ router.post('/', (req, res) => {
 
   // 동일 요청에 대한 진행 중 세션이 이미 있으면 기존 세션 반환 (중복 방지)
   const existingSessions = db.get('walkSessions', []);
-  const dup = existingSessions.find(s => s.requestId === requestId && ['heading','arrived','handoff','walking'].includes(s.status));
+  const dup = existingSessions.find(s => s.requestId === requestId && ['heading','arrived','handoff','walking','returning','return_arrived'].includes(s.status));
   if (dup) {
     return res.json({ success: true, session: dup });
   }
@@ -70,6 +84,8 @@ router.post('/', (req, res) => {
     startedAt:     db.now(),
     arrivedAt:     null,
     walkStartedAt: null,
+    returnStartedAt: null,
+    returnArrivedAt: null,
     endedAt:       null
   };
 
@@ -146,6 +162,30 @@ router.patch('/:id/end', (req, res) => {
   res.json({ success: true, session: sessions[idx], totalDistanceKm: totalDist });
 });
 
+// 산책 종료 후 요청자에게 복귀 시작 (walking -> returning)
+router.patch('/:id/start-return', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status !== 'walking') {
+    return res.json({ success: false, error: '산책 중일 때만 복귀를 시작할 수 있습니다.' });
+  }
+
+  sessions[idx].status = 'returning';
+  sessions[idx].returnStartedAt = db.now();
+  db.set('walkSessions', sessions);
+
+  const s = sessions[idx];
+  syncWalkRequestStatus(s.requestId, 'returning');
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) {
+    emitToUser(s.requesterId, 'walker-returning', { sessionId: s.id, requestId: s.requestId, walkerId: s.walkerId });
+  }
+
+  res.json({ success: true, session: sessions[idx] });
+});
+
 // 도우미 도착 (heading → arrived)
 router.patch('/:id/arrive', (req, res) => {
   const sessions = db.get('walkSessions', []);
@@ -163,10 +203,42 @@ router.patch('/:id/arrive', (req, res) => {
   // 요청 상태도 업데이트
   const requests = db.get('walkRequests', []);
   const reqIdx = requests.findIndex(r => r.id === s.requestId);
-  if (reqIdx !== -1) { requests[reqIdx].status = 'arrived'; db.set('walkRequests', requests); }
+  if (reqIdx !== -1) {
+    requests[reqIdx].status = 'arrived';
+    requests[reqIdx].updatedAt = db.now();
+    db.set('walkRequests', requests);
+  }
 
   const emitToUser = req.app.get('emitToUser');
   if (emitToUser) emitToUser(s.requesterId, 'walker-arrived', { sessionId: s.id, walkerName: req.body.walkerName || '' });
+
+  res.json({ success: true, session: sessions[idx] });
+});
+
+// 도우미가 복귀 장소에 도착 (returning -> return_arrived)
+router.patch('/:id/arrive-return', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status !== 'returning') {
+    return res.json({ success: false, error: '복귀 중 상태일 때만 도착 처리할 수 있습니다.' });
+  }
+
+  sessions[idx].status = 'return_arrived';
+  sessions[idx].returnArrivedAt = db.now();
+  db.set('walkSessions', sessions);
+
+  const s = sessions[idx];
+  syncWalkRequestStatus(s.requestId, 'return_arrived');
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) {
+    emitToUser(s.requesterId, 'walker-returned', {
+      sessionId: s.id,
+      requestId: s.requestId,
+      walkerName: req.body.walkerName || ''
+    });
+  }
 
   res.json({ success: true, session: sessions[idx] });
 });
@@ -195,13 +267,48 @@ router.patch('/:id/confirm-handoff', (req, res) => {
   res.json({ success: true, session: sessions[idx] });
 });
 
+// 요청자가 반려견을 다시 인계받아 산책 종료 (return_arrived -> completed)
+router.patch('/:id/confirm-return-handoff', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status !== 'return_arrived') {
+    return res.json({ success: false, error: '도우미가 복귀 도착한 후에만 종료할 수 있습니다.' });
+  }
+
+  sessions[idx].status = 'completed';
+  sessions[idx].endedAt = db.now();
+
+  const s = sessions[idx];
+  const points = readRoutePoints(s.id);
+  const totalDist = calcTotalDistance(points);
+  sessions[idx].totalDistanceKm = totalDist;
+  db.set('walkSessions', sessions);
+
+  syncWalkRequestStatus(s.requestId, 'completed');
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) {
+    const payload = {
+      sessionId: s.id,
+      requestId: s.requestId,
+      walkerId: s.walkerId,
+      totalDistanceKm: totalDist
+    };
+    emitToUser(s.requesterId, 'walk-ended', payload);
+    emitToUser(s.walkerId, 'walk-ended', payload);
+  }
+
+  res.json({ success: true, session: sessions[idx], totalDistanceKm: totalDist });
+});
+
 // 산책 실제 시작 (handoff → walking) — 도우미가 반려견 픽업 후 누름
 router.patch('/:id/start-walk', (req, res) => {
   const sessions = db.get('walkSessions', []);
   const idx = sessions.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false });
-  if (!['arrived', 'handoff'].includes(sessions[idx].status)) {
-    return res.json({ success: false, error: '도착 확인 후 산책을 시작할 수 있습니다.' });
+  if (sessions[idx].status !== 'handoff') {
+    return res.json({ success: false, error: '요청자가 반려견 전달을 확인한 뒤 산책을 시작할 수 있습니다.' });
   }
   sessions[idx].status        = 'walking';
   sessions[idx].walkStartedAt = db.now();
@@ -281,6 +388,13 @@ router.get('/', (req, res) => {
   const { userId } = req.query;
   let sessions = db.get('walkSessions', []);
   if (userId) sessions = sessions.filter(s => s.walkerId === userId || s.requesterId === userId);
+  const requests = db.get('walkRequests', []);
+  const activeRequestStatuses = ['accepted', 'heading', 'arrived', 'handoff', 'walking', 'returning', 'return_arrived'];
+  sessions = sessions.filter(s => {
+    if (!['heading', 'arrived', 'handoff', 'walking', 'returning', 'return_arrived'].includes(s.status)) return true;
+    const request = requests.find(r => r.id === s.requestId);
+    return request && activeRequestStatuses.includes(request.status);
+  });
   sessions.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
   res.json({ success: true, sessions });
 });

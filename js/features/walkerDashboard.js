@@ -7,7 +7,7 @@ async function renderWalkerRequestsList(userId) {
   try {
     const res = await fetch(`/api/walk-requests?walkerId=${userId}`);
     const data = await res.json();
-    requests = (data.requests || []).filter(r => ['pending', 'accepted', 'heading', 'arrived', 'walking'].includes(r.status));
+    requests = (data.requests || []).filter(r => ['pending', 'accepted', 'heading', 'arrived', 'handoff', 'walking', 'returning', 'return_arrived'].includes(r.status));
   } catch(e) {}
 
   if (requests.length === 0) return { html: '<p style="color:#718096;font-size:0.88rem;">현재 받은 요청이 없습니다.</p>', requests: [] };
@@ -17,8 +17,26 @@ async function renderWalkerRequestsList(userId) {
   const html = requests.map(r => {
     const requester = users.find(u => u.id === r.requesterId);
     const requesterName = requester ? (requester.nickname || requester.name) : (r.requesterName || '요청자');
-    const statusLabel = { pending: '⏳ 대기 중', accepted: '이동 중', walking: '산책 중' };
-    const statusColor = { pending: '#F6AD55', accepted: '#4299E1', walking: '#48BB78' };
+    const statusLabel = {
+      pending: '수락 대기',
+      accepted: '출발 준비',
+      heading: '이동 중',
+      arrived: '도착',
+      handoff: '인계 완료',
+      walking: '산책 중',
+      returning: '복귀 중',
+      return_arrived: '복귀 도착'
+    };
+    const statusColor = {
+      pending: '#F6AD55',
+      accepted: '#4299E1',
+      heading: '#3B82F6',
+      arrived: '#F59E0B',
+      handoff: '#8B5CF6',
+      walking: '#48BB78',
+      returning: '#0EA5E9',
+      return_arrived: '#FB7185'
+    };
 
     return `
     <div class="match-request-card ${r.status === 'pending' ? 'match-request-card--pending' : ''}">
@@ -66,7 +84,7 @@ async function renderWalkerRequestsList(userId) {
     <div style="font-weight:700;font-size:0.9rem;color:#1E40AF;margin-bottom:6px;">이동 중 · 요청자 위치로 향하는 중</div>
     <div style="font-size:0.8rem;color:#4A5568;margin-bottom:12px;">요청자 위치에 도착하면 아래 버튼을 눌러주세요.</div>
     <div style="display:flex;gap:8px;">
-    <button class="btn btn-primary" style="flex:2;padding:13px;" onclick="arriveAtPickup('${_activeSessionId||r.sessionId||''}')">
+    <button class="btn btn-primary" style="flex:2;padding:13px;" onclick="arriveAtPickup('${r.sessionId||_activeSessionId||''}')">
     도착했어요
     </button>
     <button class="btn btn-ghost" style="flex:1;padding:13px;color:#b91c1c;border:1px solid #fca5a5;" onclick="cancelWalkByWalker('${r.id}')">
@@ -78,8 +96,14 @@ async function renderWalkerRequestsList(userId) {
     ${r.status === 'arrived' ? `
     <div style="background:#FFFBEB;border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid #FCD34D;">
     <div style="font-weight:700;font-size:0.9rem;color:#92400E;margin-bottom:6px;">도착 · 반려견 픽업 중</div>
-    <div style="font-size:0.8rem;color:#4A5568;margin-bottom:12px;">반려견을 인계받으면 산책을 시작해주세요.</div>
-    <button class="btn btn-primary" style="width:100%;padding:13px;background:#00AA76;" onclick="startActualWalk('${_activeSessionId||r.sessionId||''}')">
+    <div style="font-size:0.8rem;color:#4A5568;">요청자가 반려견 전달 완료를 확인하면 산책을 시작할 수 있어요.</div>
+    </div>
+    ` : ''}
+    ${r.status === 'handoff' ? `
+    <div style="background:#F5F3FF;border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid #C4B5FD;">
+    <div style="font-weight:700;font-size:0.9rem;color:#5B21B6;margin-bottom:6px;">반려견 인계 완료</div>
+    <div style="font-size:0.8rem;color:#4A5568;margin-bottom:12px;">이제 산책을 시작하면 요청자 화면에서 실시간 GPS를 확인할 수 있어요.</div>
+    <button class="btn btn-primary" style="width:100%;padding:13px;background:#00AA76;" onclick="startActualWalk('${r.sessionId||_activeSessionId||''}')">
     산책 시작
     </button>
     </div>
@@ -87,7 +111,19 @@ async function renderWalkerRequestsList(userId) {
     ${r.status === 'walking' ? `
     <div style="display:flex;gap:8px;">
     <button class="btn btn-primary btn-sm" style="flex:1;" onclick="Router.navigate('/walk-session')">트래킹 보기</button>
-    <button class="btn btn-danger btn-sm" onclick="endWalkSession('${_activeSessionId||''}')">산책 종료</button>
+    <button class="btn btn-danger btn-sm" onclick="startReturnToRequester('${r.sessionId||_activeSessionId||''}')">복귀 시작</button>
+    </div>
+    ` : ''}
+    ${r.status === 'returning' ? `
+    <div style="display:flex;gap:8px;">
+    <button class="btn btn-primary btn-sm" style="flex:1;" onclick="Router.navigate('/walk-session')">실시간 보기</button>
+    <button class="btn btn-secondary btn-sm" onclick="arriveReturnToRequester('${r.sessionId||_activeSessionId||''}')">복귀 도착</button>
+    </div>
+    ` : ''}
+    ${r.status === 'return_arrived' ? `
+    <div style="background:#FFF1F2;border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid #FDA4AF;">
+    <div style="font-weight:700;font-size:0.9rem;color:#9F1239;margin-bottom:6px;">재인계 확인 대기 중</div>
+    <div style="font-size:0.8rem;color:#4A5568;">요청자가 반려견을 다시 인계받으면 산책이 종료돼요.</div>
     </div>
     ` : ''}
     </div>`;

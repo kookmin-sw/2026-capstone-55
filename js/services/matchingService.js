@@ -9,6 +9,26 @@ const MatchingService = (() => {
   const WALK_SCHEDULES_KEY = 'walkSchedules';
   const REVIEWS_KEY = 'reviews';
 
+  function mergeServerWalkerProfile(localProfile, serverWalker) {
+    if (!serverWalker) return localProfile || null;
+
+    return {
+      ...(localProfile || {}),
+      ...serverWalker,
+      userId: serverWalker.userId || localProfile?.userId,
+      userName: serverWalker.userName || serverWalker.name || localProfile?.userName || '도우미',
+      role: 'walker',
+      location: serverWalker.location || localProfile?.location || '',
+      preferredTime: serverWalker.preferredTime || localProfile?.preferredTime || '',
+      message: serverWalker.message || serverWalker.intro || localProfile?.message || '',
+      profilePhoto: serverWalker.profilePhoto || serverWalker.profileImage || localProfile?.profilePhoto || '',
+      acceptedSizes: serverWalker.acceptedSizes || localProfile?.acceptedSizes || ['small', 'medium', 'large'],
+      isAvailable: serverWalker.isAvailable ?? localProfile?.isAvailable ?? false,
+      lat: serverWalker.lat ?? localProfile?.lat ?? null,
+      lng: serverWalker.lng ?? localProfile?.lng ?? null
+    };
+  }
+
   // --- 프로필(역할) 관리 ---
 
   /**
@@ -35,7 +55,13 @@ const MatchingService = (() => {
    */
   function getMyProfile(userId) {
     const local = getAllProfiles().find(p => p.userId === userId);
-    if (local) return local;
+    if (local) {
+      if (local.role === 'walker' && _serverWalkersCache) {
+        const serverWalker = _serverWalkersCache.find(w => w.userId === userId);
+        if (serverWalker) return mergeServerWalkerProfile(local, serverWalker);
+      }
+      return local;
+    }
 
     // matchProfiles에서 삭제됐지만 서버 walkers.json에는 있는 경우 (동기화 타이밍 이슈 복구)
     if (_serverWalkersCache) {
@@ -402,12 +428,21 @@ const MatchingService = (() => {
         acceptedSizes: w.acceptedSizes || ['small', 'medium', 'large'],
       }));
 
+      const profiles = StorageService.get('matchProfiles', []);
+      const syncedProfiles = profiles.map(profile => {
+        if (profile.role !== 'walker') return profile;
+        const serverWalker = _serverWalkersCache.find(w => w.userId === profile.userId);
+        return serverWalker ? mergeServerWalkerProfile(profile, serverWalker) : profile;
+      });
+      if (JSON.stringify(syncedProfiles) !== JSON.stringify(profiles)) {
+        StorageService.set('matchProfiles', syncedProfiles);
+      }
+
       // 서버 워커 목록을 기준으로 localStorage 구형 더미 워커 정리
       // 서버 walkers.json에 실제로 존재하는 워커는 절대 삭제하지 않음
       if (_serverWalkersCache.length > 0) {
         const serverIds = new Set(_serverWalkersCache.map(w => w.userId));
-        const profiles = StorageService.get('matchProfiles', []);
-        const cleaned = profiles.filter(p => {
+        const cleaned = syncedProfiles.filter(p => {
           if (p.role === 'walker' && p.userId) {
             // 서버에 존재하는 워커는 보호 (실제 등록된 사용자)
             if (serverIds.has(p.userId)) return true;
@@ -416,7 +451,7 @@ const MatchingService = (() => {
           }
           return true;
         });
-        if (cleaned.length !== profiles.length) {
+        if (cleaned.length !== syncedProfiles.length) {
           StorageService.set('matchProfiles', cleaned);
         }
       }
@@ -430,7 +465,14 @@ const MatchingService = (() => {
       const res2 = await fetch('/api/data/matchProfiles');
       if (res2.ok) {
         const profiles = await res2.json();
-        if (Array.isArray(profiles)) StorageService.setCache('matchProfiles', profiles);
+        if (Array.isArray(profiles)) {
+          const mergedProfiles = profiles.map(profile => {
+            if (profile.role !== 'walker') return profile;
+            const serverWalker = _serverWalkersCache?.find(w => w.userId === profile.userId);
+            return serverWalker ? mergeServerWalkerProfile(profile, serverWalker) : profile;
+          });
+          StorageService.setCache('matchProfiles', mergedProfiles);
+        }
       }
     } catch(e) {}
   }
@@ -542,9 +584,14 @@ const MatchingService = (() => {
    * @returns {Object[]} 거리순 정렬된 walker 배열 (distance 필드 포함)
    */
   function getNearbyWalkers(lat, lng, radiusKm = 10) {
-    return getAllWalkers()
-      .filter(w => w.lat && w.lng)
-      .map(w => ({ ...w, distance: haversineDistance(lat, lng, w.lat, w.lng) }))
+    return getAvailableWalkers()
+      .filter(w => Number.isFinite(Number(w.lat)) && Number.isFinite(Number(w.lng)))
+      .map(w => ({
+        ...w,
+        lat: Number(w.lat),
+        lng: Number(w.lng),
+        distance: haversineDistance(lat, lng, Number(w.lat), Number(w.lng))
+      }))
       .filter(w => w.distance <= radiusKm)
       .sort((a, b) => a.distance - b.distance);
   }

@@ -52,10 +52,30 @@ function initRealtimeListeners() {
     }, 500);
   });
 
-  // 1단계: 도우미 수락 → 이동 중 오버레이 표시
+  function refreshRequesterMatchingPage() {
+    document.getElementById('live-tracking-overlay')?.remove();
+    const curUser = AuthService.getCurrentUser();
+    const profile = curUser ? MatchingService.getMyProfile(curUser.id) : null;
+    if (profile && profile.role === 'requester') {
+      renderMatchingPage();
+    }
+  }
+
+  function refreshWalkerActivePage(sessionId) {
+    const curUser = AuthService.getCurrentUser();
+    const profile = curUser ? MatchingService.getMyProfile(curUser.id) : null;
+    if (!profile || profile.role !== 'walker') return;
+    if (Router.getPath && Router.getPath() === '/walk-session') {
+      renderWalkSessionPage(sessionId);
+    } else {
+      renderWalkerDashboard(curUser, profile);
+    }
+  }
+
+  // 1단계: 도우미 출발 → 요청자 매칭 화면에서 현재 세션 추적
   RealtimeService.on('walk-started', (data) => {
     _activeSessionId = data.sessionId;
-    showLiveTrackingOverlay(data.sessionId, data.walkerId);
+    refreshRequesterMatchingPage();
     addNotification('도우미가 이동을 시작했어요!', 'walk');
   });
 
@@ -63,22 +83,27 @@ function initRealtimeListeners() {
   RealtimeService.on('walker-arrived', (data) => {
     showToast('도우미가 도착했습니다! 반려견을 전달해주세요.', 'success');
     addNotification('도우미가 도착했습니다! 반려견을 전달해주세요.', 'success');
-    const curUser = AuthService.getCurrentUser();
-    const profile = curUser ? MatchingService.getMyProfile(curUser.id) : null;
-    if (profile && profile.role === 'requester' && Router.getPath && Router.getPath() === '/matching') {
-      renderMatchingPage();
-    }
+    refreshRequesterMatchingPage();
   });
 
   // 3단계: 산책 실제 시작
   RealtimeService.on('walk-tracking-started', (data) => {
     showToast('산책이 시작되었어요! 실시간 경로를 확인하세요.', 'success');
     addNotification('산책이 시작됐어요! 실시간 경로를 확인하세요.', 'walk');
-    const curUser = AuthService.getCurrentUser();
-    const profile = curUser ? MatchingService.getMyProfile(curUser.id) : null;
-    if (profile && profile.role === 'requester' && Router.getPath && Router.getPath() === '/matching') {
-      renderMatchingPage();
-    }
+    refreshRequesterMatchingPage();
+  });
+
+  RealtimeService.on('handoff-confirmed', (data) => {
+    showToast('반려견 인계가 확인됐어요. 산책을 시작해주세요.', 'success');
+    refreshWalkerActivePage(data?.sessionId);
+  });
+
+  RealtimeService.on('walker-returning', () => {
+    refreshRequesterMatchingPage();
+  });
+
+  RealtimeService.on('walker-returned', () => {
+    refreshRequesterMatchingPage();
   });
 
   // 4단계: 산책 종료

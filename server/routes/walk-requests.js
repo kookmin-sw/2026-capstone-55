@@ -19,10 +19,6 @@ function setWalkerAvailability(app, userId, isAvailable) {
 
   walkers[idx].isAvailable = !!isAvailable;
   walkers[idx].lastSeenAt = db.now();
-  if (!isAvailable) {
-    walkers[idx].lat = null;
-    walkers[idx].lng = null;
-  }
   db.set('walkers', walkers);
 
   const io = app.get('io');

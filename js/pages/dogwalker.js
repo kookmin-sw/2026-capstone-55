@@ -99,10 +99,10 @@ async function _renderDiscMap(userLat, userLng, radiusKm) {
  // 반경 원
  L.circle([userLat, userLng], { radius: radiusKm * 1000, color: '#00AA76', fillColor: '#00AA76', fillOpacity: 0.05, weight: 1.5 }).addTo(_dwDiscMap);
 
- // 도그워커 마커 (ON + GPS 있는 것만 지도에 표시)
+ // 도그워커 마커/목록/거리 계산을 같은 기준으로 맞춘다.
  const nearbyWalkers = MatchingService.getNearbyWalkers(userLat, userLng, radiusKm);
- const allWalkers = MatchingService.getAllWalkers().filter(w => w.lat && w.lng && w.isAvailable);
- const noGpsWalkers = MatchingService.getAllWalkers().filter(w => !w.lat && w.isAvailable);
+ const allAvailableWalkers = MatchingService.getAvailableWalkers();
+ const noGpsWalkers = allAvailableWalkers.filter(w => !Number.isFinite(Number(w.lat)) || !Number.isFinite(Number(w.lng)));
 
  const currentUser = AuthService.getCurrentUser();
 
@@ -116,11 +116,12 @@ async function _renderDiscMap(userLat, userLng, radiusKm) {
  document.getElementById('dw-disc-map')?.after(noGpsEl);
  }
 
- allWalkers.forEach(w => {
- const distObj = nearbyWalkers.find(n => n.userId === w.userId);
- const distTxt = distObj
- ? (distObj.distance < 1 ? `${(distObj.distance * 1000).toFixed(0)}m` : `${distObj.distance.toFixed(1)}km`)
- : '';
+ const mapBounds = [[userLat, userLng]];
+
+ nearbyWalkers.forEach(w => {
+ const distTxt = w.distance < 1
+ ? `${(w.distance * 1000).toFixed(0)}m`
+ : `${w.distance.toFixed(1)}km`;
 
  const walkerPhoto = w.profilePhoto || w.profileImage || '';
  const walkerInitial = (w.userName || w.name || '?').charAt(0);
@@ -196,7 +197,12 @@ async function _renderDiscMap(userLat, userLng, radiusKm) {
  L.marker([w.lat, w.lng], { icon })
  .bindPopup(popupHtml, { maxWidth: 320, className: 'walker-popup', offset: [0, -68] })
  .addTo(_dwDiscMap);
+ mapBounds.push([w.lat, w.lng]);
  });
+
+ if (mapBounds.length > 1) {
+ _dwDiscMap.fitBounds(mapBounds, { padding: [36, 36], maxZoom: 15 });
+ }
 
  // 목록을 거리순으로 업데이트
  const listEl = document.getElementById('dw-walker-list');

@@ -2,7 +2,6 @@
 // Dog walker matching, profiles, and walk management
 
 async function renderMatchingPage() {
- _cleanupRequesterLiveMap();
  const user = AuthService.getCurrentUser();
 
  if (!user) {
@@ -60,11 +59,12 @@ async function renderMatchingPage() {
  .then(res => res.json())
  .then(data => {
  const reqs = data.requests || [];
+ const activeReqs = reqs
+   .filter(r => ['accepted', 'heading', 'arrived', 'handoff', 'walking', 'returning', 'return_arrived'].includes(r.status))
+   .sort((a, b) => new Date(b.updatedAt || b.walkerLocationUpdatedAt || b.requestedStartTime || b.createdAt || 0) - new Date(a.updatedAt || a.walkerLocationUpdatedAt || a.requestedStartTime || a.createdAt || 0));
 
  // 산책 진행 중 → 실시간 추적 화면 (completed는 제외)
- const activeReq = reqs.find(r =>
-   ['accepted', 'heading', 'arrived', 'handoff', 'walking'].includes(r.status)
- );
+ const activeReq = activeReqs[0];
  if (activeReq) {
    renderRequesterActiveWalkScreen(user, activeReq);
  } else {
@@ -79,29 +79,6 @@ async function renderMatchingPage() {
 
  if (myProfile.role === 'walker') {
  renderWalkerDashboard(user, myProfile);
- }
-}
-
-function _cleanupRequesterLiveMap() {
- if (window._requesterLiveMapPoll) {
-  clearInterval(window._requesterLiveMapPoll);
-  window._requesterLiveMapPoll = null;
- }
- if (window._requesterWalkTimer) {
-  clearInterval(window._requesterWalkTimer);
-  window._requesterWalkTimer = null;
- }
- if (window._requesterLiveMap && typeof window._requesterLiveMap.remove === 'function') {
-  try { window._requesterLiveMap.remove(); } catch (e) {}
-  window._requesterLiveMap = null;
- }
- if (window._requesterWalkerLocationHandler && typeof RealtimeService !== 'undefined') {
-  RealtimeService.off('walker-location-update', window._requesterWalkerLocationHandler);
-  window._requesterWalkerLocationHandler = null;
- }
- if (window._requesterWalkerPositionHandler && typeof RealtimeService !== 'undefined') {
-  RealtimeService.off('walker-position', window._requesterWalkerPositionHandler);
-  window._requesterWalkerPositionHandler = null;
  }
 }
 
@@ -672,7 +649,6 @@ function _onSigunguChange() {
 function selectMatchRegCard(key, value) {
  _matchRegData[key] = value;
  renderMatchRegStep();
- setTimeout(() => nextMatchRegStep(), 300);
 }
 
 function toggleMatchRegMulti(key, value) {
@@ -1443,7 +1419,7 @@ function renderAiBreakdownHtml(breakdown) {
 
 /** 개별 워커 카드의 AI 점수/이유/breakdown을 DOM에서 업데이트하고 블러 해제 */
 function updateWalkerCardWithAi(userId, score, reason, breakdown, enhancedData) {
-  const card = document.querySelector(`.walker-card-item[data-walker-id="${userId}"]`);
+  const card = document.querySelector(`#ai-walker-list .walker-card-item[data-walker-id="${userId}"]`);
   if (!card) return;
 
   const scoreColor = score >= 80 ? '#00AA76' : score >= 60 ? '#F6A623' : '#999';
@@ -1505,23 +1481,11 @@ function updateWalkerCardWithAi(userId, score, reason, breakdown, enhancedData) 
   }
 }
 
-function clearWalkerCardPending(userId) {
-  const card = document.querySelector(`.walker-card-item[data-walker-id="${userId}"]`);
-  if (!card) return;
-  card.classList.remove('walker-card-item--pending');
-  card.classList.add('walker-card-item--revealed');
-  const overlay = card.querySelector('.walker-card__ai-overlay');
-  if (overlay) {
-    overlay.style.opacity = '0';
-    setTimeout(() => { overlay.style.display = 'none'; }, 250);
-  }
-}
-
 /** 모든 AI 점수가 도착한 후 점수순으로 카드 재정렬 */
 function resortWalkerCardsByAiScore() {
-  const section = document.getElementById('walker-list-section');
-  if (!section) return;
-  const cards = Array.from(section.querySelectorAll('.walker-card-item'));
+  const parent = document.getElementById('ai-walker-list');
+  if (!parent) return;
+  const cards = Array.from(parent.querySelectorAll('.walker-card-item'));
   if (cards.length < 2) return;
 
   // 현재 DOM의 점수를 읽어서 정렬
@@ -1531,10 +1495,6 @@ function resortWalkerCardsByAiScore() {
     return { card, score };
   });
   scored.sort((a, b) => b.score - a.score);
-
-  // 첫 번째 카드의 부모(목록 컨테이너) 기준으로 재배치
-  const parent = cards[0].parentNode;
-  const moreBtn = parent.querySelector('#walker-list-more-wrap');
 
   // INITIAL_LIMIT 기준 가시성 갱신
   const INITIAL_LIMIT = 5;
@@ -1555,7 +1515,7 @@ function resortWalkerCardsByAiScore() {
     if (newIdx >= INITIAL_LIMIT) card.style.display = 'none';
     else card.style.display = '';
 
-    parent.insertBefore(card, moreBtn || null);
+    parent.appendChild(card);
   });
 
   // 더보기 버튼 라벨 갱신 (접힌 상태로 초기화)
@@ -1569,10 +1529,11 @@ function resortWalkerCardsByAiScore() {
 async function fetchAiScoresAndUpdateCards(walkers, dog) {
   if (!Array.isArray(walkers) || walkers.length === 0) return;
 
-  for (const w of walkers) {
+  const tasks = walkers.map(async (w) => {
+    let timeoutId;
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      timeoutId = setTimeout(() => controller.abort(), 15000);
       const res = await fetch('/api/matching/ai-score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1582,18 +1543,31 @@ async function fetchAiScoresAndUpdateCards(walkers, dog) {
       clearTimeout(timeoutId);
       const data = await res.json();
       const score = data.success ? data.score : calcAiMatchScore(w, dog, []);
-      updateWalkerCardWithAi(w.userId, score, data.reason || '', data.breakdown || null, {
+      return {
+        userId: w.userId,
+        score,
+        reason: data.reason || '',
+        breakdown: data.breakdown || null,
+        enhancedData: {
         trustScore: data.trustScore,
         historyFallback: data.historyFallback || false
-      });
+        }
+      };
     } catch(e) {
+      if (timeoutId) clearTimeout(timeoutId);
       // 실패 시 로컬 점수로 대체하되 블러는 해제
       const fallback = calcAiMatchScore(w, dog, []);
-      updateWalkerCardWithAi(w.userId, fallback, '', null, null);
+      return { userId: w.userId, score: fallback, reason: '', breakdown: null, enhancedData: null };
     }
-  }
+  });
 
   // 모든 호출 완료 후 점수순 재정렬
+  const results = await Promise.allSettled(tasks);
+  results.forEach(result => {
+    if (result.status !== 'fulfilled' || !result.value) return;
+    const { userId, score, reason, breakdown, enhancedData } = result.value;
+    updateWalkerCardWithAi(userId, score, reason, breakdown, enhancedData);
+  });
   resortWalkerCardsByAiScore();
 }
 
@@ -1608,51 +1582,74 @@ async function startAiScoreCalc() {
  const overlay = document.getElementById('ai-score-blur-overlay');
  const list = document.getElementById('ai-walker-list');
  if (!btn || !overlay) return;
+ if (window._aiScoreCalcRunning) return;
+ window._aiScoreCalcRunning = true;
+ const originalHtml = btn.innerHTML;
+ const wrapper = document.getElementById('ai-score-wrapper');
+ const originalMinHeight = wrapper?.style.minHeight || '';
+ let snapshot = null;
  btn.disabled = true;
  btn.innerHTML = `<span class="spinner" style="width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff;margin-right:8px;"></span> AI 분석 중...`;
+ if (wrapper) wrapper.style.minHeight = `${wrapper.offsetHeight}px`;
+ if (wrapper && list) {
+   const oldSnapshot = document.getElementById('ai-walker-list-snapshot');
+   if (oldSnapshot) oldSnapshot.remove();
+   snapshot = list.cloneNode(true);
+   snapshot.id = 'ai-walker-list-snapshot';
+   snapshot.removeAttribute('onclick');
+   snapshot.querySelectorAll('.walker-card-item').forEach(card => {
+     card.classList.remove('walker-card-item');
+     card.removeAttribute('data-walker-id');
+   });
+   snapshot.style.cssText = 'position:absolute;inset:0;z-index:1;filter:blur(6px);opacity:0.72;pointer-events:none;user-select:none;overflow:hidden;transform:translateZ(0);';
+   wrapper.insertBefore(snapshot, overlay);
+   list.style.visibility = 'hidden';
+   list.style.filter = 'none';
+ }
+ overlay.style.background = 'rgba(255,255,255,0.38)';
+ overlay.style.backdropFilter = 'blur(2px)';
 
+ try {
  // 버튼 클릭 시 서버에서 최신 워커 목록을 다시 가져옴
  // (페이지 첫 렌더링 시 GPS가 아직 refresh 전일 수 있어 캐시가 구형일 수 있음)
+ try {
+   await MatchingService.refreshFromServer();
+ } catch (e) {
+   console.warn('[AI Score] walker refresh failed, using cached cards', e);
+ }
 
  const _user = AuthService.getCurrentUser();
  const _myProfile = _user ? MatchingService.getMyProfile(_user.id) : {};
- const currentWalkers = Array.isArray(window._aiCalcWalkers) && window._aiCalcWalkers.length > 0
-   ? window._aiCalcWalkers
-   : MatchingService.getAvailableWalkers().filter(w => w.userId !== _user?.id);
+ const freshWalkers = MatchingService.getAvailableWalkers()
+   .filter(w => w.userId !== _user?.id);
 
- // DOM에 있는 카드들의 userId 집합
- const domIds   = new Set(Array.from(document.querySelectorAll('.walker-card-item')).map(c => c.getAttribute('data-walker-id')));
- const freshIds = new Set(currentWalkers.map(w => w.userId));
- const hasStaleCards = false;
-
- if (hasStaleCards) {
-   // DOM의 워커가 최신 서버 데이터와 다름 → 페이지 재렌더링 후 AI 계산 자동 재시작
-   window._aiCalcWalkers = freshWalkers;
-   window._aiCalcProfile = _myProfile;
-   window._aiCalcAutoStart = true; // 재렌더 후 자동 실행 플래그
-   await renderRequesterDashboard(_user, _myProfile);
-   return;
- }
-
- const walkers = currentWalkers.filter(w => domIds.has(w.userId));
+ // 화면을 다시 그리지 않고 현재 보이는 카드만 최신 데이터로 보강한다.
+ const domIds = new Set(Array.from(document.querySelectorAll('#ai-walker-list .walker-card-item')).map(c => c.getAttribute('data-walker-id')).filter(Boolean));
+ const freshById = new Map(freshWalkers.map(w => [w.userId, w]));
+ const cachedWalkers = Array.isArray(window._aiCalcWalkers) ? window._aiCalcWalkers : [];
+ const visibleWalkers = cachedWalkers
+   .filter(w => !domIds.size || domIds.has(w.userId))
+   .map(w => freshById.get(w.userId) || w);
+ const walkers = visibleWalkers.length
+   ? visibleWalkers
+   : freshWalkers.filter(w => !domIds.size || domIds.has(w.userId));
  const profile = window._aiCalcProfile || _myProfile;
- if (walkers.length === 0) {
-  btn.disabled = false;
-  btn.innerHTML = `${icon('sparkles',15,'#fff')} AI ?곹빀??怨꾩궛?섍린`;
-  showToast('도우미 목록이 준비된 뒤 다시 시도해주세요.', 'info');
-  return;
+ await fetchAiScoresAndUpdateCards(walkers, profile);
+ } catch (e) {
+   console.error('[AI Score] failed', e);
+ } finally {
+ overlay.style.transition = 'opacity 0.4s';
+ overlay.style.opacity = '0';
+ if (list) { list.style.visibility = ''; list.style.opacity = '1'; list.style.filter = 'none'; list.style.pointerEvents = ''; list.style.userSelect = ''; }
+ btn.disabled = false;
+ btn.innerHTML = originalHtml;
+ window._aiScoreCalcRunning = false;
+ setTimeout(() => {
+   if (snapshot) snapshot.remove();
+   overlay.style.display = 'none';
+   if (wrapper) wrapper.style.minHeight = originalMinHeight;
+  }, 400);
  }
-  overlay.style.transition = 'opacity 0.4s';
-  overlay.style.opacity = '0';
-  if (list) { list.style.filter = 'none'; list.style.pointerEvents = ''; list.style.userSelect = ''; }
-  setTimeout(() => { overlay.style.display = 'none'; }, 400);
-  btn.disabled = false;
-  btn.innerHTML = `${icon('sparkles',15,'#fff')} AI 다시 계산`;
-
-  const prioritizedWalkers = walkers.slice(0, 3);
-  const deferredWalkers = walkers.slice(3);
-  deferredWalkers.forEach(w => clearWalkerCardPending(w.userId));
-  await fetchAiScoresAndUpdateCards(prioritizedWalkers, profile);
 }
 
 /** AI 추천 도우미 목록 더보기/접기 토글 */
@@ -1690,81 +1687,6 @@ function toggleWalkerListMore(btn) {
 }
 
 /** 요청자: 매칭 완료 후 도우미 이동 중 화면 */
-function renderRequesterActiveWalkScreen(user, req) {
- const walkerName = req.walkerName || '도우미';
- const statusMap = {
-   accepted: { label: '매칭 완료',    desc: '도우미가 출발 준비 중이에요',         icon: '✅', color: '#00AA76' },
-   heading:  { label: '이동 중',      desc: '도우미가 픽업 장소로 오고 있어요',    icon: icon('navigation',14,'#3182CE'), color: '#3182CE' },
-   arrived:  { label: '도착',         desc: '도우미가 도착했어요! 반려견을 전달해주세요', icon: icon('map-pin',14,'#F6A623'), color: '#F6A623' },
-   handoff:  { label: '인계 완료',    desc: '반려견을 전달했어요. 산책이 곧 시작돼요!', icon: '🐕', color: '#8B5CF6' },
-   walking:  { label: '산책 중',      desc: '반려견이 산책 중이에요',              icon: icon('paw-print',14,'#00AA76'), color: '#00AA76' },
- };
- const status = statusMap[req.status] || statusMap.accepted;
-
- renderPage(`
- <style>
- .active-walk { max-width:500px; margin:0 auto; }
- .active-walk__status { text-align:center; padding:40px 20px 32px; }
- .active-walk__icon { font-size:3rem; margin-bottom:12px; animation:${req.status === 'heading' ? 'walkBounce 1.5s ease-in-out infinite' : 'none'}; }
- @keyframes walkBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
- .active-walk__label { display:inline-block; padding:4px 14px; border-radius:999px; font-size:0.78rem; font-weight:700; margin-bottom:8px; }
- .active-walk__title { font-size:1.2rem; font-weight:800; margin-bottom:6px; }
- .active-walk__desc { font-size:0.88rem; color:var(--color-text-muted); }
- .active-walk__map { border-radius:16px; overflow:hidden; border:1px solid var(--color-border); margin-bottom:24px; position:relative; }
- .active-walk__map-inner { height:300px; width:100%; }
- .active-walk__map-hint { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); color:#fff; font-size:0.75rem; padding:6px 14px; border-radius:20px; pointer-events:none; }
- .active-walk__walker { display:flex; align-items:center; gap:14px; padding:18px; background:#fff; border-radius:14px; border:1px solid var(--color-border); margin-bottom:16px; }
- .active-walk__avatar { width:48px; height:48px; border-radius:50%; background:#1a1a1a; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.1rem; }
- .active-walk__actions { display:flex; gap:10px; }
- .active-walk__actions button { flex:1; padding:14px; border-radius:12px; font-weight:700; font-size:0.9rem; cursor:pointer; border:none; }
- </style>
-
- <div class="active-walk">
- <div class="active-walk__status">
- <div class="active-walk__icon">${status.icon}</div>
- <div class="active-walk__label" style="background:${status.color}20;color:${status.color};">${status.label}</div>
- <div class="active-walk__title">${walkerName}님${req.status === 'heading' ? '이 오고 있어요' : req.status === 'arrived' ? '이 도착했어요' : req.status === 'walking' ? '과 산책 중' : '과 매칭됐어요'}</div>
- <div class="active-walk__desc">${status.desc}</div>
- </div>
-
- <div class="active-walk__map">
- <div id="requester-live-map" class="active-walk__map-inner"></div>
- <div class="active-walk__map-hint">${req.status === 'heading' ? '도우미 실시간 위치가 표시돼요' : req.status === 'walking' ? '산책 경로가 실시간으로 표시돼요' : '도우미 위치를 기다리는 중...'}</div>
- </div>
-
- ${req.status === 'walking' ? `
- <div id="requester-walk-stats" style="display:flex;gap:16px;justify-content:center;margin-bottom:16px;padding:12px;background:#f8f8f6;border-radius:12px;">
- <div style="text-align:center;"><div id="rw-time" style="font-size:1.2rem;font-weight:800;">00:00</div><div style="font-size:0.7rem;color:var(--color-text-muted);">산책 시간</div></div>
- <div style="text-align:center;"><div id="rw-dist" style="font-size:1.2rem;font-weight:800;">0.00 km</div><div style="font-size:0.7rem;color:var(--color-text-muted);">이동 거리</div></div>
- <div style="text-align:center;"><div id="rw-points" style="font-size:1.2rem;font-weight:800;">0</div><div style="font-size:0.7rem;color:var(--color-text-muted);">포인트</div></div>
- </div>
- ` : ''}
-
- <div class="active-walk__walker">
- <div class="active-walk__avatar">${walkerName.charAt(0)}</div>
- <div style="flex:1;">
- <div style="font-weight:700;font-size:0.95rem;">${walkerName}</div>
- <div style="font-size:0.78rem;color:var(--color-text-muted);">산책 도우미</div>
- </div>
- <button class="btn btn-secondary btn-sm" onclick="openChatModal('${req.id}')">💬 채팅</button>
- </div>
-
- <div class="active-walk__actions">
- ${req.status === 'walking' ? `
- <button style="background:#1a1a1a;color:#fff;" onclick="Router.navigate('/walk-tracking')">🗺️ 경로 보기</button>
- ` : ''}
- <button style="background:#fee2e2;color:#b91c1c;" onclick="cancelActiveWalkRequest('${req.id}')">요청 취소</button>
- </div>
- </div>
- `);
-
- // 지도 초기화 + 도우미 실시간 위치 표시
- setTimeout(() => _initRequesterLiveMap(req), 300);
-
- // 하단 채팅 버튼 표시
- showChatButton(req.id);
-}
-
 /** 요청자 실시간 지도 초기화 */
 /** 프로필 사진 기반 원형 지도 마커 아이콘 생성 */
 function _makePhotoMarker(photoUrl, fallbackChar, borderColor, size, pulse) {
@@ -1775,204 +1697,6 @@ function _makePhotoMarker(photoUrl, fallbackChar, borderColor, size, pulse) {
     html: `<div style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid #fff;outline:2px solid ${borderColor};overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,0.3);${pulse?'animation:wsmWalkerPulse 2s ease infinite;':''}background:${borderColor};">${inner}</div>`,
     className: '', iconSize: [size, size], iconAnchor: [size/2, size/2]
   });
-}
-
-function _initRequesterLiveMap(req) {
- _cleanupRequesterLiveMap();
- const container = document.getElementById('requester-live-map');
- if (!container) return;
-
- const lat = req.pickupLatitude || 37.5665;
- const lng = req.pickupLongitude || 126.978;
- const map = L.map(container).setView([lat, lng], 16);
- window._requesterLiveMap = map;
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-   attribution: 'ⓒ OpenStreetMap'
- }).addTo(map);
-
- // 내 위치 마커 (요청자 사진)
- const user = AuthService.getCurrentUser();
- const myProfile = user ? MatchingService.getMyProfile(user.id) : null;
- const myPhoto = user?.profileImage || myProfile?.profilePhoto || '';
- const myName  = user ? (user.nickname || user.name || '나') : '나';
- const myIcon  = _makePhotoMarker(myPhoto, myName.charAt(0), '#3182CE', 36, false);
- let myMarker  = L.marker([lat, lng], { icon: myIcon }).bindPopup('내 위치').addTo(map);
- let myLat = lat, myLng = lng;
- const moveMarkerSmooth = (marker, nextLatLng, duration = 900) => {
-   if (!marker || !nextLatLng) return;
-   const cur = marker.getLatLng();
-   const fromLat = cur.lat, fromLng = cur.lng;
-   const toLat = Array.isArray(nextLatLng) ? nextLatLng[0] : nextLatLng.lat;
-   const toLng = Array.isArray(nextLatLng) ? nextLatLng[1] : nextLatLng.lng;
-   if (!Number.isFinite(toLat) || !Number.isFinite(toLng)) return;
-   if (marker._smoothAnim) cancelAnimationFrame(marker._smoothAnim);
-   const start = performance.now();
-   const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-   const tick = now => {
-     const t = Math.min(1, (now - start) / duration);
-     const e = ease(t);
-     marker.setLatLng([fromLat + (toLat - fromLat) * e, fromLng + (toLng - fromLng) * e]);
-     if (t < 1) marker._smoothAnim = requestAnimationFrame(tick);
-   };
-   marker._smoothAnim = requestAnimationFrame(tick);
- };
-
- navigator.geolocation.getCurrentPosition((pos) => {
-   myLat = pos.coords.latitude;
-   myLng = pos.coords.longitude;
-   moveMarkerSmooth(myMarker, [myLat, myLng]);
-   map.setView([myLat, myLng], 16);
- }, () => {}, { timeout: 5000, enableHighAccuracy: true });
-
- // 도우미 마커 (도우미 사진 — walkers API에서 로드)
- let walkerPhoto = '';
- let walkerMarker = null;
- let lastAutoPanAt = 0;
-
- // 도우미 사진 미리 로드
- fetch('/api/walkers').then(r => r.json()).then(walkers => {
-   const w = walkers.find(w => w.userId === req.walkerId);
-  if (w?.profilePhoto || w?.profileImage) walkerPhoto = w.profilePhoto || w.profileImage;
- }).catch(() => {});
-
- const _getWalkerIcon = (pulse) => _makePhotoMarker(
-   walkerPhoto, (req.walkerName || '도').charAt(0), '#F59E0B', 44, pulse
- );
-
- // 두 마커가 모두 보이도록 줌 조정 (서울 전역 확대 방지: 최소 zoom 13 유지)
- function fitBothMarkers(walkerLat, walkerLng) {
-   const bounds = L.latLngBounds([[myLat, myLng], [walkerLat, walkerLng]]);
-   const computedZoom = map.getBoundsZoom(bounds, false, [50, 50]);
-   if (computedZoom < 13) {
-     map.setView([myLat, myLng], 15);
-   } else {
-     map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-   }
- }
-
- // 도우미 현재 위치 가져오기 (폴링)
- async function fetchWalkerLocation() {
-   try {
-     const res = await fetch(`/api/walk-requests/${req.id}/walker-location`);
-     const data = await res.json();
-     if (data.success && data.lat && data.lng) {
-       if (!walkerMarker) {
-         walkerMarker = L.marker([data.lat, data.lng], { icon: _getWalkerIcon(true) }).bindPopup(`${req.walkerName || '도우미'} 위치`).addTo(map);
-         fitBothMarkers(data.lat, data.lng);
-       } else {
-         moveMarkerSmooth(walkerMarker, [data.lat, data.lng]);
-       }
-     } else if (!walkerMarker) {
-       // fallback: walkers.json에서 도우미 마지막 위치 + 사진 로드
-       try {
-         const wRes = await fetch('/api/walkers');
-         const walkers = await wRes.json();
-         const walker = walkers.find(w => w.userId === req.walkerId);
-         if (walker && walker.lat && walker.lng) {
-           if (walker.profilePhoto || walker.profileImage) walkerPhoto = walker.profilePhoto || walker.profileImage;
-           walkerMarker = L.marker([walker.lat, walker.lng], { icon: _getWalkerIcon(true) }).bindPopup(`${req.walkerName || '도우미'} (마지막 위치)`).addTo(map);
-           fitBothMarkers(walker.lat, walker.lng);
-         }
-       } catch(e2) {}
-     }
-   } catch(e) {}
- }
-
- fetchWalkerLocation();
- const pollInterval = setInterval(fetchWalkerLocation, 5000);
-
- // Socket으로도 실시간 위치 수신
- if (typeof RealtimeService !== 'undefined') {
-   const handleWalkerLocationUpdate = (data) => {
-     if (data.requestId !== req.id) return;
-     if (!walkerMarker) {
-       walkerMarker = L.marker([data.lat, data.lng], { icon: _getWalkerIcon(true) }).bindPopup(`${req.walkerName || '도우미'} 위치`).addTo(map);
-       fitBothMarkers(data.lat, data.lng);
-     } else {
-       moveMarkerSmooth(walkerMarker, [data.lat, data.lng]);
-     }
-     // walking 상태면 경로 폴리라인 추가
-     if (req.status === 'walking' && routePolyline) {
-       routePolyline.addLatLng([data.lat, data.lng]);
-       routePoints++;
-       updateWalkStats();
-     }
-    };
-   window._requesterWalkerLocationHandler = handleWalkerLocationUpdate;
-   RealtimeService.on('walker-location-update', handleWalkerLocationUpdate);
-
-   // walker-position 이벤트도 수신 (산책 중 경로 트래킹)
-   const handleWalkerPosition = (data) => {
-     if (!data.latitude || !data.longitude) return;
-     if (req.status === 'walking' && routePolyline) {
-       const latlng = [data.latitude, data.longitude];
-       routePolyline.addLatLng(latlng);
-       if (walkerMarker) moveMarkerSmooth(walkerMarker, latlng);
-       else {
-         walkerMarker = L.marker(latlng, { icon: _getWalkerIcon(true) }).addTo(map);
-       }
-        const now = Date.now();
-        if (now - lastAutoPanAt > 8000 && !map.getBounds().pad(-0.2).contains(latlng)) {
-          lastAutoPanAt = now;
-          map.panTo(latlng, { animate: true, duration: 0.4 });
-        }
-       routePoints++;
-       updateWalkStats();
-     }
-    };
-   window._requesterWalkerPositionHandler = handleWalkerPosition;
-   RealtimeService.on('walker-position', handleWalkerPosition);
-  }
-
- // walking 상태: 경로 폴리라인 초기화 + 산책 시간 타이머
- let routePolyline = null;
- let routePoints = 0;
- let walkStartTime = Date.now();
- let walkTimer = null;
-
- if (req.status === 'walking') {
-   routePolyline = L.polyline([], { color: '#00AA76', weight: 4, opacity: 0.8 }).addTo(map);
-   walkStartTime = req.walkStartedAt ? new Date(req.walkStartedAt).getTime() : Date.now();
-
-   // 기존 경로 로드 (세션에서)
-   if (req.sessionId) {
-     fetch(`/api/walk-sessions/${req.sessionId}/route`)
-       .then(r => r.json())
-       .then(data => {
-         if (data.points && data.points.length > 0) {
-           const points = data.points.map(p => [p.latitude, p.longitude]);
-           points.forEach(p => routePolyline.addLatLng(p));
-           routePoints = points.length;
-           const last = points[points.length - 1];
-           if (walkerMarker) moveMarkerSmooth(walkerMarker, last);
-           else walkerMarker = L.marker(last, { icon: _getWalkerIcon(req.status === 'walking') }).addTo(map);
-           map.fitBounds(routePolyline.getBounds(), { padding: [30, 30] });
-           updateWalkStats();
-         }
-       })
-       .catch(() => {});
-   }
-
-   // 산책 시간 타이머
-   walkTimer = setInterval(() => {
-     const elapsed = Math.floor((Date.now() - walkStartTime) / 1000);
-     const min = Math.floor(elapsed / 60);
-     const sec = elapsed % 60;
-     const timeEl = document.getElementById('rw-time');
-     if (timeEl) timeEl.textContent = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-   }, 1000);
- }
-
- function updateWalkStats() {
-   const pointsEl = document.getElementById('rw-points');
-   if (pointsEl) pointsEl.textContent = routePoints;
-   const distEl = document.getElementById('rw-dist');
-   if (distEl) distEl.textContent = `${(routePoints * 0.007).toFixed(2)} km`;
- }
-
- // 페이지 떠날 때 정리
- window._requesterLiveMapPoll = pollInterval;
- window._requesterWalkTimer = walkTimer;
 }
 
 /** 요청자: 진행 중인 요청 취소 */
@@ -2045,7 +1769,7 @@ async function renderRequesterDashboard(user, myProfile) {
 
  // 쿨다운 맵: toUserId → { status, cooldownEndsAt }
  // 최근 30분 내 거절/walker_busy/취소 이력이 있으면 재요청 차단
-  const COOLDOWN_MS = 0; // 테스트 중: 최근 거절/취소 후 재요청 제한 비활성화
+ const COOLDOWN_MS = 30 * 60 * 1000;
  const blockedStatuses = ['rejected', 'walker_busy', 'cancelled', 'rejected_matched'];
  const cooldownMap = {};
  sentRequests.forEach(r => {
@@ -2319,21 +2043,14 @@ async function renderRequesterDashboard(user, myProfile) {
  </select>
  </div>
  </div>
-    <div class="dw-map-wrap">
-    <div id="dw-disc-map" class="dw-map"></div>
-    <div class="dw-map-hint" id="dw-map-hint" style="flex-direction:column;gap:14px;background:rgba(250,250,248,0.94);backdrop-filter:blur(8px);padding:18px 18px 16px;min-width:220px;">
-      <video
-        src="/pawsitive_loading.mp4"
-        autoplay
-        muted
-        loop
-        playsinline
-        style="width:112px;height:112px;object-fit:cover;border-radius:18px;box-shadow:0 10px 24px rgba(0,0,0,0.08);background:#fff;"
-      ></video>
-      <div style="font-weight:700;font-size:0.95rem;color:var(--color-text);">내 위치를 찾고 있어요</div>
-      <div style="font-size:0.78rem;color:var(--color-text-muted);line-height:1.5;">GPS 신호를 잡는 중이에요.<br>위치 권한을 허용해주세요.</div>
-    </div>
-    </div>
+ <div class="dw-map-wrap">
+ <div id="dw-disc-map" class="dw-map"></div>
+ <div class="dw-map-hint" id="dw-map-hint" style="flex-direction:column;gap:12px;background:rgba(250,250,248,0.92);backdrop-filter:blur(6px);">
+ <div class="spinner" style="width:32px;height:32px;"></div>
+ <div style="font-weight:700;font-size:0.95rem;color:var(--color-text);">내 위치를 찾고 있어요</div>
+ <div style="font-size:0.78rem;color:var(--color-text-muted);line-height:1.5;">GPS 신호를 잡는 중이에요.<br>위치 권한을 허용해주세요 🐾</div>
+ </div>
+ </div>
  </div>
 
  ${completedWalks.length > 0 ? `<div class="match-section"><h2 class="match-section__title">완료된 산책</h2>${completedHtml}</div>` : ''}
@@ -2405,12 +2122,6 @@ async function renderRequesterDashboard(user, myProfile) {
  // AI 점수는 버튼 클릭 시에만 계산 (API 토큰 절약)
  window._aiCalcWalkers = availWalkers;
  window._aiCalcProfile = myProfile;
-
- // 구형 캐시로 렌더링됐다가 재렌더된 경우 AI 계산 자동 시작
- if (window._aiCalcAutoStart) {
-   window._aiCalcAutoStart = false;
-   setTimeout(() => startAiScoreCalc(), 600);
- }
 
  renderDirectWalkHistory(user.id, 'requester').then(({ html, hasRecords }) => {
  const section = document.getElementById('direct-history-section');
@@ -2635,11 +2346,19 @@ async function _sendMatchRequestAfterPayment(toUserId, paymentResult) {
 
  const alertEl = document.getElementById('matching-alert');
 
- let lat = null, lng = null;
+ let lat = paymentResult?.pickupLatitude || null;
+ let lng = paymentResult?.pickupLongitude || null;
  try {
    const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 }));
    lat = pos.coords.latitude; lng = pos.coords.longitude;
  } catch(e) {}
+ if ((!lat || !lng) && toUserId) {
+   try {
+     const walkers = await (await fetch('/api/walkers')).json();
+     const walker = walkers.find(w => w.userId === toUserId);
+     if (walker?.lat && walker?.lng) { lat = walker.lat; lng = walker.lng; }
+   } catch(e) {}
+ }
 
  const requestData = {
    dogId: selectedDog.id || null,
@@ -2787,3 +2506,180 @@ function handleSubmitReview(scheduleId, targetId) {
 }
 
 // --- 프로필 페이지 (플레이스홀더) ---
+function renderRequesterActiveWalkScreen(user, req) {
+  if (window._requesterLiveMapPoll) { clearInterval(window._requesterLiveMapPoll); window._requesterLiveMapPoll = null; }
+  if (window._requesterWalkTimer) { clearInterval(window._requesterWalkTimer); window._requesterWalkTimer = null; }
+
+  const walkerName = req.walkerName || '도우미';
+  const statusText = ({ accepted:'매칭 완료', heading:'이동 중', arrived:'도착', handoff:'인계 완료', walking:'산책 중', returning:'복귀 중', return_arrived:'복귀 도착' })[req.status] || '매칭 완료';
+  const descText = ({ accepted:'도우미가 곧 이동을 시작해요', heading:'도우미가 픽업 장소로 오고 있어요', arrived:'반려견 전달을 진행해주세요', handoff:'도우미가 산책을 시작할 준비를 마쳤어요', walking:'도우미와 반려견의 이동 경로를 보고 있어요', returning:'도우미가 반려견과 함께 돌아오고 있어요', return_arrived:'반려견을 다시 인계받아주세요' })[req.status] || '도우미 위치를 확인할 수 있어요';
+  const sessionId = req.sessionId || '';
+  const primaryAction = req.status === 'arrived' && sessionId
+    ? `<button style="width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:0.95rem;cursor:pointer;border:none;background:#F59E0B;color:#fff;margin-bottom:12px;" onclick="confirmHandoff('${sessionId}')">🐕 반려견 전달 완료</button>`
+    : req.status === 'return_arrived' && sessionId
+      ? `<button style="width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:0.95rem;cursor:pointer;border:none;background:#10B981;color:#fff;margin-bottom:12px;" onclick="confirmReturnHandoff('${sessionId}')">🐕 반려견 다시 인계받기</button>`
+      : '';
+
+  renderPage(`
+  <div style="max-width:560px;margin:0 auto;">
+    <div style="text-align:center;padding:32px 20px 24px;">
+      <div style="display:inline-block;padding:4px 14px;border-radius:999px;font-size:0.78rem;font-weight:700;margin-bottom:8px;background:#eef6ff;color:#2563eb;">${statusText}</div>
+      <div style="font-size:1.2rem;font-weight:800;margin-bottom:6px;">${walkerName}님 상태</div>
+      <div style="font-size:0.88rem;color:var(--color-text-muted);">${descText}</div>
+    </div>
+    <div style="border-radius:16px;overflow:hidden;border:1px solid var(--color-border);margin-bottom:20px;position:relative;background:#fff;">
+      <div id="requester-live-map" style="height:260px;width:100%;"></div>
+      <div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.82);color:#fff;font-size:0.75rem;padding:6px 14px;border-radius:20px;white-space:nowrap;">${req.status === 'walking' ? '실시간 산책 경로' : req.status === 'returning' ? '복귀 경로를 따라오는 중' : req.status === 'return_arrived' ? '반려견 재인계 대기 중' : '픽업 장소 기준 위치'}</div>
+    </div>
+    ${['walking','returning','return_arrived'].includes(req.status) ? `
+    <div style="display:flex;gap:16px;justify-content:center;margin-bottom:16px;padding:12px;background:#f8f8f6;border-radius:12px;">
+      <div style="text-align:center;"><div id="rw-time" style="font-size:1.2rem;font-weight:800;">00:00</div><div style="font-size:0.7rem;color:var(--color-text-muted);">산책 시간</div></div>
+      <div style="text-align:center;"><div id="rw-dist" style="font-size:1.2rem;font-weight:800;">0.00 km</div><div style="font-size:0.7rem;color:var(--color-text-muted);">이동 거리</div></div>
+      <div style="text-align:center;"><div id="rw-points" style="font-size:1.2rem;font-weight:800;">0</div><div style="font-size:0.7rem;color:var(--color-text-muted);">위치 포인트</div></div>
+    </div>` : ''}
+    ${primaryAction}
+    <div style="display:flex;align-items:center;gap:14px;padding:18px;background:#fff;border-radius:14px;border:1px solid var(--color-border);margin-bottom:16px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">${walkerName.charAt(0)}</div>
+      <div style="flex:1;"><div style="font-weight:700;font-size:0.95rem;">${walkerName}</div><div style="font-size:0.78rem;color:var(--color-text-muted);">산책 도우미</div></div>
+      <button class="btn btn-secondary btn-sm" onclick="openChatModal('${req.id}')">채팅</button>
+    </div>
+    <button style="width:100%;padding:14px;border-radius:12px;font-weight:700;font-size:0.9rem;cursor:pointer;border:none;background:#fee2e2;color:#b91c1c;" onclick="cancelActiveWalkRequest('${req.id}')">요청 취소</button>
+  </div>`);
+
+  setTimeout(() => _initRequesterLiveMap(req), 200);
+  showChatButton(req.id);
+}
+
+function _initRequesterLiveMap(req) {
+  const container = document.getElementById('requester-live-map');
+  if (!container) return;
+
+  if (window._requesterLiveMapPoll) { clearInterval(window._requesterLiveMapPoll); window._requesterLiveMapPoll = null; }
+  if (window._requesterWalkTimer) { clearInterval(window._requesterWalkTimer); window._requesterWalkTimer = null; }
+
+  const reqPickupLat = Number(req.pickupLatitude);
+  const reqPickupLng = Number(req.pickupLongitude);
+  const reqWalkerLat = Number(req.walkerCurrentLat);
+  const reqWalkerLng = Number(req.walkerCurrentLng);
+  const hasPickup = Number.isFinite(reqPickupLat) && Number.isFinite(reqPickupLng);
+  const hasInitialWalker = Number.isFinite(reqWalkerLat) && Number.isFinite(reqWalkerLng);
+  const pickupLat = hasPickup ? reqPickupLat : (hasInitialWalker ? reqWalkerLat : 37.5665);
+  const pickupLng = hasPickup ? reqPickupLng : (hasInitialWalker ? reqWalkerLng : 126.9780);
+  const map = L.map(container).setView([pickupLat, pickupLng], hasPickup || hasInitialWalker ? 16 : 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+  const user = AuthService.getCurrentUser();
+  const myProfile = user ? MatchingService.getMyProfile(user.id) : null;
+  const myPhoto = user?.profileImage || myProfile?.profilePhoto || '';
+  const myName = user?.nickname || user?.name || '나';
+  let walkerPhoto = '';
+  const walkerName = req.walkerName || '도우미';
+  const requesterIcon = _makePhotoMarker(myPhoto, myName.charAt(0), '#3182CE', 36, false);
+  const getWalkerIcon = (pulse = true) => _makePhotoMarker(walkerPhoto, walkerName.charAt(0), '#F59E0B', 44, pulse);
+  const requesterMarker = L.marker([pickupLat, pickupLng], { icon: requesterIcon, zIndexOffset: 800 })
+    .bindPopup(hasPickup ? '내 픽업 장소' : '요청자 위치 기준점')
+    .addTo(map);
+
+  let walkerMarker = null;
+  let routePolyline = null;
+  let routePoints = [];
+  let walkStartTime = req.walkStartedAt ? new Date(req.walkStartedAt).getTime() : Date.now();
+
+  const hav = (la1, lo1, la2, lo2) => {
+    const R = 6371000;
+    const r = Math.PI / 180;
+    const dLa = (la2 - la1) * r;
+    const dLo = (lo2 - lo1) * r;
+    const a = Math.sin(dLa / 2) ** 2 + Math.cos(la1 * r) * Math.cos(la2 * r) * Math.sin(dLo / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+  const routeKm = () => {
+    let meters = 0;
+    for (let i = 1; i < routePoints.length; i++) meters += hav(routePoints[i - 1][0], routePoints[i - 1][1], routePoints[i][0], routePoints[i][1]);
+    return meters / 1000;
+  };
+  const updateWalkStats = () => {
+    const pointsEl = document.getElementById('rw-points');
+    const distEl = document.getElementById('rw-dist');
+    if (pointsEl) pointsEl.textContent = routePoints.length;
+    if (distEl) distEl.textContent = `${routeKm().toFixed(2)} km`;
+  };
+  const fitPickupAndWalker = (walkerLat, walkerLng) => {
+    if (!Number.isFinite(walkerLat) || !Number.isFinite(walkerLng)) return;
+    if (hav(pickupLat, pickupLng, walkerLat, walkerLng) < 8) {
+      map.setView([pickupLat, pickupLng], 17, { animate: true });
+      return;
+    }
+    const bounds = L.latLngBounds([[pickupLat, pickupLng], [walkerLat, walkerLng]]);
+    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 17 });
+  };
+  const moveWalker = (lat, lng, fitMode = 'pickup') => {
+    const nearRequester = hav(pickupLat, pickupLng, lat, lng) < 8;
+    const markerLatLng = nearRequester ? [lat + 0.00008, lng + 0.00008] : [lat, lng];
+    if (!walkerMarker) walkerMarker = L.marker(markerLatLng, { icon: getWalkerIcon(req.status !== 'return_arrived'), zIndexOffset: 900 }).bindPopup(`${walkerName} 위치`).addTo(map);
+    else walkerMarker.setLatLng(markerLatLng);
+    if (fitMode === 'pickup') fitPickupAndWalker(lat, lng);
+    else map.setView([lat, lng], map.getZoom() > 10 ? map.getZoom() : 16, { animate: true, duration: 0.4 });
+  };
+
+  fetch('/api/walkers').then(r => r.json()).then(walkers => {
+    const walker = walkers.find(w => w.userId === req.walkerId);
+    if (walker?.profilePhoto || walker?.profileImage) walkerPhoto = walker.profilePhoto || walker.profileImage;
+  }).catch(() => {});
+
+  const fetchWalkerLocation = async () => {
+    try {
+      const res = await fetch(`/api/walk-requests/${req.id}/walker-location`);
+      const data = await res.json();
+      if (data.success && data.lat && data.lng) moveWalker(data.lat, data.lng, req.status === 'walking' ? 'free' : 'pickup');
+    } catch (e) {}
+  };
+
+  if (['walking','returning','return_arrived'].includes(req.status)) {
+    routePolyline = L.polyline([], { color: '#00AA76', weight: 4, opacity: 0.85 }).addTo(map);
+    if (req.sessionId) {
+      fetch(`/api/walk-sessions/${req.sessionId}/route`).then(r => r.json()).then(data => {
+        if (data.points?.length) {
+          routePoints = data.points.map(p => [p.latitude, p.longitude]);
+          routePoints.forEach(point => routePolyline.addLatLng(point));
+          const last = routePoints[routePoints.length - 1];
+          moveWalker(last[0], last[1], req.status === 'walking' ? 'free' : 'pickup');
+          if (req.status === 'walking') map.fitBounds(routePolyline.getBounds(), { padding: [36, 36], maxZoom: 17 });
+          updateWalkStats();
+        }
+      }).catch(() => {});
+    }
+    window._requesterWalkTimer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - walkStartTime) / 1000);
+      const min = Math.floor(elapsed / 60);
+      const sec = elapsed % 60;
+      const timeEl = document.getElementById('rw-time');
+      if (timeEl) timeEl.textContent = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  fetchWalkerLocation();
+  if (hasInitialWalker) moveWalker(reqWalkerLat, reqWalkerLng, req.status === 'walking' ? 'free' : 'pickup');
+  window._requesterLiveMapPoll = setInterval(fetchWalkerLocation, req.status === 'walking' ? 5000 : 3000);
+
+  if (typeof RealtimeService !== 'undefined') {
+    RealtimeService.on('walker-location-update', data => {
+      if (data.requestId !== req.id) return;
+      moveWalker(data.lat, data.lng, req.status === 'walking' ? 'free' : 'pickup');
+      if ((req.status === 'returning' || req.status === 'return_arrived') && routePolyline) {
+        routePolyline.addLatLng([data.lat, data.lng]);
+        routePoints.push([data.lat, data.lng]);
+        updateWalkStats();
+      }
+    });
+    RealtimeService.on('walker-position', data => {
+      if (data.sessionId !== req.sessionId) return;
+      if (req.status !== 'walking') return;
+      const latlng = [data.latitude, data.longitude];
+      if (routePolyline) routePolyline.addLatLng(latlng);
+      routePoints.push(latlng);
+      moveWalker(latlng[0], latlng[1], 'free');
+      updateWalkStats();
+    });
+  }
+}

@@ -208,6 +208,15 @@ function showPaymentConfirmModal({ dogSize, dogName, duration = 40 }) {
       const btn = document.getElementById(`${modalId}-pay`);
       btn.disabled = true; btn.textContent = '결제 처리 중...';
       const orderId = 'walk_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+      let pickupLatitude = null;
+      let pickupLongitude = null;
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, enableHighAccuracy: true, maximumAge: 60000 });
+        });
+        pickupLatitude = pos.coords.latitude;
+        pickupLongitude = pos.coords.longitude;
+      } catch(e) {}
 
       const pendingPayment = {
         orderId,
@@ -216,6 +225,8 @@ function showPaymentConfirmModal({ dogSize, dogName, duration = 40 }) {
         dogs: selectedDogs,
         walkerId: window._pendingPaymentWalkerId || null,
         requestType: window._pendingPaymentType || 'direct',
+        pickupLatitude,
+        pickupLongitude,
         timestamp: Date.now()
       };
       localStorage.setItem('pawsitive_pending_payment', JSON.stringify(pendingPayment));

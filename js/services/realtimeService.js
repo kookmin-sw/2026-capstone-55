@@ -29,6 +29,7 @@ const RealtimeService = (() => {
       'walk-started', 'walk-ended',
       'walker-position', 'walker-status-changed', 'walker-location-updated',
       'walker-location-update',
+      'walker-returning', 'walker-returned',
       // matching (AI 매칭 직접 요청)
       'match-request', 'match-request-accepted', 'match-request-rejected',
       'match-request-walker-busy', 'match-request-cancelled',

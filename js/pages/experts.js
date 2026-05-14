@@ -1,5 +1,5 @@
 // Pawsitive - Experts Page
-const EXPERT_CATEGORIES = [
+const EXPERT_PAGE_CATEGORIES = [
  { key: 'all', label: '전체' },
  { key: 'vet', label: '수의사' },
  { key: 'trainer', label: '훈련사' },
@@ -7,7 +7,7 @@ const EXPERT_CATEGORIES = [
  { key: 'groomer', label: '미용사' }
 ];
 
-const EXPERT_PROFILES = [
+const EXPERT_PAGE_PROFILES = [
  {
  id: 'vet-01',
  category: 'vet',
@@ -112,10 +112,10 @@ const EXPERT_PROFILES = [
  }
 ];
 
-let _expertCategory = 'all';
-let _activeExpertSessionId = null;
-let _expertSessionTab = 'active';
-let _expertPendingAttachments = {};
+let _expertsPageCategory = 'all';
+let _expertsPageActiveSessionId = null;
+let _expertsPageSessionTab = 'active';
+let _expertsPagePendingAttachments = {};
 
 function escapeHtml(value) {
  return String(value || '').replace(/[&<>"']/g, ch => ({
@@ -136,7 +136,7 @@ function saveExpertSessions(sessions) {
 }
 
 function getExpertById(expertId) {
- return EXPERT_PROFILES.find(expert => expert.id === expertId);
+ return EXPERT_PAGE_PROFILES.find(expert => expert.id === expertId);
 }
 
 function getExistingExpertSession(expertId, userId) {
@@ -168,12 +168,12 @@ function renderExpertsPage() {
  const sessions = user ? getExpertSessions().filter(s => s.userId === user.id) : [];
  const activeSessions = getUniqueExpertSessions(sessions.filter(isExpertSessionActive));
  const endedSessions = sessions.filter(session => !isExpertSessionActive(session));
- const activeSession = _activeExpertSessionId ? sessions.find(s => s.id === _activeExpertSessionId) : null;
+ const activeSession = _expertsPageActiveSessionId ? sessions.find(s => s.id === _expertsPageActiveSessionId) : null;
  const activeExpert = activeSession ? getExpertById(activeSession.expertId) : null;
- const visibleExperts = _expertCategory === 'all'
- ? EXPERT_PROFILES
- : EXPERT_PROFILES.filter(expert => expert.category === _expertCategory);
- const activeCategory = EXPERT_CATEGORIES.find(cat => cat.key === _expertCategory) || EXPERT_CATEGORIES[0];
+ const visibleExperts = _expertsPageCategory === 'all'
+ ? EXPERT_PAGE_PROFILES
+ : EXPERT_PAGE_PROFILES.filter(expert => expert.category === _expertsPageCategory);
+ const activeCategory = EXPERT_PAGE_CATEGORIES.find(cat => cat.key === _expertsPageCategory) || EXPERT_PAGE_CATEGORIES[0];
 
  renderPage(`
  <div class="experts-page">
@@ -183,7 +183,7 @@ function renderExpertsPage() {
  <h1 class="experts-hero__title">우리 아이에게 맞는<br>전문가를 찾아보세요</h1>
  <p class="experts-hero__sub">수의사, 훈련사, 영양사, 미용사와 결제 후 바로 상담을 시작할 수 있어요.</p>
  <div class="experts-hero__stats">
- <span class="dw-stat"><strong>${EXPERT_PROFILES.length}</strong>명 전문가</span>
+ <span class="dw-stat"><strong>${EXPERT_PAGE_PROFILES.length}</strong>명 전문가</span>
  <span class="dw-stat-divider">·</span>
  <span class="dw-stat"><strong>4.8</strong> 평균 평점</span>
  <span class="dw-stat-divider">·</span>
@@ -200,14 +200,14 @@ function renderExpertsPage() {
  <h2 class="dw-section__title">추천 전문가 <span class="dw-count">${visibleExperts.length}</span></h2>
  <div class="dw-map-controls">
  <select class="form-select expert-category-select" onchange="setExpertCategory(this.value)">
- ${EXPERT_CATEGORIES.map(cat => `<option value="${cat.key}" ${_expertCategory === cat.key ? 'selected' : ''}>${cat.label}</option>`).join('')}
+ ${EXPERT_PAGE_CATEGORIES.map(cat => `<option value="${cat.key}" ${_expertsPageCategory === cat.key ? 'selected' : ''}>${cat.label}</option>`).join('')}
  </select>
  </div>
  </div>
 
  <div class="expert-tabs">
- ${EXPERT_CATEGORIES.map(cat => `
- <button class="expert-tab ${_expertCategory === cat.key ? 'active' : ''}" onclick="setExpertCategory('${cat.key}')">${cat.label}</button>
+ ${EXPERT_PAGE_CATEGORIES.map(cat => `
+ <button class="expert-tab ${_expertsPageCategory === cat.key ? 'active' : ''}" onclick="setExpertCategory('${cat.key}')">${cat.label}</button>
  `).join('')}
  </div>
 
@@ -219,8 +219,8 @@ function renderExpertsPage() {
 }
 
 function renderExpertSessionTabs(activeSessions, endedSessions) {
- const visibleSessions = _expertSessionTab === 'history' ? endedSessions : activeSessions;
- const title = _expertSessionTab === 'history' ? '상담 기록' : '진행 중인 상담';
+ const visibleSessions = _expertsPageSessionTab === 'history' ? endedSessions : activeSessions;
+ const title = _expertsPageSessionTab === 'history' ? '상담 기록' : '진행 중인 상담';
  return `
  <section class="expert-session-strip">
  <div class="expert-section-head">
@@ -228,11 +228,11 @@ function renderExpertSessionTabs(activeSessions, endedSessions) {
  <span>${visibleSessions.length}건</span>
  </div>
  <div class="expert-session-tabs">
- <button class="${_expertSessionTab === 'active' ? 'active' : ''}" onclick="setExpertSessionTab('active')">진행 중 <strong>${activeSessions.length}</strong></button>
- <button class="${_expertSessionTab === 'history' ? 'active' : ''}" onclick="setExpertSessionTab('history')">상담 기록 <strong>${endedSessions.length}</strong></button>
+ <button class="${_expertsPageSessionTab === 'active' ? 'active' : ''}" onclick="setExpertSessionTab('active')">진행 중 <strong>${activeSessions.length}</strong></button>
+ <button class="${_expertsPageSessionTab === 'history' ? 'active' : ''}" onclick="setExpertSessionTab('history')">상담 기록 <strong>${endedSessions.length}</strong></button>
  </div>
  <div class="expert-session-list">
- ${visibleSessions.length ? visibleSessions.map(renderExpertSessionChip).join('') : `<div class="expert-session-empty">${_expertSessionTab === 'history' ? '아직 종료된 상담 기록이 없어요.' : '진행 중인 상담이 없어요.'}</div>`}
+ ${visibleSessions.length ? visibleSessions.map(renderExpertSessionChip).join('') : `<div class="expert-session-empty">${_expertsPageSessionTab === 'history' ? '아직 종료된 상담 기록이 없어요.' : '진행 중인 상담이 없어요.'}</div>`}
  </div>
  </section>`;
 }
@@ -253,7 +253,7 @@ function renderExpertSessionChip(session) {
 }
 
 function setExpertSessionTab(tab) {
- _expertSessionTab = tab === 'history' ? 'history' : 'active';
+ _expertsPageSessionTab = tab === 'history' ? 'history' : 'active';
  renderExpertsPage();
 }
 
@@ -300,7 +300,7 @@ function renderExpertCard(expert, idx = 0) {
 }
 
 function setExpertCategory(category) {
- _expertCategory = category;
+ _expertsPageCategory = category;
  renderExpertsPage();
 }
 
@@ -447,7 +447,7 @@ function openExpertChat(sessionId) {
  const expert = getExpertById(session.expertId);
  if (!expert) return;
 
- _activeExpertSessionId = sessionId;
+ _expertsPageActiveSessionId = sessionId;
  renderExpertsPage();
  setTimeout(() => {
  const panel = document.getElementById('expert-chat-panel');
@@ -459,7 +459,7 @@ function openExpertChat(sessionId) {
 }
 
 function closeExpertChat() {
- _activeExpertSessionId = null;
+ _expertsPageActiveSessionId = null;
  renderExpertsPage();
 }
 
@@ -477,9 +477,9 @@ function endExpertSession(sessionId) {
  text: '상담이 종료됐어요. 같은 전문가와 새 상담이 필요하면 다시 결제 후 시작할 수 있어요.',
  createdAt: session.endedAt
  });
- _expertPendingAttachments[sessionId] = [];
+ _expertsPagePendingAttachments[sessionId] = [];
  saveExpertSessions(sessions);
- _expertSessionTab = 'history';
+ _expertsPageSessionTab = 'history';
  showToast('상담을 종료했어요.', 'success');
  openExpertChat(sessionId);
 }
@@ -536,7 +536,7 @@ function renderExpertMessage(message) {
 }
 
 function getExpertPendingAttachments(sessionId) {
- return _expertPendingAttachments[sessionId] || [];
+ return _expertsPagePendingAttachments[sessionId] || [];
 }
 
 function renderExpertAttachmentPreview(sessionId) {
@@ -558,7 +558,7 @@ function refreshExpertAttachmentPreview(sessionId) {
 function removeExpertChatAttachment(sessionId, index) {
  const attachments = getExpertPendingAttachments(sessionId);
  attachments.splice(index, 1);
- _expertPendingAttachments[sessionId] = attachments;
+ _expertsPagePendingAttachments[sessionId] = attachments;
  refreshExpertAttachmentPreview(sessionId);
 }
 
@@ -585,7 +585,7 @@ function addExpertChatImage(sessionId, file) {
  reader.onload = (e) => {
  const attachments = getExpertPendingAttachments(sessionId);
  attachments.push(e.target.result);
- _expertPendingAttachments[sessionId] = attachments.slice(0, 4);
+ _expertsPagePendingAttachments[sessionId] = attachments.slice(0, 4);
  refreshExpertAttachmentPreview(sessionId);
  document.getElementById('expert-chat-input')?.focus();
  };
@@ -622,6 +622,6 @@ function sendExpertMessage(sessionId) {
  });
  saveExpertSessions(sessions);
  input.value = '';
- _expertPendingAttachments[sessionId] = [];
+ _expertsPagePendingAttachments[sessionId] = [];
  openExpertChat(sessionId);
 }
