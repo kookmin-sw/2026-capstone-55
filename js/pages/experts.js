@@ -33,7 +33,9 @@ function getExistingExpertSession(expertId, userId) {
 }
 
 function isExpertSessionActive(session) {
- return session && session.status !== 'ended';
+ if (!session || session.status === 'ended') return false;
+ if (!session.orderId) return false; // 결제 없이 생성된 mock 세션 → 만료 처리
+ return true;
 }
 
 function formatExpertSessionDate(value) {
