@@ -130,18 +130,19 @@ function openBreedRecommendFlow() {
   };
 
   document.getElementById('breed-rec-modal')?.remove();
-  const app = document.getElementById('app');
-  app.innerHTML += `
-    <div id="breed-rec-modal" style="position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
-      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
-        <div style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
-          <button onclick="closeBreedRecommendFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
-          <div id="breed-rec-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
-          <div id="breed-rec-content" style="flex:1; display:flex; flex-direction:column;"></div>
-        </div>
+  const modal = document.createElement('div');
+  modal.id = 'breed-rec-modal';
+  modal.style.cssText = 'position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);';
+  modal.innerHTML = `
+    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
+      <div style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+        <button onclick="closeBreedRecommendFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
+        <div id="breed-rec-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
+        <div id="breed-rec-content" style="flex:1; display:flex; flex-direction:column;"></div>
       </div>
     </div>
   `;
+  document.body.appendChild(modal);
   renderBreedRecStep();
 }
 
