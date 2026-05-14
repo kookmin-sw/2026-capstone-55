@@ -87,7 +87,9 @@ function validateWalkerProfile(body) {
 
 function readWalkers() {
   try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    let raw = fs.readFileSync(DATA_FILE, 'utf8');
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1); // BOM 제거
+    return JSON.parse(raw);
   } catch {
     return [];
   }
@@ -267,6 +269,22 @@ router.patch('/toggle', (req, res) => {
   if (io) io.emit('walker-status-changed', { userId, isAvailable: newState });
 
   res.json({ success: true, isAvailable: walkers[idx].isAvailable });
+});
+
+// 워커 대표 사진 동기화
+router.patch('/:userId/photo', (req, res) => {
+  const { userId } = req.params;
+  const { profilePhoto } = req.body;
+  const walkers = readWalkers();
+  const idx = walkers.findIndex(w => w.userId === userId);
+  if (idx < 0) return res.status(404).json({ success: false, error: '워커를 찾을 수 없습니다.' });
+
+  walkers[idx].profilePhoto = profilePhoto || '';
+  walkers[idx].profileImage = profilePhoto || '';
+  walkers[idx].updatedAt = new Date().toISOString();
+  writeWalkers(walkers);
+
+  res.json({ success: true, walker: walkers[idx] });
 });
 
 // Walk History 집계 통계 조회

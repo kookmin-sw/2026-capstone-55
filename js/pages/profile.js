@@ -41,14 +41,6 @@ function renderProfilePage() {
 
  const sizeMap = { small: '소형', medium: '중형', large: '대형' };
 
- // localStorage에서 반려견 사진 로드
- if (user.dogs) {
-   user.dogs.forEach(d => {
-     const saved = localStorage.getItem('dogPhoto_' + d.id);
-     if (saved) d.photo = saved;
-   });
- }
-
  renderPage(`
  <div class="page-header">
  <h1>내 프로필</h1>
@@ -56,12 +48,16 @@ function renderProfilePage() {
  <div class="card" style="padding:24px; margin-bottom:16px;">
  <div class="profile-card-head">
  <label class="profile-avatar-upload">
- <span class="profile-avatar-upload__circle">
+ <span class="profile-avatar-upload__circle" style="${user.profileImage ? 'border:2.5px solid #00AA76;' : 'border:2.5px dashed #ccc;'}">
  ${user.profileImage ? `<img src="${user.profileImage}" alt="프로필 사진">` : icon('user', 34)}
  </span>
  <input type="file" accept="image/*" onchange="handleProfileImageSelect(this)">
- <span class="profile-avatar-upload__label">사진 변경</span>
+ <span class="profile-avatar-upload__label" style="color:${user.profileImage ? '#00AA76' : 'var(--color-text-muted)'};">${user.profileImage ? '✓ 사진 등록됨' : '사진 등록'}</span>
  </label>
+ <div style="margin-top:10px;padding:10px 14px;background:#FFF7ED;border-radius:10px;font-size:0.78rem;color:#92400E;line-height:1.55;border:1px solid #FDE68A;">
+   🔒 <strong>실제 개인 얼굴이 나오는 사진을 등록하셔야 매칭 서비스를 이용할 수 있어요.</strong><br>
+   <span style="color:#B45309;">도우미·요청자 모두 상대방의 얼굴을 확인하고 안전하게 매칭돼요.</span>
+ </div>
  <div class="profile-card-head__info">
  <h3 style="margin-bottom:4px;">${user.nickname || user.name}</h3>
  <p style="color:var(--color-text-light); font-size:0.82rem; margin-bottom:10px;">닉네임</p>
@@ -141,26 +137,6 @@ function renderProfilePage() {
  <div><span style="font-size:0.78rem; color:var(--color-text-muted);">성향</span><div style="font-weight:600; font-size:0.9rem;">${d.personality || '미등록'}</div></div>
  </div>
  ${d.healthNote ? `<div style="margin-bottom:12px;"><span style="font-size:0.78rem; color:var(--color-text-muted);">건강 관리 정보</span><div style="font-size:0.85rem; margin-top:4px; padding:10px; background:white; border-radius:8px;">${d.healthNote}</div></div>` : ''}
- <div style="margin-bottom:12px; padding:12px; background:white; border-radius:10px; border:1px solid var(--color-border);">
- <div style="font-size:0.82rem; font-weight:700; margin-bottom:8px;">건강 서류</div>
- <div id="dog-files-${idx}" style="margin-bottom:8px;"><div class="spinner" style="margin:8px auto;width:16px;height:16px;"></div></div>
- <div style="display:flex; gap:6px; flex-wrap:wrap;">
- <select id="upload-type-${idx}" class="form-select" style="flex:1;min-width:100px;font-size:0.78rem;padding:6px 8px;">
- <option value="vaccination">예방접종 증명서</option>
- <option value="checkup">건강검진 결과지</option>
- <option value="treatment">진료 기록 / 처방전</option>
- <option value="surgery">수술 / 시술 기록</option>
- <option value="allergy">알러지 / 질병 진단서</option>
- <option value="medication">복용 약 / 투약 기록</option>
- <option value="other">기타</option>
- </select>
- <label class="btn btn-secondary btn-sm" style="font-size:0.72rem;cursor:pointer;margin:0;">
- 파일 추가
- <input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none;" onchange="handleUploadDogFile(${idx}, this)">
- </label>
- </div>
- <div id="upload-msg-${idx}" style="margin-top:6px;"></div>
- </div>
  <div style="display:flex; gap:8px;">
  <button class="btn btn-secondary btn-sm" style="font-size:0.75rem;" onclick="event.stopPropagation(); showEditDogForm(${idx})">수정</button>
  <button class="btn btn-sm" style="background:#FFF0F0; color:#D32F2F; font-size:0.75rem;" onclick="event.stopPropagation(); handleDeleteDog(${idx})">삭제</button>
@@ -172,6 +148,37 @@ function renderProfilePage() {
  `).join('')
  : '<p style="color:var(--color-text-muted);">등록된 반려견이 없습니다.</p>'
  }
+ </div>
+
+ <div class="card" style="padding:24px; margin-bottom:16px;">
+ <h3 style="margin-bottom:16px;">건강 서류 관리</h3>
+ <div id="upload-error"></div>
+ <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+ <div style="flex:1; min-width:100px;">
+ <label style="font-size:0.85rem; font-weight:600; margin-bottom:4px; display:block;">반려견</label>
+ <select id="upload-dog-select" class="form-select" onchange="loadUploadedFiles(null)">
+ ${user.dogs && user.dogs.length > 0 ? user.dogs.map(d => `<option value="${d.id}">${d.name}</option>`).join('') : '<option value="">반려견 없음</option>'}
+ </select>
+ </div>
+ <div style="flex:1; min-width:100px;">
+ <label style="font-size:0.85rem; font-weight:600; margin-bottom:4px; display:block;">서류 종류</label>
+ <select id="upload-type" class="form-select">
+ <option value="vaccination">예방접종 증명서</option>
+ <option value="checkup">건강검진 결과지</option>
+ <option value="treatment">진료 기록 / 처방전</option>
+ <option value="surgery">수술 / 시술 기록</option>
+ <option value="allergy">알러지 / 질병 진단서</option>
+ <option value="medication">복용 약 / 투약 기록</option>
+ <option value="other">기타</option>
+ </select>
+ </div>
+ <div style="flex:1; min-width:100px;">
+ <label style="font-size:0.85rem; font-weight:600; margin-bottom:4px; display:block;">파일 선택</label>
+ <input type="file" id="upload-file" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;">
+ </div>
+ </div>
+ <button class="btn btn-primary btn-sm" onclick="handleUploadFile()">업로드</button>
+ <div id="uploaded-files" style="margin-top:16px;"></div>
  </div>
 
  <div id="profile-photo-modal" class="profile-photo-modal" style="display:none;">
@@ -199,7 +206,7 @@ function renderProfilePage() {
  <div id="dog-reg-modal" style="display:none; position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
  <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
  <div id="dog-reg-card" style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:400px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
- <button onclick="closeDogRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
+ <button onclick="closeDogRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">?</button>
  <div id="dog-reg-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
  <div id="dog-reg-content" style="flex:1; display:flex; flex-direction:column;"></div>
  </div>
@@ -207,10 +214,7 @@ function renderProfilePage() {
  </div>
  `);
 
- // 각 반려견별 서류 로드
- if (user.dogs) {
-   user.dogs.forEach((d, idx) => loadDogFiles(idx, d.id, user.id));
- }
+ loadUploadedFiles(user.id);
 }
 
 let _profilePhotoCrop = null;
@@ -387,11 +391,23 @@ function saveProfilePhotoCrop() {
  const profileImage = canvas.toDataURL('image/jpeg', 0.86);
  const result = AuthService.updateProfile(user.id, { profileImage });
  if (result.success) {
- closeProfilePhotoCrop();
- showToast('프로필 사진을 변경했어요.', 'success');
- renderProfilePage();
+   closeProfilePhotoCrop();
+   showToast('프로필 사진을 변경했어요.', 'success');
+   // 매칭 프로필에도 동기화 (도우미·요청자 카드, 지도 마커에도 반영)
+   if (typeof MatchingService !== 'undefined') {
+     const existingProfile = MatchingService.getMyProfile(user.id);
+    if (existingProfile) {
+      MatchingService.registerProfile(user.id, { ...existingProfile, profilePhoto: profileImage });
+    }
+    fetch(`/api/walkers/${user.id}/photo`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profilePhoto: profileImage })
+    }).catch(() => {});
+  }
+  renderProfilePage();
  } else {
- showToast(result.error || '프로필 사진 변경에 실패했어요.', 'error');
+   showToast(result.error || '프로필 사진 변경에 실패했어요.', 'error');
  }
 }
 
@@ -527,6 +543,8 @@ function renderDogRegStep() {
 function selectDogRegCard(key, value) {
  _dogRegData[key] = value;
  renderDogRegStep();
+ // 카드 선택 후 0.3초 뒤 자동 다음
+ setTimeout(() => nextDogRegStep(), 300);
 }
 
 function handleDogPhotoSelect(input) {
@@ -918,14 +936,14 @@ async function loadDogFiles(idx, dogId, userId) {
 
  const typeLabel = { vaccination: '💉 예방접종', checkup: '🩺 건강검진', treatment: '📝 진료/처방', surgery: '🏥 수술/시술', allergy: '⚠️ 알러지/질병', medication: '💊 투약기록', diagnosis: '🏥 진단서', other: '📄 기타' };
  container.innerHTML = files.map(f => `
- <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--color-bg-section);border-radius:8px;margin-bottom:6px;">
- <div style="font-size:0.75rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--color-bg-section);border-radius:6px;margin-bottom:4px;">
+ <div style="font-size:0.75rem;">
  <span style="font-weight:600;">${typeLabel[f.type] || '📄'}</span>
  <span style="color:var(--color-text-muted);margin-left:4px;">${f.originalName}</span>
  </div>
- <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px;">
- <a href="/api/upload/download/${f.filename}" class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:4px 10px;text-decoration:none;">다운로드</a>
- <button class="btn btn-sm" style="font-size:0.68rem;padding:4px 10px;background:#FFF0F0;color:#D32F2F;border:1px solid #FECACA;" onclick="handleDeleteFile('${f.id}')">삭제</button>
+ <div style="display:flex;gap:4px;">
+ <a href="/api/upload/download/${f.filename}" style="font-size:0.68rem;color:var(--color-mint);text-decoration:none;">다운</a>
+ <button style="font-size:0.68rem;color:#D32F2F;background:none;border:none;cursor:pointer;" onclick="handleDeleteFile('${f.id}')">삭제</button>
  </div>
  </div>
  `).join('');
@@ -1105,34 +1123,6 @@ function handleSaveEditDog(idx) {
  StorageService.set('currentUser', updated);
 
  renderProfilePage();
-}
-
-// --- 프로필 전화번호 인증 ---
-function openKycForProfile() {
-  _kycOnSuccessCallback = async (phoneToken, phone) => {
-    const user = AuthService.getCurrentUser();
-    if (!user) return;
-    try {
-      const res = await fetch('/api/phone/link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, phoneToken })
-      });
-      const data = await res.json();
-      if (data.success) {
-        const normalized = phone.replace(/[^0-9]/g, '');
-        const updated = { ...user, phone: normalized };
-        StorageService.set('currentUser', updated);
-        showToast('전화번호가 등록되었어요!', 'success');
-        renderProfilePage();
-      } else {
-        showToast(data.error || '전화번호 등록에 실패했어요.', 'error');
-      }
-    } catch(e) {
-      showToast('서버 연결에 실패했어요.', 'error');
-    }
-  };
-  openKycModal();
 }
 
 // --- 로그인 페이지 ---

@@ -12,13 +12,31 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 
+function setWalkerAvailability(app, userId, isAvailable) {
+  const walkers = db.get('walkers', []);
+  const idx = walkers.findIndex(w => w.userId === userId);
+  if (idx === -1) return;
+
+  walkers[idx].isAvailable = !!isAvailable;
+  walkers[idx].lastSeenAt = db.now();
+  if (!isAvailable) {
+    walkers[idx].lat = null;
+    walkers[idx].lng = null;
+  }
+  db.set('walkers', walkers);
+
+  const io = app.get('io');
+  if (io) io.emit('walker-status-changed', { userId, isAvailable: !!isAvailable });
+}
+
 // 요청 생성
 router.post('/', (req, res) => {
   const {
     requesterId, walkerId,
-    dogName, dogBreed, dogSize, dogSpecialNotes,
+    dogId, dogs, dogName, dogBreed, dogSize, dogSpecialNotes,
     requestMessage, requestedStartTime, requestedEndTime,
-    pickupLatitude, pickupLongitude
+    pickupLatitude, pickupLongitude,
+    duration, totalPrice, paymentOrderId, paymentAmount
   } = req.body;
 
   if (!requesterId || !walkerId) {
@@ -36,6 +54,36 @@ router.post('/', (req, res) => {
     return res.json({ success: false, error: '이미 대기 중인 요청이 있습니다.' });
   }
 
+  const COOLDOWN_MS = 0; // 테스트 중: 최근 거절/취소 후 재요청 제한 비활성화
+  const now = Date.now();
+  const blockedStatuses = ['rejected', 'walker_busy', 'cancelled', 'rejected_matched'];
+  const recentBlocked = existing
+    .filter(r =>
+      r.requesterId === requesterId &&
+      r.walkerId === walkerId &&
+      blockedStatuses.includes(r.status) &&
+      r.updatedAt &&
+      (now - new Date(r.updatedAt).getTime()) < COOLDOWN_MS
+    )
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+
+  if (recentBlocked) {
+    const remainingMs = COOLDOWN_MS - (now - new Date(recentBlocked.updatedAt).getTime());
+    const remainingMin = Math.max(1, Math.ceil(remainingMs / 60000));
+    const reasonMap = {
+      rejected: '도우미가 요청을 거절했어요',
+      walker_busy: '도우미가 다른 산책을 수락했어요',
+      cancelled: '이전 요청이 취소되었어요',
+      rejected_matched: '다른 도우미가 먼저 매칭되었어요'
+    };
+    return res.json({
+      success: false,
+      cooldown: true,
+      error: `${reasonMap[recentBlocked.status] || '이전 요청 처리 이력'}. ${remainingMin}분 후 다시 시도해주세요.`,
+      retryAfterMs: remainingMs
+    });
+  }
+
   // 요청자 정보 가져오기
   const users = db.get('users', []);
   const requester = users.find(u => u.id === requesterId);
@@ -49,12 +97,20 @@ router.post('/', (req, res) => {
     requesterId,
     walkerId,
     requesterName:      requester ? (requester.nickname || requester.name) : '알 수 없음',
+    requesterPhoto:     requester ? (requester.profileImage || '') : '',
     walkerName:         walker ? walker.userName : '알 수 없음',
+    walkerPhoto:        walker ? (walker.profilePhoto || walker.profileImage || '') : '',
+    dogId:              dogId || null,
+    dogs:               Array.isArray(dogs) ? dogs : null,
     dogName:            dogName || '',
     dogBreed:           dogBreed || '',
     dogSize:            dogSize || '',
     dogSpecialNotes:    dogSpecialNotes || '',
     requestMessage:     requestMessage || '',
+    duration:           Number(duration) || 40,
+    totalPrice:         Number(totalPrice || paymentAmount) || 0,
+    paymentOrderId:     paymentOrderId || null,
+    paymentAmount:      Number(paymentAmount || totalPrice) || 0,
     requestedStartTime: requestedStartTime || '',
     requestedEndTime:   requestedEndTime || '',
     pickupLatitude:     pickupLatitude || null,
@@ -142,6 +198,7 @@ router.patch('/:id/accept', (req, res) => {
   });
 
   db.set('walkRequests', requests);
+  setWalkerAvailability(req.app, walkerId, false);
 
   const r = requests[idx];
 
@@ -186,10 +243,22 @@ router.patch('/:id/reject', (req, res) => {
 
   const r = requests[idx];
 
+  // 결제 건이 있으면 자동 환불 처리
+  if (r.paymentOrderId) {
+    const payments = db.get('payments', []);
+    const payIdx = payments.findIndex(p => p.orderId === r.paymentOrderId);
+    if (payIdx !== -1 && ['pending', 'completed'].includes(payments[payIdx].status)) {
+      payments[payIdx].status = 'refunded';
+      payments[payIdx].refundedAt = db.now();
+      payments[payIdx].refundReason = '도우미 거절';
+      db.set('payments', payments);
+    }
+  }
+
   // Socket.IO로 요청자에게 거절 알림
   const emitToUser = req.app.get('emitToUser');
   if (emitToUser) {
-    emitToUser(r.requesterId, 'walk-request-rejected', { requestId: r.id });
+    emitToUser(r.requesterId, 'walk-request-rejected', { requestId: r.id, refunded: !!r.paymentOrderId });
   }
 
   res.json({ success: true });
@@ -238,6 +307,19 @@ router.patch('/:id/cancel', (req, res) => {
   db.set('walkRequests', requests);
 
   const r = requests[idx];
+
+  // 취소 시 결제 환불 처리
+  if (r.paymentOrderId) {
+    const payments = db.get('payments', []);
+    const payIdx = payments.findIndex(p => p.orderId === r.paymentOrderId);
+    if (payIdx !== -1 && ['pending', 'completed'].includes(payments[payIdx].status)) {
+      payments[payIdx].status = 'refunded';
+      payments[payIdx].refundedAt = db.now();
+      payments[payIdx].refundReason = r.cancelledBy === 'walker' ? '도우미 취소' : '요청자 취소';
+      db.set('payments', payments);
+    }
+  }
+
   const emitToUser = req.app.get('emitToUser');
   if (emitToUser) {
     // 요청자가 취소 → 도우미에게 알림
@@ -246,7 +328,7 @@ router.patch('/:id/cancel', (req, res) => {
     }
     // 도우미가 취소 → 요청자에게 알림
     if (r.cancelledBy === 'walker') {
-      emitToUser(r.requesterId, 'walk-request-cancelled', { requestId: r.id, cancelledBy: 'walker' });
+      emitToUser(r.requesterId, 'walk-request-cancelled', { requestId: r.id, cancelledBy: 'walker', refunded: true });
     }
   }
 
@@ -271,7 +353,8 @@ router.post('/broadcast', (req, res) => {
   const {
     requesterId, dogName, dogBreed, dogSize,
     dogAggression, dogPersonality, walkDifficulty,
-    dogSpecialNotes, pickupLatitude, pickupLongitude
+    dogSpecialNotes, pickupLatitude, pickupLongitude,
+    duration, paymentOrderId, paymentAmount
   } = req.body;
 
   if (!requesterId) {
@@ -302,6 +385,10 @@ router.post('/broadcast', (req, res) => {
     dogSpecialNotes: dogSpecialNotes || '',
     pickupLatitude:  pickupLatitude || null,
     pickupLongitude: pickupLongitude || null,
+    duration:        Number(duration) || 40,
+    paymentOrderId:  paymentOrderId || null,
+    paymentAmount:   Number(paymentAmount) || 0,
+    totalPrice:      Number(paymentAmount) || 0,
     status:         'broadcasting',
     expiresAt:      new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5분 후 만료
     createdAt:      db.now(),
@@ -366,6 +453,7 @@ router.patch('/:id/accept-broadcast', (req, res) => {
   requests[idx].walkerName = walker?.userName || walkerUser?.nickname || walkerUser?.name || '도우미';
   requests[idx].updatedAt = db.now();
   db.set('walkRequests', requests);
+  setWalkerAvailability(req.app, walkerId, false);
 
   const r = requests[idx];
   const emitToUser = req.app.get('emitToUser');

@@ -190,6 +190,11 @@ const AuthService = (() => {
       if (currentUser && currentUser.id === userId) {
         const updatedUser = applyUpdates(currentUser);
         setCurrentUser(updatedUser);
+        fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        }).catch(() => {});
         return { success: true, user: updatedUser };
       }
       return { success: false, error: '사용자를 찾을 수 없습니다.' };
@@ -199,6 +204,12 @@ const AuthService = (() => {
 
     saveUsers(users);
     setCurrentUser(users[index]);
+
+    fetch(`/api/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).catch(() => {});
 
     return { success: true, user: users[index] };
   }

@@ -44,6 +44,13 @@ router.post('/', (req, res) => {
     return res.status(400).json({ success: false, error: 'requestId, walkerId, requesterId가 필요합니다.' });
   }
 
+  // 동일 요청에 대한 진행 중 세션이 이미 있으면 기존 세션 반환 (중복 방지)
+  const existingSessions = db.get('walkSessions', []);
+  const dup = existingSessions.find(s => s.requestId === requestId && ['heading','arrived','handoff','walking'].includes(s.status));
+  if (dup) {
+    return res.json({ success: true, session: dup });
+  }
+
   // walk request 상태 → heading (픽업 이동 중)
   const requests = db.get('walkRequests', []);
   const reqIdx   = requests.findIndex(r => r.id === requestId);
@@ -134,7 +141,14 @@ router.patch('/:id/end', (req, res) => {
   }
 
   const emitToUser = req.app.get('emitToUser');
-  if (emitToUser) emitToUser(s.requesterId, 'walk-ended', { sessionId: s.id, totalDistanceKm: totalDist });
+  if (emitToUser) {
+    emitToUser(s.requesterId, 'walk-ended', {
+      sessionId: s.id,
+      requestId: s.requestId,
+      walkerId: s.walkerId,
+      totalDistanceKm: totalDist
+    });
+  }
 
   res.json({ success: true, session: sessions[idx], totalDistanceKm: totalDist });
 });
