@@ -108,7 +108,7 @@ function renderBreedRecommendUI() {
       <div style="font-size:2.4rem; margin-bottom:12px;">🐾</div>
       <h2 style="margin-bottom:6px;">나에게 맞는 반려견 찾기</h2>
       <p style="color:var(--color-text-muted); font-size:0.9rem; line-height:1.6; margin:0 auto 20px; max-width:360px;">생활 패턴, 주거 환경, 선호도를 바탕으로 383종 중 딱 맞는 견종을 골라드려요.</p>
-      <button id="rec-submit-btn" class="btn btn-primary" onclick="openBreedRecommendFlow()" style="width:100%; max-width:320px; padding:14px; font-weight:800;">추천 시작하기</button>
+      <button id="rec-submit-btn" class="btn btn-primary" onclick="openBreedRecommendFlow()" style="width:100%; max-width:320px; padding:14px; font-weight:800; display:block; margin:0 auto;">추천 시작하기</button>
     </div>
 
     <div id="breed-recommend-result"></div>
@@ -274,7 +274,7 @@ async function handleBreedRecommend() {
   };
   const count = Math.min(20, Math.max(1, parseInt(document.getElementById('rec-count')?.value, 10) || 3));
 
-  if (btn) { btn.disabled = true; btn.style.display = 'flex'; btn.style.alignItems = 'center'; btn.style.justifyContent = 'center'; btn.style.gap = '8px'; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0;"></div>AI가 분석 중...'; }
+  if (btn) { btn.disabled = true; btn.style.display = 'flex'; btn.style.alignItems = 'center'; btn.style.justifyContent = 'center'; btn.style.gap = '8px'; btn.style.margin = '0 auto'; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0;"></div>AI가 분석 중...'; }
   if (resultEl) resultEl.innerHTML = `
     <div class="card" style="padding:60px 40px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:160px;">
       <div class="spinner" style="margin-bottom:20px;"></div>
@@ -304,7 +304,7 @@ async function handleBreedRecommend() {
     resultEl.innerHTML = `<div class="alert alert-error">서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.</div>`;
   }
 
-  if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI 맞춤 추천 받기'; }
+  if (btn) { btn.disabled = false; btn.style.display = 'block'; btn.style.margin = '0 auto'; btn.innerHTML = '🤖 AI 맞춤 추천 받기'; }
 }
 
 // --- 추천 결과 렌더링 ---
@@ -339,6 +339,7 @@ function renderBreedRecommendResult(data) {
           <h3>${rec.name}</h3>
           ${rec.nameEn ? `<span class="breed-rec-result-card__name-en">${rec.nameEn}</span>` : ''}
           ${breed ? `<span class="breed-rec-result-card__size">${sizeMap[breed.size] || ''}</span>` : ''}
+          ${rec.matchScore ? `<span style="font-size:0.75rem; font-weight:700; color:#fff; background:var(--color-primary,#7c5cfc); border-radius:20px; padding:2px 10px; white-space:nowrap;">${rec.matchScore}% 일치</span>` : ''}
         </div>
         <p class="breed-rec-result-card__reason">${rec.reason}</p>
         ${prosHtml || consHtml ? `<div class="breed-rec-result-card__traits">${prosHtml}${consHtml}</div>` : ''}
