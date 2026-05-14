@@ -30,6 +30,55 @@ function syncWalkRequestStatus(requestId, status, extra = {}) {
   return walkRequests[reqIdx];
 }
 
+function emitReturnHandoffUpdate(req, session) {
+  const emitToUser = req.app.get('emitToUser');
+  if (!emitToUser) return;
+
+  const payload = {
+    sessionId: session.id,
+    requestId: session.requestId,
+    walkerId: session.walkerId,
+    requesterId: session.requesterId,
+    walkerReturnHandoffConfirmedAt: session.walkerReturnHandoffConfirmedAt || null,
+    requesterReturnHandoffConfirmedAt: session.requesterReturnHandoffConfirmedAt || null
+  };
+  emitToUser(session.requesterId, 'return-handoff-updated', payload);
+  emitToUser(session.walkerId, 'return-handoff-updated', payload);
+}
+
+function completeWalkSession(req, sessions, idx) {
+  sessions[idx].status = 'completed';
+  sessions[idx].endedAt = db.now();
+
+  const s = sessions[idx];
+  const points = readRoutePoints(s.id);
+  const totalDist = calcTotalDistance(points);
+  sessions[idx].totalDistanceKm = totalDist;
+  db.set('walkSessions', sessions);
+
+  syncWalkRequestStatus(s.requestId, 'completed', {
+    endedAt: sessions[idx].endedAt,
+    totalDistanceKm: totalDist,
+    walkerReturnHandoffConfirmedAt: s.walkerReturnHandoffConfirmedAt || null,
+    requesterReturnHandoffConfirmedAt: s.requesterReturnHandoffConfirmedAt || null
+  });
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) {
+    const payload = {
+      sessionId: s.id,
+      requestId: s.requestId,
+      walkerId: s.walkerId,
+      requesterId: s.requesterId,
+      totalDistanceKm: totalDist
+    };
+    emitToUser(s.requesterId, 'walk-ended', payload);
+    emitToUser(s.walkerId, 'walk-ended', payload);
+  }
+
+  return { session: sessions[idx], totalDistanceKm: totalDist };
+}
+
 // 세션별 경로 파일 경로
 function routeFilePath(sessionId) {
   return path.join(DATA_DIR, `route_${sessionId}.json`);
@@ -83,9 +132,12 @@ router.post('/', (req, res) => {
     status:        'heading',
     startedAt:     db.now(),
     arrivedAt:     null,
+    handoffAt:      null,
     walkStartedAt: null,
     returnStartedAt: null,
     returnArrivedAt: null,
+    walkerReturnHandoffConfirmedAt: null,
+    requesterReturnHandoffConfirmedAt: null,
     endedAt:       null
   };
 
@@ -226,10 +278,16 @@ router.patch('/:id/arrive-return', (req, res) => {
 
   sessions[idx].status = 'return_arrived';
   sessions[idx].returnArrivedAt = db.now();
+  sessions[idx].walkerReturnHandoffConfirmedAt = null;
+  sessions[idx].requesterReturnHandoffConfirmedAt = null;
   db.set('walkSessions', sessions);
 
   const s = sessions[idx];
-  syncWalkRequestStatus(s.requestId, 'return_arrived');
+  syncWalkRequestStatus(s.requestId, 'return_arrived', {
+    returnArrivedAt: s.returnArrivedAt,
+    walkerReturnHandoffConfirmedAt: null,
+    requesterReturnHandoffConfirmedAt: null
+  });
 
   const emitToUser = req.app.get('emitToUser');
   if (emitToUser) {
@@ -243,63 +301,115 @@ router.patch('/:id/arrive-return', (req, res) => {
   res.json({ success: true, session: sessions[idx] });
 });
 
-// 요청자가 반려견 전달 완료 확인 (arrived → handoff)
+// 요청자가 반려견 전달 완료 확인 (arrived -> walking)
 router.patch('/:id/confirm-handoff', (req, res) => {
   const sessions = db.get('walkSessions', []);
   const idx = sessions.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status === 'walking') {
+    return res.json({ success: true, session: sessions[idx] });
+  }
   if (sessions[idx].status !== 'arrived') {
     return res.json({ success: false, error: '도우미가 도착한 후 전달 확인이 가능합니다.' });
   }
-  sessions[idx].status    = 'handoff';
-  sessions[idx].handoffAt = db.now();
+  const now = db.now();
+  sessions[idx].status        = 'walking';
+  sessions[idx].handoffAt     = now;
+  sessions[idx].walkStartedAt = now;
   db.set('walkSessions', sessions);
 
   const s = sessions[idx];
-  // walk request 상태도 handoff로 동기화
-  const walkRequests = db.get('walkRequests', []);
-  const reqIdx = walkRequests.findIndex(r => r.id === s.requestId);
-  if (reqIdx !== -1) { walkRequests[reqIdx].status = 'handoff'; walkRequests[reqIdx].updatedAt = db.now(); db.set('walkRequests', walkRequests); }
+  syncWalkRequestStatus(s.requestId, 'walking', {
+    handoffAt: s.handoffAt,
+    walkStartedAt: s.walkStartedAt,
+    sessionId: s.id
+  });
 
   const emitToUser = req.app.get('emitToUser');
-  if (emitToUser) emitToUser(s.walkerId, 'handoff-confirmed', { sessionId: s.id });
+  if (emitToUser) {
+    emitToUser(s.walkerId, 'handoff-confirmed', {
+      sessionId: s.id,
+      requestId: s.requestId,
+      status: 'walking'
+    });
+    emitToUser(s.requesterId, 'walk-tracking-started', {
+      sessionId: s.id,
+      requestId: s.requestId,
+      walkerId: s.walkerId
+    });
+  }
 
   res.json({ success: true, session: sessions[idx] });
 });
 
-// 요청자가 반려견을 다시 인계받아 산책 종료 (return_arrived -> completed)
+// 도우미가 복귀 후 반려견 인계 완료 확인
+router.patch('/:id/confirm-walker-return-handoff', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status === 'completed') {
+    return res.json({ success: true, completed: true, session: sessions[idx], totalDistanceKm: sessions[idx].totalDistanceKm || 0 });
+  }
+  if (sessions[idx].status !== 'return_arrived') {
+    return res.json({ success: false, error: '복귀 도착 후에만 인계 확인이 가능합니다.' });
+  }
+
+  sessions[idx].walkerReturnHandoffConfirmedAt = sessions[idx].walkerReturnHandoffConfirmedAt || db.now();
+
+  if (sessions[idx].requesterReturnHandoffConfirmedAt) {
+    const completed = completeWalkSession(req, sessions, idx);
+    return res.json({ success: true, completed: true, ...completed });
+  }
+
+  db.set('walkSessions', sessions);
+  const s = sessions[idx];
+  syncWalkRequestStatus(s.requestId, 'return_arrived', {
+    walkerReturnHandoffConfirmedAt: s.walkerReturnHandoffConfirmedAt,
+    requesterReturnHandoffConfirmedAt: s.requesterReturnHandoffConfirmedAt || null
+  });
+  emitReturnHandoffUpdate(req, s);
+  res.json({
+    success: false,
+    pending: true,
+    completed: false,
+    error: '요청자의 인계 확인을 기다리고 있습니다.',
+    session: s
+  });
+});
+
+// 요청자가 반려견을 다시 인계받았는지 확인
 router.patch('/:id/confirm-return-handoff', (req, res) => {
   const sessions = db.get('walkSessions', []);
   const idx = sessions.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status === 'completed') {
+    return res.json({ success: true, completed: true, session: sessions[idx], totalDistanceKm: sessions[idx].totalDistanceKm || 0 });
+  }
   if (sessions[idx].status !== 'return_arrived') {
-    return res.json({ success: false, error: '도우미가 복귀 도착한 후에만 종료할 수 있습니다.' });
+    return res.json({ success: false, error: '도우미가 복귀 도착한 후에만 인계 확인이 가능합니다.' });
   }
 
-  sessions[idx].status = 'completed';
-  sessions[idx].endedAt = db.now();
+  sessions[idx].requesterReturnHandoffConfirmedAt = sessions[idx].requesterReturnHandoffConfirmedAt || db.now();
 
-  const s = sessions[idx];
-  const points = readRoutePoints(s.id);
-  const totalDist = calcTotalDistance(points);
-  sessions[idx].totalDistanceKm = totalDist;
+  if (sessions[idx].walkerReturnHandoffConfirmedAt) {
+    const completed = completeWalkSession(req, sessions, idx);
+    return res.json({ success: true, completed: true, ...completed });
+  }
+
   db.set('walkSessions', sessions);
-
-  syncWalkRequestStatus(s.requestId, 'completed');
-
-  const emitToUser = req.app.get('emitToUser');
-  if (emitToUser) {
-    const payload = {
-      sessionId: s.id,
-      requestId: s.requestId,
-      walkerId: s.walkerId,
-      totalDistanceKm: totalDist
-    };
-    emitToUser(s.requesterId, 'walk-ended', payload);
-    emitToUser(s.walkerId, 'walk-ended', payload);
-  }
-
-  res.json({ success: true, session: sessions[idx], totalDistanceKm: totalDist });
+  const s = sessions[idx];
+  syncWalkRequestStatus(s.requestId, 'return_arrived', {
+    walkerReturnHandoffConfirmedAt: s.walkerReturnHandoffConfirmedAt || null,
+    requesterReturnHandoffConfirmedAt: s.requesterReturnHandoffConfirmedAt
+  });
+  emitReturnHandoffUpdate(req, s);
+  res.json({
+    success: false,
+    pending: true,
+    completed: false,
+    error: '도우미의 인계 확인을 기다리고 있습니다.',
+    session: s
+  });
 });
 
 // 산책 실제 시작 (handoff → walking) — 도우미가 반려견 픽업 후 누름
@@ -307,25 +417,31 @@ router.patch('/:id/start-walk', (req, res) => {
   const sessions = db.get('walkSessions', []);
   const idx = sessions.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status === 'walking') {
+    return res.json({ success: true, session: sessions[idx] });
+  }
   if (sessions[idx].status !== 'handoff') {
     return res.json({ success: false, error: '요청자가 반려견 전달을 확인한 뒤 산책을 시작할 수 있습니다.' });
   }
+  const now = db.now();
   sessions[idx].status        = 'walking';
-  sessions[idx].walkStartedAt = db.now();
+  sessions[idx].walkStartedAt = sessions[idx].walkStartedAt || now;
+  sessions[idx].handoffAt     = sessions[idx].handoffAt || now;
   db.set('walkSessions', sessions);
 
   // walk-request status도 walking으로 업데이트 (요청자 화면 동기화)
   const s = sessions[idx];
-  const walkRequests = db.get('walkRequests', []);
-  const reqIdx = walkRequests.findIndex(r => r.id === s.requestId);
-  if (reqIdx !== -1) {
-    walkRequests[reqIdx].status = 'walking';
-    walkRequests[reqIdx].updatedAt = db.now();
-    db.set('walkRequests', walkRequests);
-  }
+  syncWalkRequestStatus(s.requestId, 'walking', {
+    handoffAt: s.handoffAt,
+    walkStartedAt: s.walkStartedAt,
+    sessionId: s.id
+  });
 
   const emitToUser = req.app.get('emitToUser');
-  if (emitToUser) emitToUser(s.requesterId, 'walk-tracking-started', { sessionId: s.id });
+  if (emitToUser) {
+    emitToUser(s.requesterId, 'walk-tracking-started', { sessionId: s.id, requestId: s.requestId, walkerId: s.walkerId });
+    emitToUser(s.walkerId, 'handoff-confirmed', { sessionId: s.id, requestId: s.requestId, status: 'walking' });
+  }
 
   res.json({ success: true, session: sessions[idx] });
 });

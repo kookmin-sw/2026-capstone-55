@@ -4,19 +4,99 @@ let breedPageTab = 'recommend'; // 'encyclopedia' | 'recommend'
 
 function renderBreedListPage() {
   renderPage(`
-    <div class="page-header">
-      <h1>🐕 품종 정보</h1>
-      <p>우리 아이 품종의 특성과 주의사항을 알아봐요~</p>
+    <style>
+      .breed-atlas-page { max-width:1120px; margin:0 auto; padding:10px 0 44px; color:#0B1220; }
+      .breed-atlas-hero { position:relative; overflow:hidden; min-height:300px; border:1px solid #DDE6F0; border-radius:8px; margin-bottom:18px; background:
+        linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.88) 44%, rgba(255,255,255,.38) 100%),
+        url('/품종정보탭히어로배경.png') center / cover no-repeat; box-shadow:0 24px 58px rgba(15,23,42,.08); }
+      .breed-atlas-hero__content { position:relative; z-index:1; max-width:600px; padding:36px 36px 32px; }
+      .breed-atlas-hero__eyebrow { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:999px; background:#EFF6FF; color:#175CD3; font-size:.72rem; font-weight:950; margin-bottom:14px; }
+      .breed-atlas-hero h1 { margin:0 0 10px; font-size:2.1rem; line-height:1.16; font-weight:950; letter-spacing:0; color:#0B1220; }
+      .breed-atlas-hero p { margin:0; max-width:520px; color:#52637A; line-height:1.68; font-size:.94rem; }
+      .breed-atlas-hero__search { margin-top:22px; display:flex; align-items:center; gap:10px; max-width:520px; padding:11px 13px; border:1px solid #DDE6F0; border-radius:8px; background:rgba(255,255,255,.92); box-shadow:0 14px 32px rgba(15,23,42,.08); }
+      .breed-atlas-hero__search input { flex:1; min-width:0; border:none; outline:none; background:transparent; color:#0B1220; font-size:.92rem; font-weight:800; }
+      .breed-atlas-hero__search input::placeholder { color:#94A3B8; }
+      .breed-atlas-stats { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+      .breed-atlas-stats span { padding:6px 10px; border-radius:999px; background:#fff; border:1px solid #E2E8F0; color:#64748B; font-size:.72rem; font-weight:900; }
+      .breed-tabs { display:inline-flex; gap:4px; padding:4px; margin-bottom:18px; border:1px solid #DDE6F0; border-radius:999px; background:#F8FAFC; }
+      .breed-tab { min-width:134px; padding:10px 16px; border:none; border-radius:999px; cursor:pointer; font-weight:950; font-size:.84rem; transition:all .18s; background:transparent; color:#64748B; }
+      .breed-tab:hover { color:#0B1220; }
+      .breed-tab--active { background:#0B1220 !important; color:#fff !important; box-shadow:0 10px 22px rgba(15,23,42,.14); }
+      .breed-tab-panel { animation:breedFadeIn .18s ease; }
+      @keyframes breedFadeIn { from{opacity:.7;transform:translateY(4px)} to{opacity:1;transform:none} }
+      .breed-search-panel { display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:13px 15px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; box-shadow:0 14px 34px rgba(15,23,42,.055); }
+      .breed-search-panel input { flex:1; min-width:0; border:none; outline:none; font-size:.92rem; font-weight:800; color:#0B1220; }
+      .breed-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+      .breed-atlas-card { overflow:hidden; border:1px solid #DDE6F0; border-radius:8px; background:#fff; cursor:pointer; box-shadow:0 16px 38px rgba(15,23,42,.055); transition:transform .16s, box-shadow .16s, border-color .16s; }
+      .breed-atlas-card:hover { transform:translateY(-2px); border-color:#CBD5E1; box-shadow:0 22px 46px rgba(15,23,42,.095); }
+      .breed-atlas-card__image { position:relative; height:210px; background:#F8FAFC; display:flex; align-items:center; justify-content:center; font-size:2.8rem; }
+      .breed-atlas-card__badge { position:absolute; top:12px; left:12px; padding:5px 9px; border-radius:999px; background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.9); color:#334155; font-size:.68rem; font-weight:950; }
+      .breed-atlas-card__body { padding:17px 18px 18px; }
+      .breed-atlas-card__name { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:4px; }
+      .breed-atlas-card__name strong { font-size:1.02rem; font-weight:950; color:#0B1220; }
+      .breed-atlas-card__name span { color:#94A3B8; font-size:.72rem; font-weight:800; text-align:right; }
+      .breed-atlas-card__text { min-height:42px; color:#64748B; font-size:.8rem; line-height:1.55; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+      .breed-trait-bars { display:grid; gap:8px; margin-top:14px; }
+      .breed-trait-bar { display:grid; grid-template-columns:56px minmax(0,1fr) 32px; gap:8px; align-items:center; color:#64748B; font-size:.68rem; font-weight:900; }
+      .breed-trait-bar__track { height:6px; overflow:hidden; border-radius:999px; background:#E2E8F0; }
+      .breed-trait-bar__track span { display:block; height:100%; border-radius:999px; background:#2563EB; }
+      .breed-trait-bar:nth-child(2) .breed-trait-bar__track span { background:#0F766E; }
+      .breed-trait-bar:nth-child(3) .breed-trait-bar__track span { background:#F97316; }
+      .breed-recommend-hero { display:grid; grid-template-columns:minmax(0,1.08fr) minmax(260px,.72fr); gap:16px; align-items:stretch; margin-bottom:20px; }
+      .breed-recommend-card { padding:30px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; box-shadow:0 18px 44px rgba(15,23,42,.065); }
+      .breed-recommend-card__kicker { display:inline-flex; padding:6px 10px; border-radius:999px; background:#ECFDF5; color:#047857; font-size:.72rem; font-weight:950; margin-bottom:12px; }
+      .breed-recommend-card h2 { margin:0 0 8px; font-size:1.65rem; line-height:1.22; font-weight:950; }
+      .breed-recommend-card p { margin:0; max-width:560px; color:#64748B; line-height:1.65; font-size:.9rem; }
+      .breed-recommend-card__features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:18px 0 20px; }
+      .breed-recommend-card__features span { padding:10px; border-radius:8px; background:#F8FAFC; border:1px solid #EEF2F7; color:#334155; font-size:.74rem; font-weight:900; text-align:center; }
+      .breed-recommend-card .btn { width:100%; max-width:320px; padding:14px; font-weight:950; }
+      .breed-recommend-photo { position:relative; min-height:286px; overflow:hidden; border-radius:8px; border:1px solid #DDE6F0; background:url('/품종상세페이지용이미지.png') center / cover no-repeat; box-shadow:0 18px 44px rgba(15,23,42,.08); }
+      .breed-recommend-photo::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,18,32,.02), rgba(11,18,32,.52)); }
+      .breed-recommend-photo__copy { position:absolute; left:18px; right:18px; bottom:18px; z-index:1; color:#fff; }
+      .breed-recommend-photo__copy strong { display:block; font-size:1.02rem; font-weight:950; margin-bottom:5px; }
+      .breed-recommend-photo__copy span { display:block; font-size:.78rem; line-height:1.55; opacity:.9; }
+      @media (max-width:920px) { .breed-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .breed-recommend-hero { grid-template-columns:1fr; } }
+      @media (max-width:640px) {
+        .breed-atlas-hero { min-height:0; }
+        .breed-atlas-hero__content { padding:26px 18px; }
+        .breed-atlas-hero h1 { font-size:1.55rem; }
+        .breed-tabs { display:grid; grid-template-columns:1fr 1fr; width:100%; border-radius:8px; }
+        .breed-tab { min-width:0; border-radius:8px; }
+        .breed-grid { grid-template-columns:1fr; }
+        .breed-recommend-card { padding:22px 18px; }
+        .breed-recommend-card__features { grid-template-columns:1fr; }
+        .breed-recommend-photo { min-height:220px; }
+      }
+    </style>
+
+    <div class="breed-atlas-page">
+      <section class="breed-atlas-hero">
+        <div class="breed-atlas-hero__content">
+          <div class="breed-atlas-hero__eyebrow">품종 탐색 도감</div>
+          <h1>우리 가족에게 맞는 견종을 더 선명하게 찾아요</h1>
+          <p>성격, 활동량, 미용 관리, 주거 환경까지 함께 보며 품종을 탐색하고 AI 추천을 받을 수 있어요.</p>
+          <div class="breed-atlas-hero__search">
+            <span>🔎</span>
+            <input type="text" placeholder="품종 이름으로 바로 검색..." onfocus="switchBreedTab('encyclopedia'); setTimeout(() => document.getElementById('breed-search')?.focus(), 30)" oninput="switchBreedTab('encyclopedia'); setTimeout(() => { const el = document.getElementById('breed-search'); if (el) { el.value = this.value; handleBreedSearch(this.value); } }, 30)">
+          </div>
+          <div class="breed-atlas-stats">
+            <span>383종 품종 데이터</span>
+            <span>생활패턴 기반 추천</span>
+            <span>활동량/관리 난이도 비교</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="breed-tabs">
+        <button id="tab-recommend" class="breed-tab ${breedPageTab === 'recommend' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('recommend')">
+          AI 맞춤 추천
+        </button>
+        <button id="tab-encyclopedia" class="breed-tab ${breedPageTab === 'encyclopedia' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('encyclopedia')">
+          품종 백과사전
+        </button>
+      </div>
+      <div id="breed-tab-content" class="breed-tab-panel"></div>
     </div>
-    <div class="breed-tabs" style="display:flex; gap:0; margin-bottom:20px; border-radius:12px; overflow:hidden; border:2px solid var(--color-primary);">
-      <button id="tab-recommend" class="breed-tab ${breedPageTab === 'recommend' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('recommend')" style="flex:1; padding:12px 16px; border:none; cursor:pointer; font-weight:700; font-size:0.95rem; transition:all 0.2s;">
-        AI 맞춤 추천
-      </button>
-      <button id="tab-encyclopedia" class="breed-tab ${breedPageTab === 'encyclopedia' ? 'breed-tab--active' : ''}" onclick="switchBreedTab('encyclopedia')" style="flex:1; padding:12px 16px; border:none; cursor:pointer; font-weight:700; font-size:0.95rem; transition:all 0.2s;">
-        품종 백과사전
-      </button>
-    </div>
-    <div id="breed-tab-content"></div>
   `);
   renderBreedTabContent();
 }
@@ -35,11 +115,11 @@ function renderBreedTabContent() {
 
   if (breedPageTab === 'encyclopedia') {
     container.innerHTML = `
-      <div class="search-bar">
-        <span class="search-icon">🔍</span>
+      <div class="breed-search-panel">
+        <span>🔍</span>
         <input type="text" id="breed-search" placeholder="품종 이름으로 검색..." oninput="handleBreedSearch(this.value)">
       </div>
-      <div class="grid-2" id="breed-list">
+      <div class="breed-grid" id="breed-list">
         ${renderBreedCards(BreedService.getAll())}
       </div>
     `;
@@ -104,12 +184,25 @@ function renderBreedRecommendUI() {
     <input type="checkbox" id="rec-apartment" style="display:none;">
     <textarea id="rec-freetext" style="display:none;"></textarea>
 
-    <div class="card" style="padding:28px; margin-bottom:20px; text-align:center;">
-      <div style="font-size:2.4rem; margin-bottom:12px;">🐾</div>
-      <h2 style="margin-bottom:6px;">나에게 맞는 반려견 찾기</h2>
-      <p style="color:var(--color-text-muted); font-size:0.9rem; line-height:1.6; margin:0 auto 20px; max-width:360px;">생활 패턴, 주거 환경, 선호도를 바탕으로 383종 중 딱 맞는 견종을 골라드려요.</p>
-      <button id="rec-submit-btn" class="btn btn-primary" onclick="openBreedRecommendFlow()" style="width:100%; max-width:320px; padding:14px; font-weight:800;">추천 시작하기</button>
-    </div>
+    <section class="breed-recommend-hero">
+      <div class="breed-recommend-card">
+        <div class="breed-recommend-card__kicker">AI 맞춤 견종 찾기</div>
+        <h2>생활 리듬에 맞는 견종을 추천받아보세요</h2>
+        <p>크기, 활동량, 미용 관리, 주거 환경을 차례로 선택하면 Pawsitive가 품종 후보를 좁혀드려요.</p>
+        <div class="breed-recommend-card__features">
+          <span>초보자 적합</span>
+          <span>아파트 생활</span>
+          <span>관리 난이도</span>
+        </div>
+        <button id="rec-submit-btn" class="btn btn-primary" onclick="openBreedRecommendFlow()">추천 시작하기</button>
+      </div>
+      <div class="breed-recommend-photo">
+        <div class="breed-recommend-photo__copy">
+          <strong>이미지와 데이터가 함께 있는 도감</strong>
+          <span>품종별 성격, 활동량, 관리 포인트를 한눈에 비교해요.</span>
+        </div>
+      </div>
+    </section>
 
     <div id="breed-recommend-result"></div>
   `;
@@ -352,6 +445,14 @@ function renderBreedRecommendResult(data) {
   return html;
 }
 
+function breedLevelPercent(level) {
+  return ({ low: 34, medium: 64, high: 92 }[level] || 52);
+}
+
+function breedLevelText(level) {
+  return ({ low: '낮음', medium: '보통', high: '높음' }[level] || '-');
+}
+
 function renderBreedCards(breeds) {
   if (breeds.length === 0) {
     return `<div class="empty-state" style="grid-column: 1/-1;">
@@ -360,21 +461,37 @@ function renderBreedCards(breeds) {
     </div>`;
   }
   const sizeMap = { small: '소형', medium: '중형', large: '대형' };
-  const exerciseMap = { low: '낮음', medium: '보통', high: '높음' };
   return breeds.map(breed => `
-    <div class="card" onclick="Router.navigate('/breeds/${breed.id}')" style="cursor:pointer;">
-      <div class="card__image breed-img" data-breed-id="${breed.id}" style="background: #F5F3F0; display:flex; align-items:center; justify-content:center; font-size:2.8rem; position:relative;">🐾</div>
-      <div class="card__body">
-        <div class="card__title">${breed.name}</div>
-        <div class="card__subtitle">
-          <span class="badge badge-primary">${sizeMap[breed.size]}</span>
-          <span class="badge badge-info" style="margin-left:4px;">운동량: ${exerciseMap[breed.exerciseLevel]}</span>
+    <article class="breed-atlas-card" onclick="Router.navigate('/breeds/${breed.id}')">
+      <div class="breed-atlas-card__image breed-img" data-breed-id="${breed.id}" data-fit-contain>
+        🐾
+        <span class="breed-atlas-card__badge">${sizeMap[breed.size] || '견종'}</span>
+      </div>
+      <div class="breed-atlas-card__body">
+        <div class="breed-atlas-card__name">
+          <strong>${breed.name}</strong>
+          ${breed.nameEn ? `<span>${breed.nameEn}</span>` : ''}
         </div>
-        <div class="card__text" style="margin-top:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
-          ${breed.personality}
+        <div class="breed-atlas-card__text">${breed.personality || '성격 정보가 준비 중이에요.'}</div>
+        <div class="breed-trait-bars">
+          <div class="breed-trait-bar">
+            <span>활동량</span>
+            <div class="breed-trait-bar__track"><span style="width:${breedLevelPercent(breed.exerciseLevel)}%;"></span></div>
+            <strong>${breedLevelText(breed.exerciseLevel)}</strong>
+          </div>
+          <div class="breed-trait-bar">
+            <span>미용</span>
+            <div class="breed-trait-bar__track"><span style="width:${breedLevelPercent(breed.groomingLevel)}%;"></span></div>
+            <strong>${breedLevelText(breed.groomingLevel)}</strong>
+          </div>
+          <div class="breed-trait-bar">
+            <span>훈련</span>
+            <div class="breed-trait-bar__track"><span style="width:${breedLevelPercent(breed.trainability)}%;"></span></div>
+            <strong>${breedLevelText(breed.trainability)}</strong>
+          </div>
         </div>
       </div>
-    </div>
+    </article>
   `).join('');
 }
 
@@ -407,41 +524,64 @@ function renderBreedDetailPage(params) {
   const levelColor = { low: 'badge-success', medium: 'badge-info', high: 'badge-error' };
 
   renderPage(`
-    <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds')" style="margin-bottom:16px;">← 목록으로</button>
-    <div class="detail-header">
-      <div id="breed-detail-img" data-breed-id="${breed.id}" data-fit-contain style="width:100%; height:300px; background: #F5F3F0; border-radius: var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:4.5rem; margin-bottom:16px; position:relative;">🐾</div>
-      <h1>${breed.name} ${breed.nameEn ? '<span style="font-size:0.9rem; color:var(--color-text-light); font-weight:600;">' + breed.nameEn + '</span>' : ''}</h1>
-      <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
-        <span class="badge badge-primary">${sizeMap[breed.size]}</span>
-        ${breed.group ? '<span class="badge badge-info">' + breed.group + '</span>' : ''}
-        ${breed.origin ? '<span class="badge badge-success">' + breed.origin + '</span>' : ''}
-      </div>
-    </div>
+    <style>
+      .breed-detail-page { max-width:1040px; margin:0 auto; padding:8px 0 44px; color:#0B1220; }
+      .breed-detail-back { margin-bottom:14px; }
+      .breed-detail-hero { display:grid; grid-template-columns:minmax(0,.92fr) minmax(320px,1fr); gap:18px; align-items:stretch; margin-bottom:18px; }
+      .breed-detail-copy { padding:30px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; box-shadow:0 18px 44px rgba(15,23,42,.065); }
+      .breed-detail-copy__kicker { display:inline-flex; padding:6px 10px; border-radius:999px; background:#EFF6FF; color:#175CD3; font-size:.72rem; font-weight:950; margin-bottom:14px; }
+      .breed-detail-copy h1 { margin:0 0 8px; font-size:2.05rem; line-height:1.16; font-weight:950; letter-spacing:0; }
+      .breed-detail-copy h1 span { display:block; margin-top:6px; color:#94A3B8; font-size:.9rem; font-weight:850; }
+      .breed-detail-copy p { margin:16px 0 0; color:#52637A; line-height:1.68; font-size:.92rem; }
+      .breed-detail-badges { display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
+      .breed-detail-badges span { padding:7px 10px; border-radius:999px; background:#F8FAFC; border:1px solid #E2E8F0; color:#334155; font-size:.74rem; font-weight:950; }
+      .breed-detail-image { min-height:360px; border:1px solid #DDE6F0; border-radius:8px; overflow:hidden; background:#F8FAFC; display:flex; align-items:center; justify-content:center; font-size:4.5rem; box-shadow:0 18px 44px rgba(15,23,42,.075); }
+      .breed-detail-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+      .breed-detail-metric { padding:18px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; text-align:center; }
+      .breed-detail-metric span { display:block; color:#8290A3; font-size:.72rem; font-weight:900; margin-bottom:6px; }
+      .breed-detail-metric strong { color:#0B1220; font-size:.98rem; font-weight:950; }
+      .breed-detail-traits { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+      .breed-detail-trait { padding:16px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; }
+      .breed-detail-trait__top { display:flex; justify-content:space-between; align-items:center; gap:8px; color:#64748B; font-size:.72rem; font-weight:950; margin-bottom:9px; }
+      .breed-detail-trait__bar { height:8px; border-radius:999px; overflow:hidden; background:#E2E8F0; }
+      .breed-detail-trait__bar span { display:block; height:100%; border-radius:999px; background:#2563EB; }
+      .breed-detail-trait:nth-child(2) .breed-detail-trait__bar span { background:#0F766E; }
+      .breed-detail-trait:nth-child(3) .breed-detail-trait__bar span { background:#F97316; }
+      .breed-detail-ai { padding:22px; border:1px solid #DDE6F0; border-radius:8px; background:#fff; box-shadow:0 16px 38px rgba(15,23,42,.055); }
+      @media (max-width:820px) { .breed-detail-hero, .breed-detail-metrics, .breed-detail-traits { grid-template-columns:1fr; } .breed-detail-image { min-height:280px; } .breed-detail-copy { padding:24px 18px; } }
+    </style>
+    <div class="breed-detail-page">
+      <button class="btn btn-secondary btn-sm breed-detail-back" onclick="Router.navigate('/breeds')">← 목록으로</button>
+      <section class="breed-detail-hero">
+        <div class="breed-detail-copy">
+          <div class="breed-detail-copy__kicker">품종 프로필</div>
+          <h1>${breed.name} ${breed.nameEn ? '<span>' + breed.nameEn + '</span>' : ''}</h1>
+          <div class="breed-detail-badges">
+            <span>${sizeMap[breed.size]}</span>
+            ${breed.group ? '<span>' + breed.group + '</span>' : ''}
+            ${breed.origin ? '<span>' + breed.origin + '</span>' : ''}
+          </div>
+          <p>${breed.personality}</p>
+        </div>
+        <div id="breed-detail-img" class="breed-detail-image" data-breed-id="${breed.id}" data-fit-contain>🐾</div>
+      </section>
 
-    ${breed.lifespan || breed.weight || breed.height ? `
-    <div class="card" style="padding:20px; margin-bottom:16px;">
-      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:12px; text-align:center;">
-        ${breed.lifespan ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">수명</div><div style="font-weight:800; margin-top:2px;">' + breed.lifespan + '</div></div>' : ''}
-        ${breed.weight ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">체중</div><div style="font-weight:800; margin-top:2px;">' + breed.weight + '</div></div>' : ''}
-        ${breed.height ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">키</div><div style="font-weight:800; margin-top:2px;">' + breed.height + '</div></div>' : ''}
+      ${breed.lifespan || breed.weight || breed.height ? `
+      <div class="breed-detail-metrics">
+        ${breed.lifespan ? '<div class="breed-detail-metric"><span>수명</span><strong>' + breed.lifespan + '</strong></div>' : ''}
+        ${breed.weight ? '<div class="breed-detail-metric"><span>체중</span><strong>' + breed.weight + '</strong></div>' : ''}
+        ${breed.height ? '<div class="breed-detail-metric"><span>키</span><strong>' + breed.height + '</strong></div>' : ''}
       </div>
-    </div>` : ''}
+      ` : ''}
 
-    <div class="card" style="padding:20px; margin-bottom:16px;">
-      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px; text-align:center;">
-        <div><div style="font-size:0.75rem; color:var(--color-text-muted);">운동량</div><span class="badge ${levelColor[breed.exerciseLevel]}" style="margin-top:4px;">${levelMap[breed.exerciseLevel]}</span></div>
-        ${breed.groomingLevel ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">미용 관리</div><span class="badge ' + levelColor[breed.groomingLevel] + '" style="margin-top:4px;">' + levelMap[breed.groomingLevel] + '</span></div>' : ''}
-        ${breed.trainability ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">훈련 난이도</div><span class="badge ' + levelColor[breed.trainability] + '" style="margin-top:4px;">' + levelMap[breed.trainability] + '</span></div>' : ''}
-        ${breed.barkingLevel ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">짖음</div><span class="badge ' + levelColor[breed.barkingLevel] + '" style="margin-top:4px;">' + levelMap[breed.barkingLevel] + '</span></div>' : ''}
-        ${breed.childFriendly !== undefined ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">아이 친화</div><div style="font-weight:800; margin-top:4px;">' + (breed.childFriendly ? '⭕' : '❌') + '</div></div>' : ''}
-        ${breed.apartmentFriendly !== undefined ? '<div><div style="font-size:0.75rem; color:var(--color-text-muted);">아파트 적합</div><div style="font-weight:800; margin-top:4px;">' + (breed.apartmentFriendly ? '⭕' : '❌') + '</div></div>' : ''}
+      <div class="breed-detail-traits">
+        <div class="breed-detail-trait">
+          <div class="breed-detail-trait__top"><span>운동량</span><strong>${levelMap[breed.exerciseLevel]}</strong></div>
+          <div class="breed-detail-trait__bar"><span style="width:${breedLevelPercent(breed.exerciseLevel)}%;"></span></div>
+        </div>
+        ${breed.groomingLevel ? '<div class="breed-detail-trait"><div class="breed-detail-trait__top"><span>미용 관리</span><strong>' + levelMap[breed.groomingLevel] + '</strong></div><div class="breed-detail-trait__bar"><span style="width:' + breedLevelPercent(breed.groomingLevel) + '%;"></span></div></div>' : ''}
+        ${breed.trainability ? '<div class="breed-detail-trait"><div class="breed-detail-trait__top"><span>훈련 난이도</span><strong>' + levelMap[breed.trainability] + '</strong></div><div class="breed-detail-trait__bar"><span style="width:' + breedLevelPercent(breed.trainability) + '%;"></span></div></div>' : ''}
       </div>
-    </div>
-
-    <div class="detail-section">
-      <h3>성격</h3>
-      <p>${breed.personality}</p>
-    </div>
 
     ${breed.cautions ? '<div class="detail-section"><h3>주의사항</h3><ul style="padding-left:20px;">' + breed.cautions.map(c => '<li style="margin-bottom:4px;">' + c + '</li>').join('') + '</ul></div>' : ''}
 
@@ -455,13 +595,14 @@ function renderBreedDetailPage(params) {
 
     ${breed.funFact ? '<div class="card" style="padding:20px; margin-bottom:16px; background:var(--color-bg-warm);"><h3 style="margin-bottom:8px;">알고 계셨나요?</h3><p style="font-size:0.9rem;">' + breed.funFact + '</p></div>' : ''}
 
-    <div class="card" style="padding:24px; margin-top:20px;">
+    <div class="breed-detail-ai" style="margin-top:20px;">
       <h3 style="margin-bottom:12px;">AI에게 ${breed.name}에 대해 물어보기</h3>
       <div id="breed-ai-result"></div>
       <div style="display:flex; gap:8px;">
         <input type="text" id="breed-ai-input" class="form-input" placeholder="${breed.name}에 대해 궁금한 점을 물어보세요~" style="flex:1;" onkeydown="if(event.key==='Enter')handleBreedAiQuestion('${breed.name}')">
         <button class="btn btn-primary" onclick="handleBreedAiQuestion('${breed.name}')" id="breed-ai-btn">질문하기</button>
       </div>
+    </div>
     </div>
   `);
   // 견종 상세 이미지 로드

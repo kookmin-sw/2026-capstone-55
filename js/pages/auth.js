@@ -586,18 +586,20 @@ async function handleLogin() {
  }
 
  const result = await AuthService.login(email, password);
- if (result.success) {
- if (remember) {
+  if (result.success) {
+  if (remember) {
  const token = StorageService.get('authToken');
  if (token) {
  token.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
  StorageService.set('authToken', token);
  }
  }
- updateNavAuth();
- getNotifications(); updateBellBadge(); loadServerNotices();
- Router.navigate('/');
- } else {
+  updateNavAuth();
+  getNotifications(); updateBellBadge(); loadServerNotices();
+  const loggedUser = AuthService.getCurrentUser();
+  if (loggedUser && typeof RealtimeService !== 'undefined') RealtimeService.connect(loggedUser.id);
+  Router.navigate('/');
+  } else {
  if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
  }
 }
@@ -630,9 +632,11 @@ async function handleRegister() {
 
  const result = await AuthService.register({ name, email, password });
  if (result.success) {
- updateNavAuth();
- alert(' 회원가입을 축하해요!\n\n가입 축하 3,000 PAW 코인이 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');
- Router.navigate('/welcome-setup');
+  updateNavAuth();
+  const loggedUser = AuthService.getCurrentUser();
+  if (loggedUser && typeof RealtimeService !== 'undefined') RealtimeService.connect(loggedUser.id);
+  alert(' 회원가입을 축하해요!\n\n가입 축하 3,000 PAW 코인이 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');
+  Router.navigate('/welcome-setup');
  } else {
  const errEl = document.getElementById('register-error');
  if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
@@ -643,6 +647,7 @@ async function handleRegister() {
  * 로그아웃 핸들러
  */
 function handleLogout() {
+  if (typeof RealtimeService !== 'undefined') RealtimeService.disconnect();
  AuthService.logout();
  window.location.replace('/auth/logout');
 }
@@ -1256,4 +1261,3 @@ function _startKycTimer() {
   tick();
   _kycTimerInterval = setInterval(tick, 1000);
 }
-

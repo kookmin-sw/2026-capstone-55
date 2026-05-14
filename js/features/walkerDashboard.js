@@ -22,7 +22,7 @@ async function renderWalkerRequestsList(userId) {
       accepted: '출발 준비',
       heading: '이동 중',
       arrived: '도착',
-      handoff: '인계 완료',
+      handoff: '산책 시작 준비',
       walking: '산책 중',
       returning: '복귀 중',
       return_arrived: '복귀 도착'
@@ -96,15 +96,15 @@ async function renderWalkerRequestsList(userId) {
     ${r.status === 'arrived' ? `
     <div style="background:#FFFBEB;border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid #FCD34D;">
     <div style="font-weight:700;font-size:0.9rem;color:#92400E;margin-bottom:6px;">도착 · 반려견 픽업 중</div>
-    <div style="font-size:0.8rem;color:#4A5568;">요청자가 반려견 전달 완료를 확인하면 산책을 시작할 수 있어요.</div>
+    <div style="font-size:0.8rem;color:#4A5568;">요청자가 반려견 전달완료를 누르면 산책이 바로 시작돼요.</div>
     </div>
     ` : ''}
     ${r.status === 'handoff' ? `
     <div style="background:#F5F3FF;border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid #C4B5FD;">
-    <div style="font-weight:700;font-size:0.9rem;color:#5B21B6;margin-bottom:6px;">반려견 인계 완료</div>
-    <div style="font-size:0.8rem;color:#4A5568;margin-bottom:12px;">이제 산책을 시작하면 요청자 화면에서 실시간 GPS를 확인할 수 있어요.</div>
-    <button class="btn btn-primary" style="width:100%;padding:13px;background:#00AA76;" onclick="startActualWalk('${r.sessionId||_activeSessionId||''}')">
-    산책 시작
+    <div style="font-weight:700;font-size:0.9rem;color:#5B21B6;margin-bottom:6px;">산책 시작 처리 중</div>
+    <div style="font-size:0.8rem;color:#4A5568;margin-bottom:12px;">전달 확인을 산책 시작 상태로 반영하고 있어요.</div>
+    <button class="btn btn-primary" style="width:100%;padding:13px;background:#00AA76;" onclick="Router.navigate('/walk-session')">
+    지도 열기
     </button>
     </div>
     ` : ''}
@@ -122,8 +122,15 @@ async function renderWalkerRequestsList(userId) {
     ` : ''}
     ${r.status === 'return_arrived' ? `
     <div style="background:#FFF1F2;border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid #FDA4AF;">
-    <div style="font-weight:700;font-size:0.9rem;color:#9F1239;margin-bottom:6px;">재인계 확인 대기 중</div>
-    <div style="font-size:0.8rem;color:#4A5568;">요청자가 반려견을 다시 인계받으면 산책이 종료돼요.</div>
+    <div style="font-weight:700;font-size:0.9rem;color:#9F1239;margin-bottom:6px;">재인계 확인</div>
+    <div style="font-size:0.8rem;color:#4A5568;margin-bottom:12px;">요청자와 도우미가 모두 확인하면 산책이 완료돼요.</div>
+    ${r.walkerReturnHandoffConfirmedAt ? `
+    <div style="font-size:0.8rem;color:#64748B;background:#F1F5F9;border-radius:9px;padding:10px;text-align:center;font-weight:700;">요청자 확인 대기 중…</div>
+    ` : `
+    <button class="btn btn-primary" style="width:100%;padding:13px;background:#00AA76;" onclick="confirmWalkerReturnHandoff('${r.sessionId||_activeSessionId||''}')">
+    반려견을 잘 인계했어요
+    </button>
+    `}
     </div>
     ` : ''}
     </div>`;

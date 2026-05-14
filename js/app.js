@@ -22,7 +22,6 @@ function initApp() {
     Router.register('/health', renderHealthDashboardPage);
     Router.register('/walk-tracking', renderWalkTrackingPage);
     Router.register('/walk-session', () => renderWalkSessionPage());
-    Router.register('/ai-consult-claude', renderAIConsultPage);
     Router.register('/profile', renderProfilePage);
     Router.register('/admin', renderAdminPage);
     Router.register('/login', renderLoginPage);

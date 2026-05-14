@@ -94,7 +94,7 @@ function initRealtimeListeners() {
   });
 
   RealtimeService.on('handoff-confirmed', (data) => {
-    showToast('반려견 인계가 확인됐어요. 산책을 시작해주세요.', 'success');
+    showToast('반려견 전달이 확인됐어요. 산책이 시작됩니다.', 'success');
     refreshWalkerActivePage(data?.sessionId);
   });
 
@@ -106,6 +106,11 @@ function initRealtimeListeners() {
     refreshRequesterMatchingPage();
   });
 
+  RealtimeService.on('return-handoff-updated', (data) => {
+    refreshRequesterMatchingPage();
+    refreshWalkerActivePage(data?.sessionId);
+  });
+
   // 4단계: 산책 종료
   RealtimeService.on('walk-ended', (data) => {
     stopWalkRouteWatcher();
@@ -114,7 +119,13 @@ function initRealtimeListeners() {
     document.getElementById('live-tracking-overlay')?.remove();
     _activeSessionId = data.sessionId;
     Router.navigate('/walk-session');
-    setTimeout(() => showRequesterReviewPrompt(data.sessionId, data.walkerId, data.totalDistanceKm), 400);
+    const curUser = AuthService.getCurrentUser();
+    setTimeout(() => {
+      if (typeof renderWalkSessionPage === 'function') renderWalkSessionPage(data.sessionId);
+    }, 120);
+    if (curUser && data.requesterId === curUser.id) {
+      setTimeout(() => showRequesterReviewPrompt(data.sessionId, data.walkerId, data.totalDistanceKm), 400);
+    }
     showToast(`🎉 산책 완료! 총 ${data.totalDistanceKm ?? 0}km`, 'success');
     addNotification(`산책이 완료됐어요! 총 ${data.totalDistanceKm ?? 0}km`, 'success');
   });
@@ -161,5 +172,39 @@ function initRealtimeListeners() {
   RealtimeService.on('admin-notice', (data) => {
     addNotification('[공지] ' + (data.text || '새 공지사항이 등록됐어요'), 'info');
     showToast('새 공지사항이 등록됐어요!', 'info');
+  });
+
+  // 전문가 등록 심사 결과
+  RealtimeService.on('expert-application-reviewed', (data) => {
+    const approved = data?.application?.status === 'approved';
+    addNotification(approved ? '전문가 등록 심사가 승인됐어요!' : '전문가 등록 심사가 반려됐어요.', approved ? 'success' : 'error');
+    showToast(approved ? '전문가 등록이 승인됐어요.' : '전문가 등록이 반려됐어요.', approved ? 'success' : 'error');
+    if (Router.getPath && Router.getPath() === '/experts' && typeof renderExpertsPage === 'function') {
+      renderExpertsPage();
+    }
+  });
+
+  // 전문가 계정: 새 상담 요청 수신
+  RealtimeService.on('expert-consultation-requested', (data) => {
+    const c = data?.consultation || {};
+    addNotification(`${c.requesterName || '보호자'}님이 ${c.categoryLabel || '전문가'} 상담을 신청했어요.`, 'expert');
+    showToast('새 전문가 상담 요청이 도착했어요.', 'success');
+    if (Router.getPath && Router.getPath() === '/experts' && typeof renderExpertsPage === 'function') {
+      renderExpertsPage();
+    }
+  });
+
+  RealtimeService.on('expert-consultation-updated', () => {
+    if (Router.getPath && Router.getPath() === '/experts' && typeof renderExpertsPage === 'function') {
+      renderExpertsPage();
+    }
+  });
+
+  RealtimeService.on('expert-consultation-message', (data) => {
+    const c = data?.consultation || {};
+    addNotification(`${c.expertName || c.requesterName || '상담방'}에서 새 메시지가 도착했어요.`, 'expert');
+    if (Router.getPath && Router.getPath() === '/experts' && typeof renderExpertsPage === 'function') {
+      renderExpertsPage();
+    }
   });
 }

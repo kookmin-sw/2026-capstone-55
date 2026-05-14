@@ -310,9 +310,13 @@ const GPSTrackingService = (() => {
   }
 
   // 산책 기록 조회
-  async function getWalkHistory(userId, dogId) {
+  async function getWalkHistory(userId, dogId, options = {}) {
     try {
-      const url = dogId ? `/api/walks/history/${userId}?dogId=${encodeURIComponent(dogId)}` : `/api/walks/history/${userId}`;
+      const params = new URLSearchParams();
+      if (dogId) params.set('dogId', dogId);
+      if (options.role) params.set('role', options.role);
+      const qs = params.toString();
+      const url = `/api/walks/history/${userId}${qs ? `?${qs}` : ''}`;
       const resp = await fetch(url);
       const data = await resp.json();
       return data.success ? data.walks : [];
@@ -322,9 +326,13 @@ const GPSTrackingService = (() => {
   }
 
   // 산책 통계 조회
-  async function getWalkStats(userId, dogId) {
+  async function getWalkStats(userId, dogId, options = {}) {
     try {
-      const url = dogId ? `/api/walks/stats/${userId}?dogId=${encodeURIComponent(dogId)}` : `/api/walks/stats/${userId}`;
+      const params = new URLSearchParams();
+      if (dogId) params.set('dogId', dogId);
+      if (options.role) params.set('role', options.role);
+      const qs = params.toString();
+      const url = `/api/walks/stats/${userId}${qs ? `?${qs}` : ''}`;
       const resp = await fetch(url);
       const data = await resp.json();
       return data.success ? data.stats : null;

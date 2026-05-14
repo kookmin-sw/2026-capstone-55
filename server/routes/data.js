@@ -14,8 +14,8 @@ const db = require('../db');
  */
 router.get('/:key', (req, res) => {
   const { key } = req.params;
-  const allowed = ['users', 'communityPosts', 'transactions', 'matchRequests',
-    'walkSchedules', 'reviews', 'matchProfiles', 'notices', 'walkers'];
+  const allowed = ['users', 'communityPosts', 'transactions',
+    'matchProfiles', 'notices', 'walkers'];
   if (!allowed.includes(key)) {
     return res.status(400).json({ error: '허용되지 않는 키입니다.' });
   }
@@ -41,8 +41,8 @@ router.post('/broadcast-notice', (req, res) => {
  */
 router.post('/:key', (req, res) => {
   const { key } = req.params;
-  const allowed = ['users', 'communityPosts', 'transactions', 'matchRequests',
-    'walkSchedules', 'reviews', 'matchProfiles', 'notices', 'walkers'];
+  const allowed = ['users', 'communityPosts', 'transactions',
+    'matchProfiles', 'notices', 'walkers'];
   if (!allowed.includes(key)) {
     return res.status(400).json({ error: '허용되지 않는 키입니다.' });
   }

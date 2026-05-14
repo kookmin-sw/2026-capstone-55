@@ -28,6 +28,7 @@ const walkSessionRoutes  = require('./routes/walk-sessions');
 const walkChatRoutes     = require('./routes/walk-chat');
 const walkReviewRoutes   = require('./routes/walk-review');
 const phoneRoutes        = require('./routes/phone');
+const expertRoutes       = require('./routes/experts');
 
 const app    = express();
 const server = http.createServer(app);
@@ -80,6 +81,7 @@ app.use('/api/walk-chat',     walkChatRoutes);
 app.use('/api/walk-review',   walkReviewRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/phone', phoneRoutes);
+app.use('/api/experts', expertRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
 app.use(express.static(path.join(__dirname, '..')));
@@ -96,7 +98,8 @@ io.on('connection', (socket) => {
   // 클라이언트가 로그인 후 자신의 userId를 등록
   socket.on('register', (userId) => {
     if (userId) {
-      userSockets[userId] = socket.id;
+      if (!userSockets[userId]) userSockets[userId] = new Set();
+      userSockets[userId].add(socket.id);
       socket.userId = userId;
       // walker 프로필이 있으면 lastSeenAt 갱신 (신선도 반영)
       try {
@@ -113,15 +116,20 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     if (socket.userId) {
-      delete userSockets[socket.userId];
+      const sockets = userSockets[socket.userId];
+      if (sockets) {
+        sockets.delete(socket.id);
+        if (sockets.size === 0) delete userSockets[socket.userId];
+      }
     }
   });
 });
 
 // 특정 userId에게 이벤트 전송
 function emitToUser(userId, event, data) {
-  const sid = userSockets[userId];
-  if (sid) io.to(sid).emit(event, data);
+  const sockets = userSockets[userId];
+  if (!sockets) return;
+  sockets.forEach(sid => io.to(sid).emit(event, data));
 }
 
 // 온라인 상태인 모든 도우미에게 브로드캐스트
@@ -133,17 +141,13 @@ function emitToAvailableWalkers(event, data) {
   const availableWalkerIds = walkers
     .filter(w => w.isAvailable && userSockets[w.userId])
     .map(w => w.userId);
-  availableWalkerIds.forEach(uid => {
-    io.to(userSockets[uid]).emit(event, data);
-  });
+  availableWalkerIds.forEach(uid => emitToUser(uid, event, data));
 
   // 소켓 연결은 됐지만 isAvailable 체크 안 된 워커도 포함 (클라이언트가 필터링)
   const connectedWalkerIds = walkers
     .filter(w => userSockets[w.userId] && !availableWalkerIds.includes(w.userId))
     .map(w => w.userId);
-  connectedWalkerIds.forEach(uid => {
-    io.to(userSockets[uid]).emit(event, { ...data, _softBroadcast: true });
-  });
+  connectedWalkerIds.forEach(uid => emitToUser(uid, event, { ...data, _softBroadcast: true }));
 
   // 최후 수단: 연결된 모든 소켓에 emit (클라이언트가 워커 여부 판단)
   if (availableWalkerIds.length === 0) {

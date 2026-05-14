@@ -35,7 +35,7 @@ async function renderMatchingPage() {
  <div style="font-size:0.9rem; line-height:1.8; color:var(--color-text);">
  <p>• <strong>산책 도우미</strong>: 활동 지역, 가능 시간, 수용 가능 견종 크기를 등록하면 요청을 받을 수 있어요.</p>
  <p>• <strong>산책 요청자</strong>: 근처 도우미에게 산책을 요청하고 실시간으로 매칭 상태를 확인할 수 있어요.</p>
- <p>• 매칭 완료 후 <strong>GPS 산책 트래킹</strong>으로 경로를 기록할 수 있어요.</p>
+ <p>• 매칭 완료 후 <strong>실시간 산책 지도</strong>에서 이동 경로를 확인할 수 있어요.</p>
  </div>
  </div>
  `);
@@ -1029,8 +1029,6 @@ function showWalkerNotification(count) {
 /** 산책 도우미 대시보드 */
 async function renderWalkerDashboard(user, myProfile) {
  const receivedRequests = await MatchingService.getReceivedRequestsRemote(user.id);
- const scheduledWalks = MatchingService.getScheduledWalks(user.id);
- const completedWalks = MatchingService.getCompletedWalks(user.id);
  const isAvail = myProfile.isAvailable;
 
  // 이미 ON 상태로 앱을 열었을 때 GPS 즉시 재시작 (어제 위치 스테일 방지)
@@ -1145,40 +1143,6 @@ async function renderWalkerDashboard(user, myProfile) {
  }).join('')
  : `<div class="empty-state"><div class="empty-icon">📭</div><p>아직 받은 산책 요청이 없어요.<br>ON 상태를 유지하면 요청이 들어와요.</p></div>`;
 
- const scheduledHtml = scheduledWalks.map(s => {
- const pid = s.participants.find(id => id !== user.id) || s.participants[0];
- const pName = MatchingService.getUserName(pid);
- const relative = formatRelativeTime(s.scheduledAt);
- const time = new Date(s.scheduledAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
- return `
- <div class="match-walk-card match-walk-card--scheduled">
- <div class="match-walk-card__left">
- <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
- <div class="match-walk-card__info">
- <div class="match-walk-card__name">${pName}</div>
- <div style="font-size:0.8rem;color:var(--color-text-muted);">${icon('clock',12)} 매칭 시각: ${relative} · ${time}</div>
- <span class="badge badge-info" style="margin-top:4px;">산책 진행 중</span>
- </div>
- </div>
- <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
- <button class="btn btn-primary btn-sm" onclick="Router.navigate('/walk-tracking')" style="display:flex;align-items:center;gap:4px;">${icon('map',14)} 산책 시작</button>
- <button class="btn btn-ghost btn-sm" onclick="handleCompleteWalk('${s.id}')" style="font-size:0.75rem;color:var(--color-text-muted);">산책 완료 처리</button>
- </div>
- </div>`;
- }).join('');
-
- const completedHtml = completedWalks.map(s => {
- const pid = s.participants.find(id => id !== user.id) || s.participants[0];
- const pName = MatchingService.getUserName(pid);
- const reviewed = MatchingService.getReviewsForSchedule(s.id).some(r => r.reviewerId === user.id);
- return `
- <div class="match-walk-card match-walk-card--completed">
- <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
- <div class="match-walk-card__info"><div class="match-walk-card__name">${pName}</div><span class="badge badge-success">완료됨</span></div>
- ${reviewed ? '<span class="badge badge-success">리뷰 완료</span>' : `<button class="btn btn-secondary btn-sm" onclick="handleShowReviewForm('${s.id}','${pid}')">리뷰 작성</button>`}
- </div>`;
- }).join('');
-
  renderPage(`
  <div class="match-hero">
  <div class="section-label">산책 도우미</div>
@@ -1197,8 +1161,6 @@ async function renderWalkerDashboard(user, myProfile) {
  <h2 class="match-section__title">산책 요청</h2>
  <div id="walker-new-requests-wrap"><div class="spinner" style="margin:20px auto;"></div></div>
  </div>
-
- ${completedWalks.length > 0 ? `<div class="match-section"><h2 class="match-section__title">완료된 산책</h2>${completedHtml}</div>` : ''}
 
  <div class="match-section" id="direct-history-section" style="display:none;">
  <h2 class="match-section__title">산책 기록</h2>
@@ -1750,8 +1712,6 @@ async function renderRequesterDashboard(user, myProfile) {
  // 사진 없는 도우미는 AI 추천에서 제외 (신뢰도 보장)
  const availWalkers = MatchingService.getAvailableWalkers()
    .filter(w => w.userId !== user.id && !!(w.profilePhoto || w.profileImage));
- const scheduledWalks = MatchingService.getScheduledWalks(user.id);
- const completedWalks = MatchingService.getCompletedWalks(user.id);
 
  // 내가 보낸 요청 (서버에서 모든 상태 포함, 최신순)
  let sentRequests = [];
@@ -1910,40 +1870,6 @@ async function renderRequesterDashboard(user, myProfile) {
  .join('')
  : `<div class="empty-state"><div class="empty-icon">${icon('search',16)}</div><p>현재 매칭 가능한 도우미가 없습니다.<br>잠시 후 다시 확인해 주세요.</p></div>`;
 
- const scheduledHtml = scheduledWalks.map(s => {
- const pid = s.participants.find(id => id !== user.id) || s.participants[0];
- const pName = MatchingService.getUserName(pid);
- const relative = formatRelativeTime(s.scheduledAt);
- const time = new Date(s.scheduledAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
- return `
- <div class="match-walk-card match-walk-card--scheduled">
- <div class="match-walk-card__left">
- <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
- <div class="match-walk-card__info">
- <div class="match-walk-card__name">${pName}</div>
- <div style="font-size:0.8rem;color:var(--color-text-muted);">${icon('clock',12)} 매칭 시각: ${relative} · ${time}</div>
- <span class="badge badge-info" style="margin-top:4px;">산책 진행 중</span>
- </div>
- </div>
- <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
- <button class="btn btn-primary btn-sm" onclick="Router.navigate('/walk-tracking')" style="display:flex;align-items:center;gap:4px;">${icon('map',14)} 산책 시작</button>
- <button class="btn btn-ghost btn-sm" onclick="handleCompleteWalk('${s.id}')" style="font-size:0.75rem;color:var(--color-text-muted);">산책 완료 처리</button>
- </div>
- </div>`;
- }).join('');
-
- const completedHtml = completedWalks.map(s => {
- const pid = s.participants.find(id => id !== user.id) || s.participants[0];
- const pName = MatchingService.getUserName(pid);
- const reviewed = MatchingService.getReviewsForSchedule(s.id).some(r => r.reviewerId === user.id);
- return `
- <div class="match-walk-card match-walk-card--completed">
- <div class="match-walk-card__avatar">${pName.charAt(0)}</div>
- <div class="match-walk-card__info"><div class="match-walk-card__name">${pName}</div><span class="badge badge-success">완료됨</span></div>
- ${reviewed ? '<span class="badge badge-success">리뷰 완료</span>' : `<button class="btn btn-secondary btn-sm" onclick="handleShowReviewForm('${s.id}','${pid}')">리뷰 작성</button>`}
- </div>`;
- }).join('');
-
  // 내가 보낸 요청 카드 HTML (최근 30분 내, 진행 중 상태)
  const sentRequestsHtml = activeRequests.length > 0
  ? activeRequests.map(r => {
@@ -2045,15 +1971,11 @@ async function renderRequesterDashboard(user, myProfile) {
  </div>
  <div class="dw-map-wrap">
  <div id="dw-disc-map" class="dw-map"></div>
- <div class="dw-map-hint" id="dw-map-hint" style="flex-direction:column;gap:12px;background:rgba(250,250,248,0.92);backdrop-filter:blur(6px);">
- <div class="spinner" style="width:32px;height:32px;"></div>
- <div style="font-weight:700;font-size:0.95rem;color:var(--color-text);">내 위치를 찾고 있어요</div>
- <div style="font-size:0.78rem;color:var(--color-text-muted);line-height:1.5;">GPS 신호를 잡는 중이에요.<br>위치 권한을 허용해주세요 🐾</div>
+ <div class="dw-map-hint dw-map-hint--loading" id="dw-map-hint" style="flex-direction:column;gap:0;background:#fdfdfd;backdrop-filter:none;">
+ <video class="dw-map-loading-video" src="/pawsitive_loading.mp4" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
  </div>
  </div>
  </div>
-
- ${completedWalks.length > 0 ? `<div class="match-section"><h2 class="match-section__title">완료된 산책</h2>${completedHtml}</div>` : ''}
 
  <!-- AI 추천 도우미 목록 -->
  <div class="match-section" id="walker-list-section">
@@ -2113,7 +2035,6 @@ async function renderRequesterDashboard(user, myProfile) {
  <h2 class="match-section__title">산책 기록</h2>
  <div id="requester-history-wrap"><div class="spinner" style="margin:20px auto;"></div></div>
  </div>
- <div id="review-form-container"></div>
  `);
 
  // GPS 자동 로드
@@ -2131,6 +2052,167 @@ async function renderRequesterDashboard(user, myProfile) {
  else section.style.display = 'none';
  }
  });
+}
+
+let _dwDiscoveryMap = null;
+let _dwDiscoveryLayer = null;
+
+function _dwEscapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+}
+
+function _dwHideDiscoveryLoading() {
+  const hint = document.getElementById('dw-map-hint');
+  if (!hint) return;
+  hint.style.opacity = '0';
+  setTimeout(() => {
+    if (hint) hint.style.display = 'none';
+  }, 250);
+}
+
+function _dwGetDiscoveryPosition() {
+  if (!navigator.geolocation) return Promise.reject(new Error('GPS unavailable'));
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 7000,
+      maximumAge: 60000
+    });
+  });
+}
+
+function _dwWalkerDiscoveryIcon(walker) {
+  const name = walker.userName || walker.name || '도우미';
+  const photo = walker.profilePhoto || walker.profileImage || '';
+  const initial = _dwEscapeHtml(name.charAt(0) || '도');
+  const color = walker.isAvailable ? '#F59E0B' : '#94A3B8';
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:${color};box-shadow:0 4px 14px rgba(15,23,42,.22);display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:900;color:#fff;">
+      ${photo ? `<img src="${_dwEscapeHtml(photo)}" alt="" style="width:100%;height:100%;object-fit:cover;">` : initial}
+    </div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -20]
+  });
+}
+
+async function loadDWDiscovery() {
+  const mapEl = document.getElementById('dw-disc-map');
+  if (!mapEl || typeof L === 'undefined') {
+    _dwHideDiscoveryLoading();
+    return;
+  }
+
+  const radiusKm = Number(document.getElementById('dw-radius-sel')?.value || 5);
+  let lat = null;
+  let lng = null;
+  let gpsOk = false;
+
+  try {
+  try {
+    const pos = await _dwGetDiscoveryPosition();
+    lat = pos.coords.latitude;
+    lng = pos.coords.longitude;
+    gpsOk = true;
+  } catch (e) {
+    const user = AuthService.getCurrentUser();
+    const profile = user ? MatchingService.getMyProfile(user.id) : null;
+    if (Number.isFinite(Number(profile?.lat)) && Number.isFinite(Number(profile?.lng))) {
+      lat = Number(profile.lat);
+      lng = Number(profile.lng);
+    }
+  }
+
+  try {
+    await MatchingService.refreshFromServer();
+  } catch (e) {}
+
+  const walkersWithCoords = MatchingService.getAvailableWalkers()
+    .filter(w => Number.isFinite(Number(w.lat)) && Number.isFinite(Number(w.lng)))
+    .map(w => ({ ...w, lat: Number(w.lat), lng: Number(w.lng) }));
+
+  if (lat === null || lng === null) {
+    const firstWalker = walkersWithCoords[0];
+    lat = firstWalker?.lat ?? 37.5665;
+    lng = firstWalker?.lng ?? 126.9780;
+  }
+
+  const walkers = gpsOk
+    ? MatchingService.getNearbyWalkers(lat, lng, radiusKm)
+    : walkersWithCoords;
+
+  if (_dwDiscoveryMap) {
+    try { _dwDiscoveryMap.remove(); } catch (e) {}
+    _dwDiscoveryMap = null;
+  }
+  if (mapEl._leaflet_id) {
+    try { delete mapEl._leaflet_id; } catch (e) {}
+  }
+
+  _dwDiscoveryMap = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView([lat, lng], gpsOk ? 15 : 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(_dwDiscoveryMap);
+
+  _dwDiscoveryLayer = L.layerGroup().addTo(_dwDiscoveryMap);
+  const bounds = [];
+
+  if (gpsOk) {
+    const myIcon = L.divIcon({
+      className: '',
+      html: '<div style="width:18px;height:18px;border-radius:50%;background:#2563EB;border:3px solid #fff;box-shadow:0 2px 10px rgba(37,99,235,.35);"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+    L.marker([lat, lng], { icon: myIcon }).bindPopup('내 위치').addTo(_dwDiscoveryLayer);
+    L.circle([lat, lng], {
+      radius: radiusKm * 1000,
+      color: '#2563EB',
+      weight: 1,
+      fillColor: '#2563EB',
+      fillOpacity: 0.05
+    }).addTo(_dwDiscoveryLayer);
+    bounds.push([lat, lng]);
+  }
+
+  walkers.forEach(walker => {
+    const name = walker.userName || walker.name || '산책 도우미';
+    const distanceText = Number.isFinite(Number(walker.distance)) ? `${Number(walker.distance).toFixed(1)}km` : '위치 확인됨';
+    L.marker([walker.lat, walker.lng], { icon: _dwWalkerDiscoveryIcon(walker) })
+      .bindPopup(`<div style="min-width:130px;"><div style="font-weight:800;margin-bottom:4px;">${_dwEscapeHtml(name)}</div><div style="font-size:12px;color:#64748B;margin-bottom:8px;">${_dwEscapeHtml(distanceText)}</div><button style="width:100%;border:none;border-radius:8px;background:#111827;color:#fff;font-size:12px;font-weight:800;padding:7px 10px;cursor:pointer;" onclick="handleSendMatchRequest('${_dwEscapeHtml(walker.userId)}')">요청하기</button></div>`)
+      .addTo(_dwDiscoveryLayer);
+    bounds.push([walker.lat, walker.lng]);
+  });
+
+  if (bounds.length >= 2) {
+    _dwDiscoveryMap.fitBounds(L.latLngBounds(bounds), { padding: [42, 42], maxZoom: 15 });
+  } else {
+    _dwDiscoveryMap.setView([lat, lng], gpsOk ? 15 : 12);
+  }
+
+  setTimeout(() => {
+    if (_dwDiscoveryMap) _dwDiscoveryMap.invalidateSize();
+  }, 80);
+
+  if (!gpsOk) {
+    showToast('GPS 위치를 받지 못해 저장된 위치 기준으로 지도를 열었어요.', 'info');
+  }
+  } catch (e) {
+    console.warn('[DW Discovery] 지도 초기화 실패:', e);
+    if (!_dwDiscoveryMap) {
+      try {
+        _dwDiscoveryMap = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView([37.5665, 126.9780], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(_dwDiscoveryMap);
+      } catch (fallbackError) {}
+    }
+  } finally {
+    _dwHideDiscoveryLoading();
+  }
 }
 
 /** 매칭 프로필 등록 해제 */
@@ -2235,39 +2317,6 @@ async function handleToggleMatcherAvailability() {
  await _syncWalkerState(user.id, false, null, null);
  renderMatchingPage();
  }
-}
-
-// 요청자 매칭 대기 폴링
-let _requesterPollInterval = null;
-
-function startRequesterPolling(userId) {
- stopRequesterPolling();
- _requesterPollInterval = setInterval(async () => {
- try {
- const res = await fetch(`/api/matching/schedules?userId=${userId}`);
- const data = await res.json();
- const newMatch = (data.schedules || []).find(s => s.status === 'scheduled');
- if (newMatch) {
- stopRequesterPolling();
- const alertEl = document.getElementById('matching-alert');
- if (alertEl) {
- alertEl.innerHTML = `
- <div class="match-pending-banner match-pending-banner--success">
- <div class="match-pending-banner__icon"></div>
- <div class="match-pending-banner__text">
- <div class="match-pending-banner__title">매칭이 완료됐어요!</div>
- <div class="match-pending-banner__sub">산책 도우미가 요청을 수락했습니다. 아래에서 확인하세요.</div>
- </div>
- </div>`;
- }
- setTimeout(() => renderMatchingPage(), 1500);
- }
- } catch (e) {}
- }, 5000);
-}
-
-function stopRequesterPolling() {
- if (_requesterPollInterval) { clearInterval(_requesterPollInterval); _requesterPollInterval = null; }
 }
 
 /** 브로드캐스트 요청 수락 (선착순 매칭) */
@@ -2398,126 +2447,21 @@ async function _sendMatchRequestAfterPayment(toUserId, paymentResult) {
  }
 }
 
-/** 산책 완료 */
-function handleCompleteWalk(scheduleId) {
- const user = AuthService.getCurrentUser();
- if (!user) { Router.navigate('/login'); return; }
-
- const ok = MatchingService.completeWalk(scheduleId, user.id);
- const alertEl = document.getElementById('matching-alert');
-
- if (!ok) {
- if (alertEl) {
- alertEl.innerHTML = '<div class="alert alert-error">완료 처리할 수 없는 산책이에요. (이미 완료됐거나 참가자가 아닙니다)</div>';
- setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
- }
- return;
- }
-
- renderMatchingPage();
- if (alertEl) {
- alertEl.innerHTML = '<div class="alert alert-success">산책이 완료되었습니다!</div>';
- setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
- }
-}
-
-/** 리뷰 작성 폼 */
-function handleShowReviewForm(scheduleId, targetId) {
- const container = document.getElementById('review-form-container');
- if (!container) return;
- const targetName = MatchingService.getUserName(targetId);
- container.innerHTML = `
- <div class="card" style="padding:24px; margin-top:16px;">
- <h3 style="margin-bottom:16px;">${targetName}님에 대한 리뷰</h3>
- <div class="form-group">
- <label>평점</label>
- <div class="star-rating" id="review-stars">
- ${[1,2,3,4,5].map(n => `<span class="star" data-value="${n}" onclick="handleSelectStar(${n})">★</span>`).join('')}
- </div>
- <input type="hidden" id="review-rating" value="0">
- </div>
- <div class="form-group">
- <label for="review-text">후기</label>
- <textarea id="review-text" class="form-input" placeholder="산책 후기를 작성해주세요..."></textarea>
- </div>
- <div id="review-error"></div>
- <div style="display:flex; gap:8px;">
- <button class="btn btn-primary" onclick="handleSubmitReview('${scheduleId}','${targetId}')">리뷰 등록</button>
- <button class="btn btn-secondary" onclick="document.getElementById('review-form-container').innerHTML=''">취소</button>
- </div>
- </div>
- `;
-}
-
-/**
- * 별점 선택 핸들러
- * @param {number} value
- */
-function handleSelectStar(value) {
- const ratingInput = document.getElementById('review-rating');
- if (ratingInput) ratingInput.value = value;
-
- document.querySelectorAll('#review-stars .star').forEach(star => {
- const starVal = parseInt(star.getAttribute('data-value'));
- star.classList.toggle('filled', starVal <= value);
- });
-}
-
-/**
- * 리뷰 제출 핸들러
- * @param {string} scheduleId
- * @param {string} targetId
- */
-function handleSubmitReview(scheduleId, targetId) {
- const user = AuthService.getCurrentUser();
- if (!user) { Router.navigate('/login'); return; }
-
- const rating = parseInt(document.getElementById('review-rating')?.value || '0');
- const text = document.getElementById('review-text')?.value || '';
- const errEl = document.getElementById('review-error');
-
- if (rating < 1 || rating > 5) {
- if (errEl) errEl.innerHTML = '<div class="alert alert-error">평점을 선택해주세요.</div>';
- return;
- }
- if (!text.trim()) {
- if (errEl) errEl.innerHTML = '<div class="alert alert-error">후기를 작성해주세요.</div>';
- return;
- }
-
- const result = MatchingService.addReview(scheduleId, {
- reviewerId: user.id,
- targetId: targetId,
- rating: rating,
- text: text.trim()
- });
-
- if (!result || !result.success) {
- if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result?.error || '리뷰 등록에 실패했습니다.'}</div>`;
- return;
- }
-
- renderMatchingPage();
- const alertEl = document.getElementById('matching-alert');
- if (alertEl) {
- alertEl.innerHTML = '<div class="alert alert-success">리뷰가 등록되었습니다! 감사합니다 </div>';
- setTimeout(() => { alertEl.innerHTML = ''; }, 3000);
- }
-}
-
 // --- 프로필 페이지 (플레이스홀더) ---
 function renderRequesterActiveWalkScreen(user, req) {
   if (window._requesterLiveMapPoll) { clearInterval(window._requesterLiveMapPoll); window._requesterLiveMapPoll = null; }
   if (window._requesterWalkTimer) { clearInterval(window._requesterWalkTimer); window._requesterWalkTimer = null; }
 
   const walkerName = req.walkerName || '도우미';
-  const statusText = ({ accepted:'매칭 완료', heading:'이동 중', arrived:'도착', handoff:'인계 완료', walking:'산책 중', returning:'복귀 중', return_arrived:'복귀 도착' })[req.status] || '매칭 완료';
-  const descText = ({ accepted:'도우미가 곧 이동을 시작해요', heading:'도우미가 픽업 장소로 오고 있어요', arrived:'반려견 전달을 진행해주세요', handoff:'도우미가 산책을 시작할 준비를 마쳤어요', walking:'도우미와 반려견의 이동 경로를 보고 있어요', returning:'도우미가 반려견과 함께 돌아오고 있어요', return_arrived:'반려견을 다시 인계받아주세요' })[req.status] || '도우미 위치를 확인할 수 있어요';
+  const statusText = ({ accepted:'매칭 완료', heading:'이동 중', arrived:'도착', handoff:'산책 시작 준비', walking:'산책 중', returning:'복귀 중', return_arrived:'복귀 도착' })[req.status] || '매칭 완료';
+  const descText = ({ accepted:'도우미가 곧 이동을 시작해요', heading:'도우미가 픽업 장소로 오고 있어요', arrived:'반려견 전달을 진행해주세요', handoff:'전달 확인을 산책 시작으로 반영하고 있어요', walking:'도우미와 반려견의 이동 경로를 보고 있어요', returning:'도우미가 반려견과 함께 돌아오고 있어요', return_arrived:'도우미와 함께 반려견 재인계를 확인해주세요' })[req.status] || '도우미 위치를 확인할 수 있어요';
   const sessionId = req.sessionId || '';
   const primaryAction = req.status === 'arrived' && sessionId
-    ? `<button style="width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:0.95rem;cursor:pointer;border:none;background:#F59E0B;color:#fff;margin-bottom:12px;" onclick="confirmHandoff('${sessionId}')">🐕 반려견 전달 완료</button>`
+    ? `<button style="width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:0.95rem;cursor:pointer;border:none;background:#F59E0B;color:#fff;margin-bottom:12px;" onclick="confirmHandoff('${sessionId}')">🐕 반려견 전달완료</button>`
     : req.status === 'return_arrived' && sessionId
-      ? `<button style="width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:0.95rem;cursor:pointer;border:none;background:#10B981;color:#fff;margin-bottom:12px;" onclick="confirmReturnHandoff('${sessionId}')">🐕 반려견 다시 인계받기</button>`
+      ? (req.requesterReturnHandoffConfirmedAt
+        ? `<div style="width:100%;padding:13px;border-radius:12px;font-weight:800;font-size:0.9rem;background:#F1F5F9;color:#64748B;margin-bottom:12px;text-align:center;">도우미 인계 확인 대기 중…</div>`
+        : `<button style="width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:0.95rem;cursor:pointer;border:none;background:#10B981;color:#fff;margin-bottom:12px;" onclick="confirmReturnHandoff('${sessionId}')">🐕 반려견을 잘 인계 받으셨나요?</button>`)
       : '';
 
   renderPage(`
@@ -2636,7 +2580,7 @@ function _initRequesterLiveMap(req) {
   };
 
   if (['walking','returning','return_arrived'].includes(req.status)) {
-    routePolyline = L.polyline([], { color: '#00AA76', weight: 4, opacity: 0.85 }).addTo(map);
+    routePolyline = L.polyline([], { color: '#F59E0B', weight: 5, opacity: 0.88 }).addTo(map);
     if (req.sessionId) {
       fetch(`/api/walk-sessions/${req.sessionId}/route`).then(r => r.json()).then(data => {
         if (data.points?.length) {
@@ -2666,11 +2610,6 @@ function _initRequesterLiveMap(req) {
     RealtimeService.on('walker-location-update', data => {
       if (data.requestId !== req.id) return;
       moveWalker(data.lat, data.lng, req.status === 'walking' ? 'free' : 'pickup');
-      if ((req.status === 'returning' || req.status === 'return_arrived') && routePolyline) {
-        routePolyline.addLatLng([data.lat, data.lng]);
-        routePoints.push([data.lat, data.lng]);
-        updateWalkStats();
-      }
     });
     RealtimeService.on('walker-position', data => {
       if (data.sessionId !== req.sessionId) return;

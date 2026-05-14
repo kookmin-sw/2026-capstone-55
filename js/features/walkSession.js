@@ -12,6 +12,8 @@ let _walkNavWatchId = null;
 let _walkNavLine = null;
 let _walkNavMyMarker = null;
 let _walkSessionPollTimer = null;
+let _walkStatusPollTimer = null;
+let _walkMapInitToken = 0;
 let _walkStartMs = 0;
 let _walkerLocationInterval = null;
 let _reviewSelectedStar = 0;
@@ -23,6 +25,48 @@ function _pickLatestActiveSession(sessions = []) {
   return (sessions || [])
     .filter(s => WALK_SESSION_ACTIVE_STATUSES.includes(s.status))
     .sort((a, b) => new Date(b.updatedAt || b.returnArrivedAt || b.returnStartedAt || b.walkStartedAt || b.arrivedAt || b.startedAt || 0) - new Date(a.updatedAt || a.returnArrivedAt || a.returnStartedAt || a.walkStartedAt || a.arrivedAt || a.startedAt || 0))[0] || null;
+}
+
+function _stopWalkStatusPolling() {
+  if (_walkStatusPollTimer) {
+    clearInterval(_walkStatusPollTimer);
+    _walkStatusPollTimer = null;
+  }
+}
+
+function _startWalkStatusPolling(sessionId, currentStatus) {
+  _stopWalkStatusPolling();
+  if (!sessionId || !WALK_SESSION_ACTIVE_STATUSES.includes(currentStatus)) return;
+
+  const user = AuthService.getCurrentUser();
+  if (!user?.id) return;
+
+  let inFlight = false;
+  _walkStatusPollTimer = setInterval(async () => {
+    if (inFlight) return;
+    if (Router.getPath && Router.getPath() !== '/walk-session') {
+      _stopWalkStatusPolling();
+      return;
+    }
+
+    inFlight = true;
+    try {
+      const res = await fetch(`/api/walk-sessions?userId=${encodeURIComponent(user.id)}&_=${Date.now()}`, {
+        cache: 'no-store'
+      });
+      const data = await res.json();
+      const fresh = (data.sessions || []).find(s => s.id === sessionId);
+
+      if (!fresh || fresh.status !== currentStatus) {
+        _stopWalkStatusPolling();
+        renderWalkSessionPage(sessionId);
+      }
+    } catch (e) {
+      // The realtime event is still the primary path; polling is only a missed-event fallback.
+    } finally {
+      inFlight = false;
+    }
+  }, 2000);
 }
 
 function _walkPhotoMarker(photoUrl, fallbackChar, borderColor, size, pulse = false) {
@@ -115,14 +159,15 @@ async function confirmHandoff(sessionId) {
     const res = await fetch(`/api/walk-sessions/${sessionId}/confirm-handoff`, { method: 'PATCH' });
     const result = await res.json();
     if (!result.success) { showToast(result.error || '오류가 발생했습니다.', 'error'); return; }
-    showToast('반려견 인계 완료! 산책을 기다려주세요.', 'success');
-    renderWalkSessionPage(sessionId);
+    showToast('반려견 전달이 확인됐어요. 산책이 시작됩니다.', 'success');
+    if (Router.getPath && Router.getPath() === '/walk-session') renderWalkSessionPage(sessionId);
+    else if (typeof renderMatchingPage === 'function') renderMatchingPage();
   } catch(e) {
     showToast('오류가 발생했습니다.', 'error');
   }
 }
 
-// ── 도우미: 산책 시작 ──
+// ── 도우미: 요청자 위치로 출발 ──
 async function startWalkSession(requestId, requesterId, dogName) {
   const user = AuthService.getCurrentUser();
   if (!user) return;
@@ -133,12 +178,11 @@ async function startWalkSession(requestId, requesterId, dogName) {
       body: JSON.stringify({ requestId, walkerId: user.id, requesterId, dogName })
     });
     const result = await res.json();
-    if (!result.success) { showToast(result.error || '산책 시작에 실패했습니다.', 'error'); return; }
+    if (!result.success) { showToast(result.error || '출발 처리에 실패했습니다.', 'error'); return; }
     _activeSessionId = result.session.id;
     window._activeWalkRequestId = requestId;
-    RealtimeService.startRouteTracking(_activeSessionId);
     _startWalkerLocationSharing(requestId);
-    showToast('산책이 시작되었습니다!', 'success');
+    showToast('요청자 위치로 출발합니다.', 'success');
     Router.navigate('/walk-session');
   } catch(e) {
     showToast('오류가 발생했습니다.', 'error');
@@ -211,7 +255,7 @@ async function arriveReturnToRequester(sessionId) {
     });
     const result = await res.json();
     if (!result.success) { showToast(result.error || '복귀 도착 처리에 실패했습니다.', 'error'); return; }
-    showToast('복귀 도착을 알렸어요. 요청자의 인계 확인을 기다려주세요.', 'success');
+    showToast('복귀 도착을 알렸어요. 반려견 재인계를 확인해주세요.', 'success');
     renderWalkSessionPage(sessionId);
   } catch(e) {
     showToast('오류가 발생했습니다.', 'error');
@@ -222,11 +266,48 @@ async function confirmReturnHandoff(sessionId) {
   try {
     const res = await fetch(`/api/walk-sessions/${sessionId}/confirm-return-handoff`, { method: 'PATCH' });
     const result = await res.json();
+    if (!result.success && result.pending) {
+      showToast(result.error || '도우미 확인을 기다려주세요.', 'info');
+      if (Router.getPath && Router.getPath() === '/walk-session') renderWalkSessionPage(sessionId);
+      else if (typeof renderMatchingPage === 'function') renderMatchingPage();
+      return;
+    }
     if (!result.success) { showToast(result.error || '종료 확인에 실패했습니다.', 'error'); return; }
-    RealtimeService.stopRouteTracking();
-    _stopWalkerLocationSharing();
-    _activeSessionId = null;
-    showWalkCompletionScreen(result.session, result.totalDistanceKm);
+    if (result.completed || result.session?.status === 'completed') {
+      RealtimeService.stopRouteTracking();
+      _stopWalkerLocationSharing();
+      _activeSessionId = null;
+      showWalkCompletionScreen(result.session, result.totalDistanceKm);
+      setTimeout(() => showRequesterReviewPrompt(sessionId, result.session?.walkerId, result.totalDistanceKm), 350);
+      return;
+    }
+    showToast('인계 확인을 보냈어요. 도우미 확인을 기다려주세요.', 'success');
+    if (Router.getPath && Router.getPath() === '/walk-session') renderWalkSessionPage(sessionId);
+    else if (typeof renderMatchingPage === 'function') renderMatchingPage();
+  } catch(e) {
+    showToast('오류가 발생했습니다.', 'error');
+  }
+}
+
+async function confirmWalkerReturnHandoff(sessionId) {
+  try {
+    const res = await fetch(`/api/walk-sessions/${sessionId}/confirm-walker-return-handoff`, { method: 'PATCH' });
+    const result = await res.json();
+    if (!result.success && result.pending) {
+      showToast(result.error || '요청자 확인을 기다려주세요.', 'info');
+      renderWalkSessionPage(sessionId);
+      return;
+    }
+    if (!result.success) { showToast(result.error || '인계 확인에 실패했습니다.', 'error'); return; }
+    if (result.completed || result.session?.status === 'completed') {
+      RealtimeService.stopRouteTracking();
+      _stopWalkerLocationSharing();
+      _activeSessionId = null;
+      showWalkCompletionScreen(result.session, result.totalDistanceKm);
+      return;
+    }
+    showToast('인계 완료를 보냈어요. 요청자 확인을 기다려주세요.', 'success');
+    renderWalkSessionPage(sessionId);
   } catch(e) {
     showToast('오류가 발생했습니다.', 'error');
   }
@@ -428,12 +509,15 @@ async function renderWalkSessionPage(sessionId) {
   let sid = sessionId || _activeSessionId;
   const user = AuthService.getCurrentUser();
   if (!user) { Router.navigate('/login'); return; }
+  _stopWalkStatusPolling();
 
   let sessions = [];
+  let allSessions = [];
   try {
     const res = await fetch(`/api/walk-sessions?userId=${user.id}`);
     const data = await res.json();
-    sessions = data.sessions || [];
+    allSessions = data.sessions || [];
+    sessions = allSessions;
   } catch (e) {}
 
   try {
@@ -444,11 +528,19 @@ async function renderWalkSessionPage(sessionId) {
     const activeRequestIds = new Set([...(asRequester.requests || []), ...(asWalker.requests || [])]
       .filter(r => WALK_SESSION_ACTIVE_STATUSES.includes(r.status))
       .map(r => r.id));
-    sessions = sessions.filter(s => activeRequestIds.has(s.requestId));
+    sessions = sessions.filter(s => activeRequestIds.has(s.requestId) || (sid && s.id === sid));
   } catch (e) {}
 
-  let session = sid ? sessions.find(s => s.id === sid) : null;
+  let session = sid ? (sessions.find(s => s.id === sid) || allSessions.find(s => s.id === sid)) : null;
   const latestActive = _pickLatestActiveSession(sessions);
+
+  if (session?.status === 'completed') {
+    RealtimeService.stopRouteTracking();
+    _stopWalkerLocationSharing();
+    _activeSessionId = null;
+    showWalkCompletionScreen(session, session.totalDistanceKm);
+    return;
+  }
 
   if (!session || !WALK_SESSION_ACTIVE_STATUSES.includes(session.status)) {
     session = latestActive;
@@ -481,10 +573,10 @@ async function renderWalkSessionPage(sessionId) {
   const STATUS_CFG = {
     heading:        { dot:'#3B82F6', label:'픽업 장소로 이동 중', sub:'도우미가 반려견을 데리러 오고 있어요' },
     arrived:        { dot:'#F59E0B', label:'픽업 장소 도착',     sub:'요청자가 반려견 전달을 확인하면 산책을 시작해요' },
-    handoff:        { dot:'#8B5CF6', label:'반려견 인계 완료',   sub:'도우미가 이제 산책을 시작할 수 있어요' },
+    handoff:        { dot:'#8B5CF6', label:'산책 시작 준비 중',   sub:'반려견 전달 확인을 산책 시작으로 반영하고 있어요' },
     walking:        { dot:'#10B981', label:'산책 중',            sub:'도우미가 반려견과 산책하고 있어요' },
     returning:      { dot:'#0EA5E9', label:'복귀 중',            sub:'도우미가 반려견을 데리고 돌아오고 있어요' },
-    return_arrived: { dot:'#FB7185', label:'복귀 도착',          sub:'요청자가 반려견을 다시 인계받으면 종료돼요' },
+    return_arrived: { dot:'#FB7185', label:'복귀 도착',          sub:'양쪽에서 반려견 재인계를 확인하면 종료돼요' },
     completed:      { dot:'#94A3B8', label:'산책 완료',          sub:'산책과 반려견 재인계가 모두 끝났어요.' },
   };
   const cfg = STATUS_CFG[st] || STATUS_CFG.heading;
@@ -497,14 +589,18 @@ async function renderWalkSessionPage(sessionId) {
   if (isWalker) {
     const cancelBtn = `<button class="wsp-cancel-btn" onclick="cancelWalkSession('${sid}')">취소</button>`;
     if (st === 'heading') actionBtn = `<div class="wsp-btn-row">${cancelBtn}<button class="wsp-btn wsp-btn--blue" onclick="arriveAtPickup('${sid}')">📍 도착했어요</button></div>`;
-    else if (st === 'arrived') actionBtn = `<div class="wsp-btn-row">${cancelBtn}<span class="wsp-waiting">전달 확인 대기 중…</span></div>`;
-    else if (st === 'handoff') actionBtn = `<button class="wsp-btn wsp-btn--green" onclick="startActualWalk('${sid}')">🐾 산책 시작</button>`;
+    else if (st === 'arrived') actionBtn = `<div class="wsp-btn-row">${cancelBtn}<span class="wsp-waiting">요청자 전달 확인 대기 중…</span></div>`;
+    else if (st === 'handoff') actionBtn = `<span class="wsp-waiting">산책 시작 처리 중…</span>`;
     else if (st === 'walking') actionBtn = `<button class="wsp-btn wsp-btn--blue" onclick="startReturnToRequester('${sid}')">↩ 요청자에게 복귀</button>`;
     else if (st === 'returning') actionBtn = `<button class="wsp-btn wsp-btn--amber" onclick="arriveReturnToRequester('${sid}')">📍 복귀 도착했어요</button>`;
-    else if (st === 'return_arrived') actionBtn = `<span class="wsp-waiting">재인계 확인 대기 중…</span>`;
+    else if (st === 'return_arrived') actionBtn = session?.walkerReturnHandoffConfirmedAt
+      ? `<span class="wsp-waiting">요청자 인계 확인 대기 중…</span>`
+      : `<button class="wsp-btn wsp-btn--green" onclick="confirmWalkerReturnHandoff('${sid}')">🐕 반려견을 잘 인계했어요</button>`;
   } else {
-    if (st === 'arrived') actionBtn = `<button class="wsp-btn wsp-btn--amber" onclick="confirmHandoff('${sid}')">🐕 반려견 전달 완료</button>`;
-    else if (st === 'return_arrived') actionBtn = `<button class="wsp-btn wsp-btn--green" onclick="confirmReturnHandoff('${sid}')">🐕 반려견 다시 인계받기</button>`;
+    if (st === 'arrived') actionBtn = `<button class="wsp-btn wsp-btn--amber" onclick="confirmHandoff('${sid}')">🐕 반려견 전달완료</button>`;
+    else if (st === 'return_arrived') actionBtn = session?.requesterReturnHandoffConfirmedAt
+      ? `<span class="wsp-waiting">도우미 인계 확인 대기 중…</span>`
+      : `<button class="wsp-btn wsp-btn--green" onclick="confirmReturnHandoff('${sid}')">🐕 반려견을 잘 인계 받으셨나요?</button>`;
   }
 
   const showStats = ['walking', 'returning', 'return_arrived', 'completed'].includes(st);
@@ -583,6 +679,8 @@ async function renderWalkSessionPage(sessionId) {
   </style>
   `);
 
+  _startWalkStatusPolling(sid, st);
+
   const resolvedReqId = window._activeWalkRequestId || session?.requestId;
   if (resolvedReqId) window._activeWalkRequestId = resolvedReqId;
 
@@ -595,9 +693,14 @@ async function renderWalkSessionPage(sessionId) {
   }
 
   if (resolvedReqId) showChatButton(resolvedReqId);
+
+  if (st === 'handoff' && isWalker) {
+    setTimeout(() => startActualWalk(sid), 250);
+  }
 }
 
 async function _initWalkSessionMap(sessionId, opts = {}) {
+  const initToken = ++_walkMapInitToken;
   const { isWalker = false, sessionStatus = '', requestId = null, session = null } = opts;
   const container = document.getElementById('walk-session-map');
   if (!container) return;
@@ -671,6 +774,11 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
   const anchorLng = pickupLng ?? myLng ?? 126.9780;
   const initZoom = pickupLat && pickupLng ? 16 : (hasGps ? 16 : 14);
 
+  if (initToken !== _walkMapInitToken || !container.isConnected) return;
+  if (container._leaflet_id) {
+    try { delete container._leaflet_id; } catch(e) {}
+  }
+
   _walkRouteMap = L.map('walk-session-map', { zoomControl: true, attributionControl: true }).setView([anchorLat, anchorLng], initZoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(_walkRouteMap);
 
@@ -704,7 +812,7 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
         _walkNavMyMarker = L.marker([myLat, myLng], { icon: iconWalker(true) }).bindPopup('내 위치').addTo(_walkRouteMap);
       }
       if (pickupLat && pickupLng && hasGps) {
-        _walkNavLine = L.polyline([[myLat, myLng], [pickupLat, pickupLng]], { color: '#3B82F6', weight: 3, dashArray: '8 5', opacity: .8 }).addTo(_walkRouteMap);
+        _walkNavLine = L.polyline([[myLat, myLng], [pickupLat, pickupLng]], { color: '#2563EB', weight: 5, opacity: .85 }).addTo(_walkRouteMap);
         fitAnchorAndWalker(myLat, myLng);
         const dist = hav(myLat, myLng, pickupLat, pickupLng);
         showBanner(`픽업까지 ${distText(dist)} · ${etaText(Math.ceil(dist / 1.3))}`);
@@ -717,7 +825,7 @@ async function _initWalkSessionMap(sessionId, opts = {}) {
           else _walkNavMyMarker = L.marker([la, lo], { icon: iconWalker(true) }).addTo(_walkRouteMap);
           if (pickupLat && pickupLng) {
             if (_walkNavLine) _walkNavLine.setLatLngs([[la, lo], [pickupLat, pickupLng]]);
-            else _walkNavLine = L.polyline([[la, lo], [pickupLat, pickupLng]], { color: '#3B82F6', weight: 3, dashArray: '8 5', opacity: .8 }).addTo(_walkRouteMap);
+            else _walkNavLine = L.polyline([[la, lo], [pickupLat, pickupLng]], { color: '#2563EB', weight: 5, opacity: .85 }).addTo(_walkRouteMap);
             fitAnchorAndWalker(la, lo);
             const dist = hav(la, lo, pickupLat, pickupLng);
             showBanner(`픽업까지 ${distText(dist)} · ${etaText(Math.ceil(dist / 1.3))}`);
