@@ -275,10 +275,7 @@ async function requestExpertPayment(expertId) {
  });
  } catch(e) {
  localStorage.removeItem('pawsitive_pending_payment');
- if (btn) {
- btn.disabled = false;
- btn.textContent = `${expert.price.toLocaleString()}원 결제하고 상담 시작`;
- }
+ document.getElementById('expert-payment-modal')?.remove();
  }
 }
 

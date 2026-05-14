@@ -242,7 +242,7 @@ function showToast(message, type = 'info') {
  const colors = { success: '#00AA76', error: '#E53E3E', info: '#3182CE' };
  toast.style.cssText = `
  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
- z-index:10000; background:${colors[type] || colors.info}; color:#fff;
+ z-index:99999; background:${colors[type] || colors.info}; color:#fff;
  padding:12px 24px; border-radius:10px; font-size:0.9rem; font-weight:600;
  box-shadow:0 4px 16px rgba(0,0,0,0.2); animation:slideInUp 0.3s ease;
  max-width:90vw; text-align:center;

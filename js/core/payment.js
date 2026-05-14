@@ -46,6 +46,10 @@ function calculateWalkPrice(dogSizes) {
 
 async function requestTossPayment({ amount, orderId, orderName, customerName, successHash, failHash }) {
   const TOSS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+  if (typeof TossPayments === 'undefined') {
+    showToast('결제 서비스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.', 'error');
+    throw new Error('TossPayments SDK not loaded');
+  }
   try {
     const tossPayments = TossPayments(TOSS_CLIENT_KEY);
     const payment = tossPayments.payment({ customerKey: orderId });
