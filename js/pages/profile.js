@@ -206,7 +206,7 @@ function renderProfilePage() {
  <div id="dog-reg-modal" style="display:none; position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
  <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
  <div id="dog-reg-card" style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:400px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
- <button onclick="closeDogRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">?</button>
+ <button onclick="closeDogRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer;">✕</button>
  <div id="dog-reg-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
  <div id="dog-reg-content" style="flex:1; display:flex; flex-direction:column;"></div>
  </div>
@@ -543,8 +543,6 @@ function renderDogRegStep() {
 function selectDogRegCard(key, value) {
  _dogRegData[key] = value;
  renderDogRegStep();
- // 카드 선택 후 0.3초 뒤 자동 다음
- setTimeout(() => nextDogRegStep(), 300);
 }
 
 function handleDogPhotoSelect(input) {
