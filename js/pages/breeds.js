@@ -149,12 +149,16 @@ function renderBreedTabContent() {
     setTimeout(() => BreedImageService.loadAll(), 100);
   } else {
     container.innerHTML = renderBreedRecommendUI();
+    restoreBreedRecommendResult();
   }
 }
 
 // --- AI 맞춤 품종 추천 UI ---
 let _breedRecStep = 0;
 let _breedRecData = {};
+let _breedLastRecommendResult = null;
+const BREED_RECOMMEND_RESULT_KEY = 'breedLastRecommendResult';
+const BREED_RETURN_TO_RECOMMEND_KEY = 'breedReturnToRecommendResults';
 
 const _breedRecommendSteps = [
   { key: 'size', question: '어떤 크기를 선호하세요?', sub: '아직 모르겠다면 상관없음을 골라도 좋아요', type: 'cards', defaultValue: 'any', options: [
@@ -404,22 +408,96 @@ async function handleBreedRecommend() {
     });
     const data = await res.json();
 
-    if (data.success && data.recommendations) {
-      resultEl.innerHTML = renderBreedRecommendResult(data);
+    const normalizedData = normalizeBreedRecommendResponse(data);
+
+    if (normalizedData.success && normalizedData.recommendations) {
+      saveBreedRecommendResult(normalizedData);
+      resultEl.innerHTML = renderBreedRecommendResult(normalizedData);
       // 추천 결과 견종 이미지 로드
       setTimeout(() => BreedImageService.loadAll(), 100);
-    } else if (data.success && data.rawReply) {
-      // JSON 파싱 실패 시 원본 텍스트 표시
-      const formatted = data.rawReply.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      resultEl.innerHTML = `<div class="card" style="padding:24px; line-height:1.8;">${formatted}</div>`;
     } else {
-      resultEl.innerHTML = `<div class="alert alert-error">${data.error || '추천에 실패했어요. 다시 시도해주세요.'}</div>`;
+      resultEl.innerHTML = `<div class="alert alert-error">${normalizedData.error || '추천에 실패했어요. 다시 시도해주세요.'}</div>`;
     }
   } catch (e) {
     resultEl.innerHTML = `<div class="alert alert-error">서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.</div>`;
   }
 
   if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI 맞춤 추천 받기'; }
+}
+
+function saveBreedRecommendResult(data) {
+  _breedLastRecommendResult = data;
+  try {
+    sessionStorage.setItem(BREED_RECOMMEND_RESULT_KEY, JSON.stringify(data));
+  } catch (e) {}
+}
+
+function getSavedBreedRecommendResult() {
+  if (_breedLastRecommendResult?.recommendations) return _breedLastRecommendResult;
+
+  try {
+    const saved = sessionStorage.getItem(BREED_RECOMMEND_RESULT_KEY);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    if (parsed?.success && Array.isArray(parsed.recommendations)) {
+      _breedLastRecommendResult = parsed;
+      return parsed;
+    }
+  } catch (e) {}
+
+  return null;
+}
+
+function restoreBreedRecommendResult() {
+  const resultEl = document.getElementById('breed-recommend-result');
+  const saved = getSavedBreedRecommendResult();
+  if (!resultEl || !saved) return;
+
+  resultEl.innerHTML = renderBreedRecommendResult(saved);
+  let shouldScrollToResults = false;
+  try {
+    shouldScrollToResults = sessionStorage.getItem(BREED_RETURN_TO_RECOMMEND_KEY) === '1';
+    sessionStorage.removeItem(BREED_RETURN_TO_RECOMMEND_KEY);
+  } catch (e) {}
+
+  setTimeout(() => {
+    BreedImageService.loadAll();
+    if (shouldScrollToResults) {
+      resultEl.scrollIntoView({ block: 'start' });
+    }
+  }, 100);
+}
+
+function openBreedDetailFromRecommendation(breedId) {
+  breedPageTab = 'recommend';
+  try {
+    sessionStorage.setItem(BREED_RETURN_TO_RECOMMEND_KEY, '1');
+  } catch (e) {}
+  Router.navigate('/breeds/' + breedId);
+}
+
+function normalizeBreedRecommendResponse(data) {
+  if (!data?.success || data.recommendations) return data;
+  if (!data.rawReply) return data;
+
+  const raw = String(data.rawReply)
+    .replace(/^\s*```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
+
+  try {
+    return { ...data, ...JSON.parse(raw), rawReply: undefined };
+  } catch (e) {}
+
+  const first = raw.indexOf('{');
+  const last = raw.lastIndexOf('}');
+  if (first !== -1 && last > first) {
+    try {
+      return { ...data, ...JSON.parse(raw.slice(first, last + 1)), rawReply: undefined };
+    } catch (e) {}
+  }
+
+  return { success: false, error: 'AI 추천 응답 형식이 맞지 않았어요. 다시 시도해주세요.' };
 }
 
 // --- 추천 결과 렌더링 ---
@@ -439,6 +517,7 @@ function renderBreedRecommendResult(data) {
     const breed = BreedService.getById(rec.id);
     const sizeMap = { small: '소형', medium: '중형', large: '대형' };
     const rankLabel = String(idx + 1).padStart(2, '0');
+    const scoreValue = Math.max(0, Math.min(100, Math.round(Number(rec.matchScore) || 0)));
 
     const prosHtml = (rec.pros || []).map(p => `<span class="breed-trait breed-trait--pro">${p}</span>`).join('');
     const consHtml = (rec.cons || []).map(c => `<span class="breed-trait breed-trait--con">${c}</span>`).join('');
@@ -455,10 +534,15 @@ function renderBreedRecommendResult(data) {
           ${rec.nameEn ? `<span class="breed-rec-result-card__name-en">${rec.nameEn}</span>` : ''}
           ${breed ? `<span class="breed-rec-result-card__size">${sizeMap[breed.size] || ''}</span>` : ''}
         </div>
+        <div class="breed-rec-result-card__score" aria-label="AI 추천 점수 ${scoreValue}점">
+          <span>AI 추천 점수</span>
+          <strong>${scoreValue}점</strong>
+          <div><i style="width:${scoreValue}%;"></i></div>
+        </div>
         <p class="breed-rec-result-card__reason">${rec.reason}</p>
         ${prosHtml || consHtml ? `<div class="breed-rec-result-card__traits">${prosHtml}${consHtml}</div>` : ''}
         ${rec.tip ? `<p class="breed-rec-result-card__tip">${rec.tip}</p>` : ''}
-        <button class="btn btn-secondary btn-sm" onclick="Router.navigate('/breeds/${rec.id}')">상세 정보 →</button>
+        <button class="btn btn-secondary btn-sm" onclick="openBreedDetailFromRecommendation('${rec.id}')">상세 정보 →</button>
       </div>
     </div>`;
   });

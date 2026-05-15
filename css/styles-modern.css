@@ -4325,6 +4325,39 @@ video[src$="pawsitive_loading.mp4"] {
   padding: 2px 8px;
   border-radius: var(--radius-full);
 }
+.breed-rec-result-card__score {
+  display: grid;
+  grid-template-columns: auto auto minmax(92px, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 13px;
+  padding: 9px 10px;
+  border: 1px solid #DDE6F0;
+  border-radius: 8px;
+  background: #F8FAFC;
+}
+.breed-rec-result-card__score span {
+  color: #64748B;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+.breed-rec-result-card__score strong {
+  color: #0B1220;
+  font-size: 0.86rem;
+  font-weight: 950;
+}
+.breed-rec-result-card__score div {
+  height: 7px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #E2E8F0;
+}
+.breed-rec-result-card__score i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0F766E, #2563EB);
+}
 .breed-rec-result-card__reason {
   font-size: 0.9rem;
   line-height: 1.78;
@@ -4366,6 +4399,15 @@ video[src$="pawsitive_loading.mp4"] {
 }
 .breed-rec-summary p { font-size: 0.88rem; line-height: 1.6; margin: 0; }
 .breed-rec-summary span { font-size: 0.75rem; color: var(--color-text-muted); white-space: nowrap; flex-shrink: 0; }
+
+@media (max-width: 520px) {
+  .breed-rec-result-card__score {
+    grid-template-columns: auto auto;
+  }
+  .breed-rec-result-card__score div {
+    grid-column: 1 / -1;
+  }
+}
 
 /* ===== Community Health Tip Memo ===== */
 .paw-tip-memo {
