@@ -305,5 +305,61 @@
     "calories": 0,
     "coordinates": [],
     "createdAt": "2026-05-13T13:07:26.665Z"
+  },
+  {
+    "id": "walk_1778815008110_zrmym8",
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "dogId": "id-motxbdfb-9r1w6sq",
+    "dogName": "초코",
+    "startTime": "2026-05-15T03:16:32.212Z",
+    "endTime": "2026-05-15T03:16:43.376Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [],
+    "createdAt": "2026-05-15T03:16:48.110Z"
+  },
+  {
+    "id": "walk_1778827670589_qzugn4",
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "dogId": "id-motxbyf3-7ithoib",
+    "dogName": "바비",
+    "startTime": "2026-05-15T06:47:45.160Z",
+    "endTime": "2026-05-15T06:47:49.160Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [],
+    "createdAt": "2026-05-15T06:47:50.589Z"
+  },
+  {
+    "id": "walk_1778827674369_jlo4yy",
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "dogId": "id-motxbyf3-7ithoib",
+    "dogName": "바비",
+    "startTime": "2026-05-15T06:47:52.479Z",
+    "endTime": "2026-05-15T06:47:54.364Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [],
+    "createdAt": "2026-05-15T06:47:54.369Z"
+  },
+  {
+    "id": "walk_1778827681542_eyhw7k",
+    "userId": "id-mol2g5lb-rvnvuvi",
+    "dogId": "id-motxbyf3-7ithoib",
+    "dogName": "바비",
+    "startTime": "2026-05-15T06:48:00.585Z",
+    "endTime": "2026-05-15T06:48:01.537Z",
+    "duration": 0,
+    "distance": 0,
+    "avgPace": 0,
+    "calories": 0,
+    "coordinates": [],
+    "createdAt": "2026-05-15T06:48:01.542Z"
   }
 ]

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "id-mp6cx0lj-4b2dnla",
+    "requesterId": "id-mol2g5lb-rvnvuvi",
+    "requesterName": "Peter Lee",
+    "requesterEmail": "cndqja5853@gmail.com",
+    "expertId": "expert-vet-mock",
+    "expertUserId": "mock-vet-user",
+    "expertName": "윤서진",
+    "category": "vet",
+    "categoryLabel": "수의사",
+    "dogName": "초코",
+    "topic": "피부가려움",
+    "firstMessage": "상담을 시작하고 싶어요.",
+    "amount": 39000,
+    "paymentOrderId": "expert_mp6cwi3m_luqm0q",
+    "status": "completed",
+    "createdAt": "2026-05-15T03:27:41.383Z",
+    "updatedAt": "2026-05-15T03:28:56.653Z",
+    "messages": [
+      {
+        "from": "system",
+        "text": "윤서진 수의사에게 상담 요청이 접수됐어요.",
+        "createdAt": "2026-05-15T03:27:41.383Z"
+      },
+      {
+        "from": "requester",
+        "text": "상담을 시작하고 싶어요.",
+        "createdAt": "2026-05-15T03:27:41.383Z"
+      },
+      {
+        "from": "system",
+        "text": "윤서진 전문가가 상담을 확인했어요.",
+        "createdAt": "2026-05-15T03:28:21.925Z"
+      },
+      {
+        "from": "expert",
+        "text": "ㅇㄴㅇㄴㅇㄴ",
+        "images": [],
+        "createdAt": "2026-05-15T03:28:24.764Z"
+      },
+      {
+        "from": "requester",
+        "text": "ㅇㄴ",
+        "images": [],
+        "createdAt": "2026-05-15T03:28:27.121Z"
+      },
+      {
+        "from": "system",
+        "text": "상담이 종료됐어요. 필요하면 새 상담을 신청할 수 있어요.",
+        "createdAt": "2026-05-15T03:28:56.653Z"
+      }
+    ],
+    "acceptedAt": "2026-05-15T03:28:21.925Z",
+    "completedAt": "2026-05-15T03:28:56.653Z"
+  }
+]

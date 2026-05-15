@@ -1,5 +1,5 @@
 // Pawsitive - Wallet Page
-// Paw coins wallet and transaction history
+// Paw points wallet and transaction history
 
 function renderWalletPage() {
  const user = AuthService.getCurrentUser();
@@ -8,10 +8,10 @@ function renderWalletPage() {
  renderPage(`
  <div class="page-header">
  <h1>Paw 지갑</h1>
- <p>활동으로 코인을 모으고 사용해봐요~</p>
+ <p>활동으로 포인트를 모으고 사용해봐요~</p>
  </div>
  <div class="wallet-balance">
- <div class="balance-label">보유 Paw 코인</div>
+ <div class="balance-label">보유 Paw 포인트</div>
  <div class="balance-amount">0</div>
  <div class="balance-unit">PAW (0원)</div>
  </div>
@@ -25,7 +25,7 @@ function renderWalletPage() {
  </div>
  </div>
  <div style="margin-top:16px; text-align:center;">
- <button class="btn btn-primary" onclick="showLoginModal('Paw 코인을 적립하고 사용하려면 로그인이 필요해요!\\n산책, 커뮤니티 활동으로 코인을 모을 수 있어요.')">${icon("wallet",16)} 코인 적립 시작하기</button>
+ <button class="btn btn-primary" onclick="showLoginModal('Paw 포인트를 적립하고 사용하려면 로그인이 필요해요!\\n산책, 커뮤니티 활동으로 포인트를 모을 수 있어요.')">${icon("wallet",16)} 포인트 적립 시작하기</button>
  </div>
  `);
  return;
@@ -69,10 +69,10 @@ function renderWalletPage() {
  renderPage(`
  <div class="page-header">
  <h1>Paw 지갑</h1>
- <p>활동으로 코인을 모으고 사용해봐요~</p>
+ <p>활동으로 포인트를 모으고 사용해봐요~</p>
  </div>
  <div class="wallet-balance">
- <div class="balance-label">보유 Paw 코인</div>
+ <div class="balance-label">보유 Paw 포인트</div>
  <div class="balance-amount">${balance}</div>
  <div class="balance-unit">PAW (${balance}원)</div>
  </div>

@@ -6,8 +6,13 @@
 const MatchingService = (() => {
   const MATCH_PROFILES_KEY = 'matchProfiles';
 
+  function isDemoWalkerId(userId) {
+    return String(userId || '').startsWith('dummy-walker-');
+  }
+
   function mergeServerWalkerProfile(localProfile, serverWalker) {
     if (!serverWalker) return localProfile || null;
+    const isDemoWalker = serverWalker.isDemoWalker === true || isDemoWalkerId(serverWalker.userId || localProfile?.userId);
 
     return {
       ...(localProfile || {}),
@@ -22,7 +27,10 @@ const MatchingService = (() => {
       acceptedSizes: serverWalker.acceptedSizes || localProfile?.acceptedSizes || ['small', 'medium', 'large'],
       isAvailable: serverWalker.isAvailable ?? localProfile?.isAvailable ?? false,
       lat: serverWalker.lat ?? localProfile?.lat ?? null,
-      lng: serverWalker.lng ?? localProfile?.lng ?? null
+      lng: serverWalker.lng ?? localProfile?.lng ?? null,
+      isDemoWalker,
+      isStale: isDemoWalker ? false : (serverWalker.isStale ?? localProfile?.isStale ?? false),
+      minutesSinceSeen: isDemoWalker ? null : (serverWalker.minutesSinceSeen ?? localProfile?.minutesSinceSeen ?? null)
     };
   }
 
@@ -197,6 +205,13 @@ const MatchingService = (() => {
    * @returns {Promise<{success: boolean, request?: Object, error?: string, cooldown?: boolean, retryAfterMs?: number}>}
    */
   async function sendRequest(fromId, toId, requestData) {
+    if (isDemoWalkerId(toId)) {
+      return {
+        success: false,
+        error: '이 도우미는 AI 추천/GPS 표시용 샘플이라 실제 요청을 보낼 수 없어요. 실시간 접속 도우미를 선택해주세요.'
+      };
+    }
+
     // 실제 산책 세션과 이어지는 walk-requests API로 통합
     try {
       const payload = requestData || {};
@@ -241,12 +256,18 @@ const MatchingService = (() => {
       // walkers.json 동기화
       const res = await fetch('/api/walkers');
       const data = await res.json();
-      _serverWalkersCache = data.map(w => ({
-        ...w,
-        userName: w.userName || w.name || '도우미',
-        preferredTime: w.preferredTime || '',
-        acceptedSizes: w.acceptedSizes || ['small', 'medium', 'large'],
-      }));
+      _serverWalkersCache = data.map(w => {
+        const isDemoWalker = w.isDemoWalker === true || isDemoWalkerId(w.userId);
+        return {
+          ...w,
+          userName: w.userName || w.name || '도우미',
+          preferredTime: w.preferredTime || '',
+          acceptedSizes: w.acceptedSizes || ['small', 'medium', 'large'],
+          isDemoWalker,
+          isStale: isDemoWalker ? false : w.isStale,
+          minutesSinceSeen: isDemoWalker ? null : w.minutesSinceSeen
+        };
+      });
 
       const profiles = StorageService.get('matchProfiles', []);
       const syncedProfiles = profiles.map(profile => {
@@ -430,8 +451,10 @@ const MatchingService = (() => {
     const localWalkers = getAllProfiles().filter(p => p.role === 'walker' && p.isAvailable);
 
     if (_serverWalkersCache !== null && _serverWalkersCache.length > 0) {
-      const serverAvailable = _serverWalkersCache.filter(w => w.isAvailable);
-      const serverIds = new Set(serverAvailable.map(w => w.userId));
+      const serverAvailable = _serverWalkersCache.filter(w => (
+        w.isAvailable && (!w.isStale || w.isDemoWalker || isDemoWalkerId(w.userId))
+      ));
+      const serverIds = new Set(_serverWalkersCache.map(w => w.userId));
       // 서버에 없는 로컬 전용 워커만 추가 (서버 데이터가 항상 우선)
       const localOnly = localWalkers.filter(w => !serverIds.has(w.userId));
       return [...serverAvailable, ...localOnly];

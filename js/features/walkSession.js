@@ -560,131 +560,203 @@ async function renderWalkSessionPage(sessionId) {
   }
 
   if (!session || !sid) {
-    renderPage(`<div style="padding:80px 20px;text-align:center;">
-      <div style="font-size:3.5rem;margin-bottom:16px;">🐾</div>
-      <p style="color:#94A3B8;font-size:0.95rem;margin-bottom:24px;">진행 중인 산책이 없습니다.</p>
-      <button class="btn btn-primary" onclick="Router.navigate('/matching')">매칭 페이지로</button>
+    renderPage(`
+    <div class="wsp-root">
+      <div class="wsp-empty">
+        <div class="wsp-empty__inner">
+          <div class="wsp-empty__icon">${icon('route', 22)}</div>
+          <h2 class="wsp-empty__title">진행 중인 산책이 없습니다</h2>
+          <p class="wsp-empty__copy">매칭이 완료되면 픽업 이동부터 산책 종료까지 이 화면에서 확인할 수 있어요.</p>
+          <button class="wsp-action wsp-action--primary" onclick="Router.navigate('/matching')">${icon('chevron-left', 15)} 매칭 화면으로</button>
+        </div>
+      </div>
     </div>`);
     return;
   }
   const isWalker = !!(session && session.walkerId === user.id);
   const st = session?.status || 'heading';
 
-  const STATUS_CFG = {
-    heading:        { dot:'#3B82F6', label:'픽업 장소로 이동 중', sub:'도우미가 반려견을 데리러 오고 있어요' },
-    arrived:        { dot:'#F59E0B', label:'픽업 장소 도착',     sub:'요청자가 반려견 전달을 확인하면 산책을 시작해요' },
-    handoff:        { dot:'#8B5CF6', label:'산책 시작 준비 중',   sub:'반려견 전달 확인을 산책 시작으로 반영하고 있어요' },
-    walking:        { dot:'#10B981', label:'산책 중',            sub:'도우미가 반려견과 산책하고 있어요' },
-    returning:      { dot:'#0EA5E9', label:'복귀 중',            sub:'도우미가 반려견을 데리고 돌아오고 있어요' },
-    return_arrived: { dot:'#FB7185', label:'복귀 도착',          sub:'양쪽에서 반려견 재인계를 확인하면 종료돼요' },
-    completed:      { dot:'#94A3B8', label:'산책 완료',          sub:'산책과 반려견 재인계가 모두 끝났어요.' },
-  };
-  const cfg = STATUS_CFG[st] || STATUS_CFG.heading;
   const pulse = st !== 'completed';
-  const dogLabel = session
-    ? `${session.dogName || '반려견'} · ${new Date(session.startedAt).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })} 시작`
-    : cfg.sub;
-
-  let actionBtn = '';
-  if (isWalker) {
-    const cancelBtn = `<button class="wsp-cancel-btn" onclick="cancelWalkSession('${sid}')">취소</button>`;
-    if (st === 'heading') actionBtn = `<div class="wsp-btn-row">${cancelBtn}<button class="wsp-btn wsp-btn--blue" onclick="arriveAtPickup('${sid}')">📍 도착했어요</button></div>`;
-    else if (st === 'arrived') actionBtn = `<div class="wsp-btn-row">${cancelBtn}<span class="wsp-waiting">요청자 전달 확인 대기 중…</span></div>`;
-    else if (st === 'handoff') actionBtn = `<span class="wsp-waiting">산책 시작 처리 중…</span>`;
-    else if (st === 'walking') actionBtn = `<button class="wsp-btn wsp-btn--blue" onclick="startReturnToRequester('${sid}')">↩ 요청자에게 복귀</button>`;
-    else if (st === 'returning') actionBtn = `<button class="wsp-btn wsp-btn--amber" onclick="arriveReturnToRequester('${sid}')">📍 복귀 도착했어요</button>`;
-    else if (st === 'return_arrived') actionBtn = session?.walkerReturnHandoffConfirmedAt
-      ? `<span class="wsp-waiting">요청자 인계 확인 대기 중…</span>`
-      : `<button class="wsp-btn wsp-btn--green" onclick="confirmWalkerReturnHandoff('${sid}')">🐕 반려견을 잘 인계했어요</button>`;
-  } else {
-    if (st === 'arrived') actionBtn = `<button class="wsp-btn wsp-btn--amber" onclick="confirmHandoff('${sid}')">🐕 반려견 전달완료</button>`;
-    else if (st === 'return_arrived') actionBtn = session?.requesterReturnHandoffConfirmedAt
-      ? `<span class="wsp-waiting">도우미 인계 확인 대기 중…</span>`
-      : `<button class="wsp-btn wsp-btn--green" onclick="confirmReturnHandoff('${sid}')">🐕 반려견을 잘 인계 받으셨나요?</button>`;
-  }
-
   const showStats = ['walking', 'returning', 'return_arrived', 'completed'].includes(st);
 
+  const premiumEsc = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const partnerName = premiumEsc(isWalker ? (session.requesterName || '요청자') : (session.walkerName || '도우미'));
+  const dogName = premiumEsc(session.dogName || '반려견');
+  const startedLabel = session.startedAt
+    ? new Date(session.startedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+    : '지금';
+  const premiumStatusMap = {
+    heading: {
+      accent: '#2563eb',
+      title: '픽업 지점으로 이동 중',
+      copy: isWalker ? '요청자가 요청한 시점의 위치로 이동하고 있어요.' : `${partnerName}님이 고정된 픽업 지점으로 이동하고 있어요.`,
+      map: '고정 픽업 지점 기준 위치'
+    },
+    arrived: {
+      accent: '#d97706',
+      title: '픽업 지점 도착',
+      copy: isWalker ? '요청자의 반려견 전달 확인을 기다리고 있어요.' : '도우미가 픽업 지점에 도착했어요. 반려견 전달 후 확인해 주세요.',
+      map: '픽업 지점 도착'
+    },
+    handoff: {
+      accent: '#7c3aed',
+      title: '산책 시작 준비',
+      copy: '전달 확인을 반영하고 산책 기록을 시작하고 있어요.',
+      map: '산책 시작 준비'
+    },
+    walking: {
+      accent: '#00a876',
+      title: '산책 진행 중',
+      copy: isWalker ? `${dogName}와 산책 중이에요. 경로와 시간이 기록됩니다.` : `${partnerName}님과 ${dogName}의 산책 경로를 확인할 수 있어요.`,
+      map: '실시간 산책 경로'
+    },
+    returning: {
+      accent: '#0284c7',
+      title: '복귀 중',
+      copy: isWalker ? '처음 고정된 픽업 지점으로 돌아가고 있어요.' : `${partnerName}님이 처음 픽업 지점으로 돌아오고 있어요.`,
+      map: '복귀 경로 확인'
+    },
+    return_arrived: {
+      accent: '#e11d48',
+      title: '복귀 지점 도착',
+      copy: isWalker ? '반려견 인계 후 완료 확인을 진행해 주세요.' : '반려견을 인계받은 뒤 완료 확인을 눌러주세요.',
+      map: '반려견 인계 대기'
+    },
+    completed: {
+      accent: '#6b7280',
+      title: '산책 완료',
+      copy: '산책과 반려견 인계가 모두 완료됐어요.',
+      map: '산책 완료'
+    }
+  };
+  const premiumStatus = premiumStatusMap[st] || premiumStatusMap.heading;
+  const stepIndexMap = { heading: 0, arrived: 1, handoff: 1, walking: 2, returning: 3, return_arrived: 3, completed: 3 };
+  const activeStepIndex = stepIndexMap[st] ?? 0;
+  const premiumSteps = [
+    { title: '픽업 이동', hint: isWalker ? '요청 시점 위치로 이동' : '도우미 위치 확인' },
+    { title: '전달 확인', hint: '반려견 전달을 양쪽에서 확인' },
+    { title: '산책 진행', hint: '시간과 경로를 실시간 기록' },
+    { title: '복귀 인계', hint: '처음 픽업 지점에서 마무리' }
+  ].map((step, idx) => {
+    const cls = idx < activeStepIndex ? ' is-done' : idx === activeStepIndex ? ' is-active' : '';
+    return `<div class="wsp-step${cls}">
+      <div class="wsp-step-index">${idx < activeStepIndex ? icon('check-circle', 14) : idx + 1}</div>
+      <div>
+        <div class="wsp-step-title">${step.title}</div>
+        <div class="wsp-step-hint">${step.hint}</div>
+      </div>
+    </div>`;
+  }).join('');
+  const pickupNote = isWalker
+    ? '요청자가 산책을 요청한 순간의 GPS 위치가 픽업 지점으로 고정돼요. 이동 중 요청자의 현재 위치가 흔들려도 이 지점을 기준으로 찾아가면 됩니다.'
+    : '산책 요청을 보낸 순간의 GPS 위치가 픽업 지점으로 고정돼요. 도우미는 이 지점을 기준으로 찾아옵니다.';
+  const partnerRole = isWalker ? '요청자' : '도우미';
+  const partnerInitial = premiumEsc((isWalker ? (session.requesterName || '요') : (session.walkerName || '도')).trim().charAt(0) || 'P');
+  const premiumCancelBtn = `<button class="wsp-action wsp-action--ghost" onclick="cancelWalkSession('${sid}')">${icon('chevron-left', 15)} 취소</button>`;
+  let premiumAction = '';
+  if (isWalker) {
+    if (st === 'heading') premiumAction = `${premiumCancelBtn}<button class="wsp-action wsp-action--primary" onclick="arriveAtPickup('${sid}')">${icon('map-pin', 15)} 픽업 지점 도착</button>`;
+    else if (st === 'arrived') premiumAction = `${premiumCancelBtn}<span class="wsp-action wsp-action--muted">요청자 전달 확인 대기</span>`;
+    else if (st === 'handoff') premiumAction = `<span class="wsp-action wsp-action--muted">산책 시작 준비 중</span>`;
+    else if (st === 'walking') premiumAction = `<button class="wsp-action wsp-action--primary" onclick="startReturnToRequester('${sid}')">${icon('navigation', 15)} 복귀 시작</button>`;
+    else if (st === 'returning') premiumAction = `<button class="wsp-action wsp-action--primary" onclick="arriveReturnToRequester('${sid}')">${icon('flag', 15)} 복귀 지점 도착</button>`;
+    else if (st === 'return_arrived') premiumAction = session?.walkerReturnHandoffConfirmedAt
+      ? `<span class="wsp-action wsp-action--muted">요청자 인계 확인 대기</span>`
+      : `<button class="wsp-action wsp-action--accent" onclick="confirmWalkerReturnHandoff('${sid}')">${icon('check-circle', 15)} 반려견 인계 완료</button>`;
+  } else {
+    if (st === 'arrived') premiumAction = `<button class="wsp-action wsp-action--primary" onclick="confirmHandoff('${sid}')">${icon('check-circle', 15)} 반려견 전달 완료</button>`;
+    else if (st === 'return_arrived') premiumAction = session?.requesterReturnHandoffConfirmedAt
+      ? `<span class="wsp-action wsp-action--muted">도우미 인계 확인 대기</span>`
+      : `<button class="wsp-action wsp-action--accent" onclick="confirmReturnHandoff('${sid}')">${icon('check-circle', 15)} 인계 확인 완료</button>`;
+  }
+
   renderPage(`
-  <div class="wsp-root">
-    <div class="wsp-header">
-      <div class="wsp-header-left">
-        <span class="wsp-dot${pulse ? ' wsp-dot--pulse' : ''}" style="background:${cfg.dot}"></span>
-        <div class="wsp-header-text">
-          <div class="wsp-title">${cfg.label}</div>
-          <div class="wsp-sub">${dogLabel}</div>
+  <div class="wsp-root" style="--wsp-accent:${premiumStatus.accent};--wsp-accent-soft:${premiumStatus.accent}18;">
+    <section class="wsp-hero">
+      <div>
+        <div class="wsp-kicker">
+          <span class="wsp-status-dot${pulse ? ' is-live' : ''}"></span>
+          ${isWalker ? '도우미 진행 화면' : '요청자 진행 화면'}
+        </div>
+        <h1 class="wsp-title">${premiumStatus.title}</h1>
+        <p class="wsp-sub">${premiumStatus.copy}</p>
+      </div>
+      <div class="wsp-actions">${premiumAction}</div>
+    </section>
+
+    <section class="wsp-grid">
+      <aside class="wsp-panel">
+        <div class="wsp-panel__label">산책 매칭 프로세스</div>
+        <div class="wsp-panel__title">${dogName} 산책 흐름</div>
+        <div class="wsp-steps">${premiumSteps}</div>
+
+        <div class="match-face-notice match-face-notice--process">
+          <strong>! ${isWalker ? '요청자 얼굴을 잘 확인하세요' : '도우미 얼굴을 잘 확인하세요'}</strong>
+          <span>실제 개인 얼굴이 보이는 프로필 사진을 기준으로 서로 확인하고 안전하게 진행해요.</span>
+        </div>
+
+        <div class="wsp-note">
+          <div class="wsp-note__label">픽업 지점 안내</div>
+          <div class="wsp-note__copy">${pickupNote}</div>
+        </div>
+
+        <div class="wsp-partner">
+          <div class="wsp-partner__avatar">${partnerInitial}</div>
+          <div class="wsp-partner__meta">
+            <div class="wsp-partner__name">${partnerName}</div>
+            <div class="wsp-partner__role">${partnerRole} · ${startedLabel} 시작</div>
+          </div>
+          <button class="wsp-action wsp-action--secondary" onclick="openChatModal('${session.requestId || ''}')">${icon('message-circle', 15)} 채팅</button>
+        </div>
+      </aside>
+
+      <main class="wsp-map-panel">
+        <div class="wsp-map-head">
+          <div>
+            <div class="wsp-map-head__label">Live map</div>
+            <div class="wsp-map-head__title">${premiumStatus.map}</div>
+          </div>
+          <div class="wsp-map-head__label">${dogName}</div>
+        </div>
+        <div class="wsp-map-wrap">
+          <div id="walk-session-map" class="wsp-map"></div>
+          <div id="wsp-banner" class="wsp-banner" style="display:none"></div>
+        </div>
+      </main>
+    </section>
+
+    <section class="wsp-stats${showStats ? '' : ' wsp-stats--hidden'}">
+      <div class="wsp-stat">
+        <div>
+          <div class="wsp-stat-val" id="route-elapsed">00:00</div>
+          <div class="wsp-stat-key">산책 시간</div>
         </div>
       </div>
-      <div class="wsp-header-right">${actionBtn}</div>
-    </div>
-
-    <div class="wsp-map-wrap">
-      <div id="walk-session-map" class="wsp-map"></div>
-      <div id="wsp-banner" class="wsp-banner" style="display:none"></div>
-    </div>
-
-    <div class="wsp-stats${showStats ? '' : ' wsp-hidden'}">
       <div class="wsp-stat">
-        <div class="wsp-stat-val" id="route-elapsed">00:00</div>
-        <div class="wsp-stat-key">시간</div>
+        <div>
+          <div class="wsp-stat-val"><span id="route-distance">0.00</span><small> km</small></div>
+          <div class="wsp-stat-key">이동 거리</div>
+        </div>
       </div>
-      <div class="wsp-stat-sep"></div>
       <div class="wsp-stat">
-        <div class="wsp-stat-val"><span id="route-distance">0.00</span><small> km</small></div>
-        <div class="wsp-stat-key">거리</div>
+        <div>
+          <div class="wsp-stat-val" id="route-pace">--</div>
+          <div class="wsp-stat-key">평균 속도</div>
+        </div>
       </div>
-      <div class="wsp-stat-sep"></div>
-      <div class="wsp-stat">
-        <div class="wsp-stat-val" id="route-pace">--</div>
-        <div class="wsp-stat-key">평균속도</div>
-      </div>
-    </div>
+    </section>
 
     ${st === 'completed' ? `<div class="wsp-footer">
-      <button class="wsp-btn wsp-btn--gray" onclick="Router.navigate('/matching')">다시 매칭으로</button>
+      <button class="wsp-action wsp-action--secondary" onclick="Router.navigate('/matching')">${icon('chevron-left', 15)} 매칭 화면으로</button>
     </div>` : ''}
-  </div>
-
-  <style>
-  .wsp-root{display:flex;flex-direction:column;background:#F8FAFC;}
-  .wsp-header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;background:#fff;border-bottom:1px solid #EEF2F7;min-height:62px;}
-  .wsp-header-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
-  .wsp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-  .wsp-dot--pulse{animation:wspDotPulse 2s ease infinite;}
-  @keyframes wspDotPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.6}}
-  .wsp-header-text{min-width:0;}
-  .wsp-title{font-size:0.92rem;font-weight:700;color:#0F172A;line-height:1.3;}
-  .wsp-sub{font-size:0.73rem;color:#94A3B8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .wsp-header-right{flex-shrink:0;}
-  .wsp-btn-row{display:flex;align-items:center;gap:7px;}
-  .wsp-cancel-btn{background:none;border:1px solid #FDA4AF;color:#F43F5E;font-size:0.73rem;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;}
-  .wsp-waiting{font-size:0.75rem;color:#94A3B8;font-weight:600;background:#F1F5F9;padding:7px 11px;border-radius:8px;}
-  .wsp-btn{display:inline-flex;align-items:center;gap:5px;padding:9px 15px;border-radius:10px;font-size:0.84rem;font-weight:700;border:none;cursor:pointer;white-space:nowrap;}
-  .wsp-btn--blue{background:#3B82F6;color:#fff;}
-  .wsp-btn--green{background:#10B981;color:#fff;}
-  .wsp-btn--amber{background:#F59E0B;color:#fff;}
-  .wsp-btn--gray{background:#F1F5F9;color:#374151;font-weight:600;}
-  .wsp-map-wrap{position:relative;}
-  .wsp-map{height:clamp(320px,48vh,520px);width:100%;}
-  .wsp-banner{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:900;background:rgba(15,23,42,.85);backdrop-filter:blur(6px);color:#fff;padding:8px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.25);}
-  .wsp-stats{display:flex;align-items:center;justify-content:space-around;padding:14px 20px;background:#fff;border-top:1px solid #EEF2F7;}
-  .wsp-hidden{display:none!important;}
-  .wsp-stat{text-align:center;}
-  .wsp-stat-val{font-size:1.18rem;font-weight:800;color:#0F172A;letter-spacing:-.5px;line-height:1.2;}
-  .wsp-stat-val small{font-size:.68rem;font-weight:600;color:#94A3B8;}
-  .wsp-stat-key{font-size:.68rem;color:#94A3B8;margin-top:3px;font-weight:500;}
-  .wsp-stat-sep{width:1px;height:30px;background:#E2E8F0;}
-  .wsp-footer{padding:12px 16px;background:#fff;border-top:1px solid #EEF2F7;}
-  @keyframes wsmWalkerPulse{0%,100%{box-shadow:0 4px 16px rgba(15,23,42,.28)}50%{box-shadow:0 4px 24px rgba(15,23,42,.38),0 0 0 10px rgba(245,158,11,.12)}}
-  </style>
-  `);
+  </div>`);
 
   _startWalkStatusPolling(sid, st);
 
-  const resolvedReqId = window._activeWalkRequestId || session?.requestId;
-  if (resolvedReqId) window._activeWalkRequestId = resolvedReqId;
+  const premiumResolvedReqId = window._activeWalkRequestId || session?.requestId;
+  if (premiumResolvedReqId) window._activeWalkRequestId = premiumResolvedReqId;
 
-  setTimeout(() => _initWalkSessionMap(sid, { isWalker, sessionStatus: st, requestId: resolvedReqId, session }), 80);
+  setTimeout(() => _initWalkSessionMap(sid, { isWalker, sessionStatus: st, requestId: premiumResolvedReqId, session }), 80);
 
   if (showStats) {
     const startAt = session?.walkStartedAt || session?.startedAt;
@@ -692,11 +764,12 @@ async function renderWalkSessionPage(sessionId) {
     _startElapsedTimer(startAt);
   }
 
-  if (resolvedReqId) showChatButton(resolvedReqId);
+  if (premiumResolvedReqId) showChatButton(premiumResolvedReqId);
 
   if (st === 'handoff' && isWalker) {
     setTimeout(() => startActualWalk(sid), 250);
   }
+  return;
 }
 
 async function _initWalkSessionMap(sessionId, opts = {}) {

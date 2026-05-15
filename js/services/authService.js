@@ -346,7 +346,7 @@ const AuthService = (() => {
     saveUsers(users);
     setCurrentUser(users[index]);
 
-    // 코인 지급
+    // 포인트 지급
     if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
       WalletService.earnCoins(userId, 3000, '추천인 코드 입력 보상');
       WalletService.earnCoins(referrer.id, 1500, (users[index].nickname || users[index].name) + '님의 추천 보상');

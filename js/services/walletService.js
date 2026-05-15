@@ -1,6 +1,6 @@
 /**
- * WalletService - Paw 코인 지갑 서비스
- * StorageService를 사용하여 코인 잔액 조회, 적립, 사용, 거래 내역 관리
+ * WalletService - Paw 포인트 지갑 서비스
+ * StorageService를 사용하여 포인트 잔액 조회, 적립, 사용, 거래 내역 관리
  */
 
 const WalletService = (() => {
@@ -45,7 +45,7 @@ const WalletService = (() => {
   }
 
   /**
-   * 코인 적립
+   * 포인트 적립
    * @param {string} userId
    * @param {number} amount - 적립 금액 (양수)
    * @param {string} reason - 적립 사유
@@ -77,7 +77,7 @@ const WalletService = (() => {
   }
 
   /**
-   * 코인 사용
+   * 포인트 사용
    * @param {string} userId
    * @param {number} amount - 사용 금액 (양수)
    * @param {string} reason - 사용 사유

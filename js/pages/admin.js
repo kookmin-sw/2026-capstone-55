@@ -62,8 +62,8 @@ function renderAdminPage() {
       <td style="padding:10px 8px; font-size:0.82rem;">${new Date(u.createdAt).toLocaleDateString('ko-KR')}</td>
       <td style="padding:10px 8px;">
         ${u.isAdmin ? '<span style="font-size:0.8rem; color:var(--color-text-muted); font-weight:700;">총관리자</span>' : `
-        <button class="btn btn-sm btn-secondary" onclick="adminGiveCoins('${u.id}')">코인지급</button>
-        <button class="btn btn-sm" style="background:var(--color-accent); color:#fff;" onclick="adminTakeCoins('${u.id}')">코인회수</button>
+        <button class="btn btn-sm btn-secondary" onclick="adminGiveCoins('${u.id}')">포인트 지급</button>
+        <button class="btn btn-sm" style="background:var(--color-accent); color:#fff;" onclick="adminTakeCoins('${u.id}')">포인트 회수</button>
         <button class="btn btn-sm btn-danger" onclick="adminDeleteUser('${u.id}', '${u.nickname || u.name}')">삭제</button>
         `}
       </td>
@@ -90,7 +90,7 @@ function renderAdminPage() {
       <div class="card" style="padding:20px; text-align:center;">
         <div style="font-size:2rem;">🪙</div>
         <div style="font-size:1.5rem; font-weight:900; margin-top:8px;">${totalCoins.toLocaleString()}</div>
-        <div style="font-size:0.82rem; color:var(--color-text-light);">총 발행 코인</div>
+        <div style="font-size:0.82rem; color:var(--color-text-light);">총 발행 포인트</div>
       </div>
       <div class="card" style="padding:20px; text-align:center;">
         <div style="font-size:2rem;">📋</div>
@@ -128,7 +128,7 @@ function renderAdminPage() {
               <th style="padding:10px 8px; font-size:0.8rem;">이름</th>
               <th style="padding:10px 8px; font-size:0.8rem;">이메일</th>
               <th style="padding:10px 8px; font-size:0.8rem;">가입방식</th>
-              <th style="padding:10px 8px; font-size:0.8rem;">코인</th>
+              <th style="padding:10px 8px; font-size:0.8rem;">포인트</th>
               <th style="padding:10px 8px; font-size:0.8rem;">추천코드</th>
               <th style="padding:10px 8px; font-size:0.8rem;">가입일</th>
               <th style="padding:10px 8px; font-size:0.8rem;">관리</th>
@@ -145,23 +145,23 @@ function renderAdminPage() {
   loadAdminExpertApplications();
 }
 
-// 관리자: 코인 지급
+// 관리자: 포인트 지급
 function adminGiveCoins(userId) {
-  const amount = prompt('지급할 코인 수량을 입력하세요:');
+  const amount = prompt('지급할 포인트 수량을 입력하세요:');
   if (!amount || isNaN(amount) || Number(amount) <= 0) return;
 
   const reason = prompt('지급 사유를 입력하세요:') || '관리자 지급';
 
   if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
     WalletService.earnCoins(userId, Number(amount), reason);
-    alert(Number(amount) + ' PAW 코인이 지급되었습니다.');
+    alert(Number(amount) + ' PAW 포인트가 지급되었습니다.');
     renderAdminPage();
   }
 }
 
-// 관리자: 코인 회수
+// 관리자: 포인트 회수
 function adminTakeCoins(userId) {
-  const amount = prompt('회수할 코인 수량을 입력하세요:');
+  const amount = prompt('회수할 포인트 수량을 입력하세요:');
   if (!amount || isNaN(amount) || Number(amount) <= 0) return;
 
   const reason = prompt('회수 사유를 입력하세요:') || '관리자 회수';
@@ -169,9 +169,9 @@ function adminTakeCoins(userId) {
   if (typeof WalletService !== 'undefined' && WalletService.spendCoins) {
     const result = WalletService.spendCoins(userId, Number(amount), reason);
     if (result) {
-      alert(Number(amount) + ' PAW 코인이 회수되었습니다.');
+      alert(Number(amount) + ' PAW 포인트가 회수되었습니다.');
     } else {
-      alert('코인이 부족하여 회수할 수 없습니다.');
+      alert('포인트가 부족하여 회수할 수 없습니다.');
     }
     renderAdminPage();
   }
@@ -327,7 +327,12 @@ async function adminSendNotice() {
     });
   } catch(e) {}
 
-  addNotification('[공지] ' + notice.trim(), 'info');
+  addNotification('[공지] ' + notice.trim(), 'notice', {
+    category: 'notice',
+    source: 'admin',
+    targetRoute: '/admin',
+    noticeText: notice.trim()
+  });
 
   alert('공지사항이 등록되었습니다!');
   document.getElementById('admin-notice').value = '';

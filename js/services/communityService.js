@@ -4,15 +4,39 @@
  */
 
 const CommunityService = (() => {
-  const POSTS_KEY = 'posts';
+  const POSTS_KEY = 'communityPosts';
+  const LEGACY_POSTS_KEY = 'posts';
   const PAGE_SIZE = 10;
+  let legacyMigrated = false;
 
   /**
    * 모든 게시물 조회
    * @returns {Post[]}
    */
   function getAllPosts() {
-    return StorageService.get(POSTS_KEY, []);
+    let posts = StorageService.get(POSTS_KEY, []);
+    if (!Array.isArray(posts)) posts = [];
+
+    if (!legacyMigrated) {
+      legacyMigrated = true;
+      const legacyPosts = StorageService.get(LEGACY_POSTS_KEY, []);
+      if (Array.isArray(legacyPosts) && legacyPosts.length) {
+        const seen = new Set(posts.map(p => p.id));
+        const merged = posts.slice();
+        legacyPosts.forEach(post => {
+          if (post && post.id && !seen.has(post.id)) {
+            seen.add(post.id);
+            merged.push(post);
+          }
+        });
+        if (merged.length !== posts.length) {
+          posts = merged;
+          savePosts(posts);
+        }
+      }
+    }
+
+    return posts;
   }
 
   /**
@@ -65,7 +89,7 @@ const CommunityService = (() => {
    * @throws {Error} 텍스트가 비어있거나 공백만 있는 경우
    */
   function createPost(newPost) {
-    if ((!newPost.text || !newPost.text.trim()) && !newPost.imageData && !newPost.walkData && !newPost.oneSecondData) {
+    if ((!newPost.text || !newPost.text.trim()) && !newPost.imageData && !newPost.videoId && !newPost.walkData && !newPost.oneSecondData) {
       throw new Error('게시물 내용을 입력하세요.');
     }
 
@@ -73,9 +97,11 @@ const CommunityService = (() => {
       id: StorageService.generateId(),
       authorId: newPost.authorId,
       authorName: newPost.authorName,
+      authorProfileImage: newPost.authorProfileImage || '',
       text: (newPost.text || '').trim(),
       imageUrls: newPost.imageUrls || [],
       imageData: newPost.imageData || null,
+      videoId: newPost.videoId || null,
       walkData: newPost.walkData || null,
       oneSecondData: newPost.oneSecondData || null,
       likes: 0,
@@ -142,6 +168,7 @@ const CommunityService = (() => {
       id: StorageService.generateId(),
       authorId: newComment.authorId,
       authorName: newComment.authorName,
+      authorProfileImage: newComment.authorProfileImage || '',
       text: newComment.text.trim(),
       createdAt: StorageService.now()
     };
@@ -152,12 +179,44 @@ const CommunityService = (() => {
     return comment;
   }
 
+  function addReply(postId, commentId, newReply) {
+    if (!newReply.text || !newReply.text.trim()) {
+      throw new Error('답글 내용을 입력하세요.');
+    }
+
+    const posts = getAllPosts();
+    const post = posts.find(p => p.id === postId);
+    if (!post) {
+      throw new Error('게시물을 찾을 수 없습니다.');
+    }
+
+    const comment = (post.comments || []).find(c => c.id === commentId);
+    if (!comment) {
+      throw new Error('댓글을 찾을 수 없습니다.');
+    }
+
+    if (!comment.replies) comment.replies = [];
+    const reply = {
+      id: StorageService.generateId(),
+      authorId: newReply.authorId,
+      authorName: newReply.authorName,
+      authorProfileImage: newReply.authorProfileImage || '',
+      text: newReply.text.trim(),
+      createdAt: StorageService.now()
+    };
+
+    comment.replies.push(reply);
+    savePosts(posts);
+    return reply;
+  }
+
   return {
     getFeed,
     getUserFeed,
     getPostById,
     createPost,
     toggleLike,
-    addComment
+    addComment,
+    addReply
   };
 })();

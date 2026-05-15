@@ -6,7 +6,7 @@
   <title>Pawsitive 🐾 반려견 종합 플랫폼</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/styles-modern.css?v=walk-flow-10">
+  <link rel="stylesheet" href="css/styles-modern.css?v=notif-story-1">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
@@ -33,19 +33,21 @@
   <!-- 스크립트 로드 순서: 외부 라이브러리 → 데이터 → 서비스 → 앱 -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://js.tosspayments.com/v2/standard"></script>
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
+  <script>if (window.Kakao && !Kakao.isInitialized()) Kakao.init('1a78066c46a917cb63d97be0bbf68886');</script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/data/breeds.js"></script>
   <script src="js/data/education.js"></script>
   <script src="js/data/koreaRegions.js"></script>
-  <script src="js/services/storage.js?v=walk-flow-2"></script>
+  <script src="js/services/storage.js?v=community-share-1"></script>
   <script src="js/services/authService.js"></script>
   <script src="js/services/breedService.js"></script>
   <script src="js/services/breedImageService.js?v=atlas-2"></script>
   <script src="js/services/educationService.js"></script>
-  <script src="js/services/communityService.js"></script>
+  <script src="js/services/communityService.js?v=community-share-1"></script>
   <script src="js/services/walletService.js"></script>
-  <script src="js/services/matchingService.js?v=walk-flow-2"></script>
-  <script src="js/services/realtimeService.js?v=walk-flow-8"></script>
+  <script src="js/services/matchingService.js?v=walk-flow-4"></script>
+  <script src="js/services/realtimeService.js?v=walk-flow-9"></script>
   <script src="js/services/gpsTrackingService.js?v=walk-flow-2"></script>
   <script src="js/services/healthAnalysisService.js"></script>
 
@@ -53,36 +55,39 @@
   <script src="js/core/router.js"></script>
   <script src="js/core/ui.js?v=shell-5"></script>
   <script src="js/core/payment.js?v=walk-flow-4"></script>
-  <script src="js/core/notifications.js"></script>
+  <script src="js/core/notifications.js?v=notif-3"></script>
 
   <!-- Page modules -->
   <script src="js/pages/home.js?v=home-services-9"></script>
   <script src="js/pages/breeds.js?v=atlas-4"></script>
   <script src="js/pages/education.js"></script>
   <script src="js/pages/ai.js?v=ai-care-12"></script>
-  <script src="js/pages/community.js?v=walk-flow-2"></script>
+  <script src="js/pages/community-social.js"></script>
+  <script src="js/pages/community-stories.js?v=story-2"></script>
+  <script src="js/pages/community.js?v=community-plaza-2"></script>
   <script src="js/pages/wallet.js"></script>
-  <script src="js/pages/matching.js?v=walk-flow-17"></script>
+  <script src="js/pages/matching.js?v=walk-flow-22"></script>
   <script src="js/pages/profile.js"></script>
   <script src="js/pages/auth.js?v=walk-flow-2"></script>
   <script src="js/pages/experts.js?v=walk-flow-10"></script>
-  <script src="js/pages/admin.js"></script>
+  <script src="js/pages/admin.js?v=notif-1"></script>
   <script src="js/pages/walkTracking.js?v=walk-flow-7"></script>
   <script src="js/pages/health.js?v=walk-flow-5"></script>
   <script src="js/pages/notfound.js"></script>
 
   <!-- Feature modules (산책 요청/세션/브로드캐스트/채팅/대시보드) -->
   <script src="js/features/walkRequest.js?v=walk-flow-2"></script>
-  <script src="js/features/walkSession.js?v=walk-flow-6"></script>
+  <script src="js/features/walkSession.js?v=walk-flow-8"></script>
   <script src="js/features/broadcast.js?v=walk-flow-3"></script>
   <script src="js/features/chat.js"></script>
-  <script src="js/features/walkerDashboard.js?v=walk-flow-4"></script>
+  <script src="js/features/dm.js"></script>
+  <script src="js/features/walkerDashboard.js?v=walk-flow-6"></script>
 
   <!-- Realtime listeners (위 feature 모듈 이후에 로드) -->
-  <script src="js/core/realtime.js?v=walk-flow-9"></script>
+  <script src="js/core/realtime.js?v=walk-flow-11"></script>
 
   <!-- Main app (초기화 + 라우트 등록) -->
-  <script src="js/app.js?v=walk-flow-8"></script>
+  <script src="js/app.js?v=notif-1"></script>
 
   <!-- 발자국 트레일 효과 -->
   <script>

@@ -23,7 +23,10 @@
       }
     ],
     "pawCoins": 20,
-    "createdAt": "2026-04-10T07:54:18.464Z"
+    "createdAt": "2026-04-10T07:54:18.464Z",
+    "following": [
+      "id-mol2g5lb-rvnvuvi"
+    ]
   },
   {
     "id": "id-mo2r9f31-nmcx76f",
@@ -321,5 +324,47 @@
     "createdAt": "2026-05-12T05:22:47.106Z",
     "nicknameChangedAt": "2026-05-12T05:22:49.810Z",
     "phone": "01050549263"
+  },
+  {
+    "id": "mock-vet-user",
+    "email": "vet@pawsitive.mock",
+    "name": "윤서진",
+    "nickname": "서진수의사",
+    "passwordHash": "hash_vk5qwl",
+    "referralCode": "PAW-VET",
+    "dogs": [],
+    "pawCoins": 3000,
+    "isExpert": true,
+    "expertCategory": "vet",
+    "expertProfileId": "expert-vet-mock",
+    "createdAt": "2026-05-14T20:03:18.494Z"
+  },
+  {
+    "id": "mock-trainer-user",
+    "email": "trainer@pawsitive.mock",
+    "name": "강도윤",
+    "nickname": "도윤훈련사",
+    "passwordHash": "hash_vk5qwl",
+    "referralCode": "PAW-TRAINER",
+    "dogs": [],
+    "pawCoins": 3000,
+    "isExpert": true,
+    "expertCategory": "trainer",
+    "expertProfileId": "expert-trainer-mock",
+    "createdAt": "2026-05-14T20:03:18.494Z"
+  },
+  {
+    "id": "mock-groomer-user",
+    "email": "groomer@pawsitive.mock",
+    "name": "정유민",
+    "nickname": "유민미용사",
+    "passwordHash": "hash_vk5qwl",
+    "referralCode": "PAW-GROOMER",
+    "dogs": [],
+    "pawCoins": 3000,
+    "isExpert": true,
+    "expertCategory": "groomer",
+    "expertProfileId": "expert-groomer-mock",
+    "createdAt": "2026-05-14T20:03:18.494Z"
   }
 ]

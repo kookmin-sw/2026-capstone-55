@@ -226,7 +226,7 @@ function renderProfilePage() {
  </div>
  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
  <div style="padding:12px; background:var(--color-bg-warm); border-radius:10px; text-align:center;">
- <div style="font-size:0.8rem; color:var(--color-text-muted);">보유 코인</div>
+ <div style="font-size:0.8rem; color:var(--color-text-muted);">보유 포인트</div>
  <div style="font-weight:800;">0 PAW</div>
  </div>
  <div style="padding:12px; background:var(--color-bg-warm); border-radius:10px; text-align:center;">
@@ -269,7 +269,7 @@ function renderProfilePage() {
  <p style="color:var(--color-text-light); font-size:0.82rem; margin-bottom:10px;">닉네임</p>
  <p style="color:var(--color-text); font-size:0.9rem;">이름: ${user.name}</p>
  <p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">이메일: ${user.email}</p>
- <p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">코인: ${user.pawCoins || 0} PAW (${user.pawCoins || 0}원)</p>
+ <p style="color:var(--color-text-light); font-size:0.9rem; margin-top:4px;">포인트: ${user.pawCoins || 0} PAW (${user.pawCoins || 0}원)</p>
  <p style="color:var(--color-text-muted); font-size:0.8rem; margin-top:8px;">가입일: ${new Date(user.createdAt).toLocaleDateString('ko-KR')}</p>
  <p style="color:var(--color-text-muted); font-size:0.72rem; margin-top:4px;">* 이름은 본인만 볼 수 있어요. 다른 사람에게는 닉네임만 표시돼요.</p>
  </div>
@@ -297,7 +297,7 @@ function renderProfilePage() {
  <div style="background:var(--color-bg-warm); border-radius:10px; padding:12px 16px; margin-bottom:16px;">
  <span style="font-size:0.82rem; color:var(--color-text-light);">내 추천인 코드:</span>
  <span style="font-weight:900; color:var(--color-primary-dark); margin-left:6px; letter-spacing:1px;">${user.referralCode || '없음'}</span>
- <p style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;">친구에게 공유하고, 친구가 가입 시 입력하면 1,500 PAW 코인을 받아요!</p>
+ <p style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;">친구에게 공유하고, 친구가 가입 시 입력하면 1,500 PAW 포인트를 받아요!</p>
  </div>
  ${user.usedReferralCode
  ? `<div style="padding:12px 16px; background:var(--color-mint-light); border-radius:10px;">
@@ -880,7 +880,7 @@ function handleApplyReferral() {
 
  const result = AuthService.applyReferralCode(user.id, code);
  if (result.success) {
- alert(`추천인 코드가 적용되었어요! \n\n3,000 PAW 코인이 지급되었어요!\n추천인 ${result.referrerName}님에게도 1,500 PAW가 지급되었어요!`);
+ alert(`추천인 코드가 적용되었어요! \n\n3,000 PAW 포인트가 지급되었어요!\n추천인 ${result.referrerName}님에게도 1,500 PAW 포인트가 지급되었어요!`);
  renderProfilePage();
  } else {
  if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;

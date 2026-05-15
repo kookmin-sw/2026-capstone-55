@@ -1,0 +1,38 @@
+{
+  "id": "id-mnsm12ov-kpkaldi_id-mol2g5lb-rvnvuvi",
+  "participants": [
+    "id-mnsm12ov-kpkaldi",
+    "id-mol2g5lb-rvnvuvi"
+  ],
+  "names": {
+    "id-mnsm12ov-kpkaldi": "관리자",
+    "id-mol2g5lb-rvnvuvi": "Peter Lee"
+  },
+  "avatars": {
+    "id-mnsm12ov-kpkaldi": "",
+    "id-mol2g5lb-rvnvuvi": "https://lh3.googleusercontent.com/a/ACg8ocKBRQuFrTAGFUpPuWf07hd29x5mRV5oU_8sUvKI4mWAO3C9Mw=s96-c"
+  },
+  "messages": [
+    {
+      "id": "id-mp6lilbj-9vg796q",
+      "senderId": "id-mnsm12ov-kpkaldi",
+      "senderName": "관리자",
+      "content": "SADSADSAD",
+      "createdAt": "2026-05-15T07:28:24.943Z"
+    },
+    {
+      "id": "id-mp6lisju-3yx8zfi",
+      "senderId": "id-mol2g5lb-rvnvuvi",
+      "senderName": "Peter Lee",
+      "content": "ssdsad",
+      "createdAt": "2026-05-15T07:28:34.314Z"
+    }
+  ],
+  "unread": {
+    "id-mol2g5lb-rvnvuvi": 0,
+    "id-mnsm12ov-kpkaldi": 1
+  },
+  "createdAt": "2026-05-15T07:28:24.940Z",
+  "lastMessage": "ssdsad",
+  "lastAt": "2026-05-15T07:28:34.314Z"
+}

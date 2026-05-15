@@ -2,6 +2,23 @@
 // 도우미 대시보드: 요청 목록, 네비게이션, 산책 이력
 // ============================================================
 
+function escapeQ(value) {
+  return String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, ' ');
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[ch]);
+}
+
 async function renderWalkerRequestsList(userId) {
   let requests = [];
   try {
@@ -14,9 +31,11 @@ async function renderWalkerRequestsList(userId) {
 
   const users = StorageService.get('users', []);
 
+  try {
   const html = requests.map(r => {
     const requester = users.find(u => u.id === r.requesterId);
     const requesterName = requester ? (requester.nickname || requester.name) : (r.requesterName || '요청자');
+    const requesterPhoto = requester?.profileImage || '';
     const statusLabel = {
       pending: '수락 대기',
       accepted: '출발 준비',
@@ -41,12 +60,16 @@ async function renderWalkerRequestsList(userId) {
     return `
     <div class="match-request-card ${r.status === 'pending' ? 'match-request-card--pending' : ''}">
     <div class="match-request-card__header">
-    <div class="match-request-card__avatar">${requesterName.charAt(0)}</div>
+    <div class="match-request-card__avatar">${requesterPhoto ? `<img src="${escapeHtml(requesterPhoto)}" alt="${escapeHtml(requesterName)}">` : escapeHtml(requesterName.charAt(0) || '?')}</div>
     <div>
     <div class="match-request-card__from">${requesterName}</div>
     <div style="font-size:0.75rem;color:var(--color-text-muted);">${new Date(r.createdAt).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
     </div>
     <span style="margin-left:auto;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;background:${statusColor[r.status]}20;color:${statusColor[r.status]};">${statusLabel[r.status]||r.status}</span>
+    </div>
+    <div class="match-face-notice match-face-notice--compact">
+      <strong>! 요청자 얼굴을 잘 확인하세요</strong>
+      <span>실제 개인 얼굴이 보이는 프로필 사진을 기준으로 안전하게 매칭돼요.</span>
     </div>
     <div class="match-request-card__body">
     <div class="match-request-card__dog">
@@ -137,6 +160,13 @@ async function renderWalkerRequestsList(userId) {
   }).join('');
 
   return { html, requests };
+  } catch (e) {
+    console.error('[WalkerDashboard] 요청 목록 렌더링 실패:', e);
+    return {
+      html: '<div class="empty-state"><div class="empty-icon">!</div><p>산책 요청을 불러오지 못했어요.<br>잠시 후 다시 시도해주세요.</p></div>',
+      requests: []
+    };
+  }
 }
 
 function initWalkerNavMaps(requests) {
@@ -237,9 +267,9 @@ async function showWalkRouteModal(sessionId, partnerName, distText, dateText) {
 
 async function renderDirectWalkHistory(userId, role) {
   const STATUS_LABEL = {
-    accepted: '수락됨',
+    accepted: '출발 준비',
     walking: '산책 중',
-    completed:'완료됨'
+    completed: '완료'
   };
   const HISTORY_STATUSES = ['accepted', 'walking', 'completed'];
 
@@ -262,34 +292,71 @@ async function renderDirectWalkHistory(userId, role) {
     sessions = data.sessions || [];
   } catch (e) {}
 
-  const html = requests.map(r => {
+  const sortedRequests = requests
+    .slice()
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+  const completedCount = sortedRequests.filter(r => r.status === 'completed').length;
+  const activeCount = sortedRequests.length - completedCount;
+  const totalKm = sessions.reduce((sum, s) => sum + (Number(s.totalDistanceKm) || 0), 0);
+  const roleLabel = role === 'walker' ? '도우미 기록' : '요청 기록';
+  const emptyRouteHint = role === 'walker' ? '산책 완료 후 경로가 저장돼요' : '완료된 산책은 경로를 다시 볼 수 있어요';
+
+  const cards = sortedRequests.map(r => {
     const partnerName = role === 'walker' ? (r.requesterName || r.requesterId) : (r.walkerName || r.walkerId);
     const session = sessions.find(s => s.requestId === r.id);
-    const distText = session && session.totalDistanceKm != null ? `${session.totalDistanceKm} km` : '';
+    const distText = session && session.totalDistanceKm != null ? `${Number(session.totalDistanceKm).toFixed(2)} km` : '';
     const dateText = new Date(r.updatedAt || r.createdAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
     const startFmt = r.requestedStartTime
       ? new Date(r.requestedStartTime).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : '시간 미정';
     const sessionId = session?.id || '';
     const hasRoute = session && session.totalDistanceKm != null;
+    const dogName = r.dogName || '반려견';
+    const statusClass = r.status === 'completed' ? 'is-complete' : r.status === 'walking' ? 'is-live' : 'is-ready';
+    const tagText = hasRoute ? '경로 보기' : emptyRouteHint;
 
     return `
-    <div class="match-walk-card ${r.status === 'completed' ? 'match-walk-card--completed' : ''}" style="cursor:${hasRoute ? 'pointer' : 'default'};transition:background 0.15s;" ${hasRoute ? `onclick="showWalkRouteModal('${sessionId}','${partnerName}','${distText}','${dateText}')"` : ''}>
-    <div class="match-walk-card__avatar">${partnerName.charAt(0)}</div>
-    <div class="match-walk-card__info" style="flex:1;">
-    <div class="match-walk-card__name">${partnerName}</div>
-    <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
-    ${r.dogName || '-'} · ${startFmt}
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">
-    <span class="badge ${r.status === 'completed' ? 'badge-success' : 'badge-info'}">${STATUS_LABEL[r.status] || r.status}</span>
-    ${distText ? `<span style="font-size:0.82rem;color:#4A5568;">📍 ${distText}</span>` : ''}
-    <span style="font-size:0.78rem;color:#A0AEC0;">${dateText}</span>
-    ${hasRoute ? `<span style="font-size:0.72rem;color:#00AA76;font-weight:600;">경로 보기 →</span>` : ''}
-    </div>
-    </div>
-    </div>`;
+    <article class="match-history-card ${hasRoute ? 'match-history-card--clickable' : ''}" ${hasRoute ? `onclick="showWalkRouteModal('${escapeQ(sessionId)}','${escapeQ(partnerName)}','${escapeQ(distText)}','${escapeQ(dateText)}')"` : ''}>
+      <div class="match-history-card__avatar">${escapeHtml(partnerName.charAt(0) || '?')}</div>
+      <div class="match-history-card__main">
+        <div class="match-history-card__top">
+          <div>
+            <div class="match-history-card__name">${escapeHtml(partnerName)}</div>
+            <div class="match-history-card__sub">${escapeHtml(dogName)} · ${escapeHtml(startFmt)}</div>
+          </div>
+          <span class="match-history-status ${statusClass}">${escapeHtml(STATUS_LABEL[r.status] || r.status)}</span>
+        </div>
+        <div class="match-history-card__meta">
+          <span>${icon('calendar', 13)} ${escapeHtml(dateText)}</span>
+          <span>${icon('map-pin', 13)} ${escapeHtml(distText || '기록 대기')}</span>
+          <span class="${hasRoute ? 'is-link' : 'is-muted'}">${escapeHtml(tagText)}${hasRoute ? ' →' : ''}</span>
+        </div>
+      </div>
+    </article>`;
   }).join('');
+
+  const html = `
+  <div class="match-history-panel">
+    <div class="match-history-summary">
+      <div>
+        <span>${escapeHtml(roleLabel)}</span>
+        <strong>${sortedRequests.length}건</strong>
+      </div>
+      <div>
+        <span>완료</span>
+        <strong>${completedCount}건</strong>
+      </div>
+      <div>
+        <span>진행</span>
+        <strong>${activeCount}건</strong>
+      </div>
+      <div>
+        <span>누적 거리</span>
+        <strong>${totalKm.toFixed(2)}km</strong>
+      </div>
+    </div>
+    <div class="match-history-list">${cards}</div>
+  </div>`;
 
   return { html, hasRecords: true };
 }

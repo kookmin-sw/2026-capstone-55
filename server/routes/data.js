@@ -14,7 +14,7 @@ const db = require('../db');
  */
 router.get('/:key', (req, res) => {
   const { key } = req.params;
-  const allowed = ['users', 'communityPosts', 'transactions',
+  const allowed = ['users', 'communityPosts', 'communityStories', 'transactions',
     'matchProfiles', 'notices', 'walkers'];
   if (!allowed.includes(key)) {
     return res.status(400).json({ error: '허용되지 않는 키입니다.' });
@@ -37,11 +37,26 @@ router.post('/broadcast-notice', (req, res) => {
 });
 
 /**
+ * POST /api/data/notify-user — 특정 사용자에게 실시간 앱 알림 전송
+ */
+router.post('/notify-user', (req, res) => {
+  const { toUserId, notification } = req.body || {};
+  if (!toUserId || !notification) {
+    return res.status(400).json({ error: '알림 대상과 내용이 필요합니다.' });
+  }
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) {
+    emitToUser(toUserId, 'user-notification', { notification });
+  }
+  res.json({ success: true });
+});
+
+/**
  * POST /api/data/:key — 데이터 저장
  */
 router.post('/:key', (req, res) => {
   const { key } = req.params;
-  const allowed = ['users', 'communityPosts', 'transactions',
+  const allowed = ['users', 'communityPosts', 'communityStories', 'transactions',
     'matchProfiles', 'notices', 'walkers'];
   if (!allowed.includes(key)) {
     return res.status(400).json({ error: '허용되지 않는 키입니다.' });

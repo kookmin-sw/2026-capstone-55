@@ -39,7 +39,9 @@ const RealtimeService = (() => {
       'walk-chat-message',
       // experts
       'expert-application-reviewed', 'expert-consultation-requested',
-      'expert-consultation-updated', 'expert-consultation-message'
+      'expert-consultation-updated', 'expert-consultation-message',
+      // global notifications
+      'admin-notice', 'user-notification'
     ];
     EVENTS.forEach(evt => {
       _socket.on(evt, data => {

@@ -6,7 +6,7 @@
 
 const StorageService = (() => {
   // 서버와 동기화할 키 목록
-  const SHARED_KEYS = ['users', 'communityPosts', 'transactions',
+  const SHARED_KEYS = ['users', 'communityPosts', 'communityStories', 'transactions',
     'matchProfiles', 'notices', 'walkers'];
 
   // 탭별로 독립 유지해야 할 키 (sessionStorage 사용)
