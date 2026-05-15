@@ -4,40 +4,119 @@
  */
 
 const BreedService = (() => {
-  /**
-   * 전체 품종 목록 반환
-   * @returns {Breed[]}
-   */
+
+  // 띄어쓰기 제거 + 소문자 + 흔한 대체 표기 통일
+  function normalize(str) {
+    return str
+      .replace(/\s+/g, '')
+      .toLowerCase()
+      .replace(/쉐/g, '셰')              // 저먼쉐퍼드 → 저먼셰퍼드
+      .replace(/쉬/g, '시')              // 잉글리쉬 → 잉글리시
+      .replace(/코카스/g, '코커스')       // 코카스패니얼 → 코커스패니얼
+      .replace(/스파니/g, '스패니')       // 코커스파니얼 → 코커스패니얼
+      .replace(/니엘/g, '니얼')          // 스패니엘 → 스패니얼
+      .replace(/테리에/g, '테리어')       // 테리에 → 테리어
+      .replace(/오스트랄리안/g, '오스트레일리안') // 오스트랄리안 → 오스트레일리안
+      .replace(/재패니즈|저패니즈/g, '일본'); // 재패니즈스피츠 → 일본스피츠
+  }
+
+  // 정규화 후에도 달라지는 표기 → 추가 검색어 목록
+  const SEARCH_ALIASES = {
+    // ── 셰퍼드 계열 ──
+    '독일셰퍼드':           ['저먼셰퍼드'],
+    '독일셰퍼트':           ['저먼셰퍼드'],
+    '호주셰퍼드':           ['오스트레일리안셰퍼드'],
+
+    // ── 시바 이누 ──
+    '시바견':               ['시바이누'],
+
+    // ── 아키타 (데이터: "아키타") ──
+    '아키타견':             ['아키타'],
+    '아키타이누':           ['아키타'],
+
+    // ── 셔틀랜드 쉽독 (쉘티) ──
+    '쉘티':                 ['셔틀랜드쉽독'],
+    '셸티':                 ['셔틀랜드쉽독'],
+
+    // ── 오스트레일리안 캐틀 독 ──
+    '블루힐러':             ['오스트레일리안캐틀독'],
+    '퀸즐랜드힐러':         ['오스트레일리안캐틀독'],
+
+    // ── 콜리 (러프) = 래시 ──
+    '래시':                 ['콜리(러프)'],
+
+    // ── 페키니즈 ──
+    '북경견':               ['페키니즈'],
+    '페케':                 ['페키니즈'],
+
+    // ── 토사 이누 ──
+    '토사견':               ['토사이누'],
+
+    // ── 한국 토종견 ──
+    '풍산견':               ['풍산개'],
+    '삽살견':               ['삽살개'],
+    '동경견':               ['동경이'],
+
+    // ── 달마시안 ──
+    '달마티안':             ['달마시안'],
+
+    // ── 닥스훈트 ──
+    '닥스훈드':             ['닥스훈트'],
+
+    // ── 래브라도 ──
+    '라브라도':             ['래브라도'],
+    '라브라도리트리버':     ['래브라도리트리버'],
+
+    // ── 로트와일러 ──
+    '로트바일러':           ['로트와일러'],
+    '롯트와일러':           ['로트와일러'],
+    '롯트바일러':           ['로트와일러'],
+
+    // ── 슈나우저 ──
+    '슈나이저':             ['슈나우저'],
+    '미니슈나이저':         ['미니어처슈나우저'],
+    '미니슈나우저':         ['미니어처슈나우저'],
+
+    // ── 시츄 ──
+    '시추':                 ['시츄'],
+
+    // ── 불독 ──
+    '불도그':               ['불독'],
+    '프렌치불도그':         ['프렌치불독'],
+
+    // ── 요크셔 테리어 ──
+    '요키':                 ['요크셔테리어'],
+
+    // ── 진돗개 ──
+    '진도':                 ['진돗개'],
+    '진도견':               ['진돗개'],
+
+    // ── 버니즈 마운틴 독 ──
+    '번즈':                 ['버니즈마운틴독'],
+    '번즈마운틴':           ['버니즈마운틴독'],
+  };
+
   function getAll() {
     return BREEDS_DATA;
   }
 
-  /**
-   * ID로 품종 상세 조회
-   * @param {string} id - 품종 ID
-   * @returns {Breed|null} 품종 객체 또는 null
-   */
   function getById(id) {
-    const breed = BREEDS_DATA.find(b => b.id === id);
-    return breed || null;
+    return BREEDS_DATA.find(b => b.id === id) || null;
   }
 
-  /**
-   * 키워드로 품종 이름 검색 (대소문자 무시)
-   * @param {string} keyword - 검색 키워드
-   * @returns {Breed[]} 검색 결과
-   */
   function search(keyword) {
-    if (!keyword || keyword.trim() === '') {
-      return BREEDS_DATA;
-    }
-    const lowerKeyword = keyword.toLowerCase();
-    return BREEDS_DATA.filter(b => b.name.toLowerCase().includes(lowerKeyword));
+    if (!keyword || keyword.trim() === '') return BREEDS_DATA;
+
+    const normalized = normalize(keyword.trim());
+    const extra = SEARCH_ALIASES[normalized] || [];
+    const terms = [normalized, ...extra];
+
+    return BREEDS_DATA.filter(b => {
+      const n = normalize(b.name);
+      const nEn = normalize(b.nameEn || '');
+      return terms.some(t => n.includes(t) || nEn.includes(t));
+    });
   }
 
-  return {
-    getAll,
-    getById,
-    search
-  };
+  return { getAll, getById, search };
 })();

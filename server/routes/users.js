@@ -232,4 +232,75 @@ router.delete('/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// 관리자: 포인트 지급 / 회수
+router.post('/:id/admin-points', (req, res) => {
+  const { amount, reason, type } = req.body; // type: 'earn' | 'spend'
+  if (!amount || !type || !['earn', 'spend'].includes(type)) {
+    return res.status(400).json({ success: false, error: 'amount와 type(earn/spend)이 필요합니다.' });
+  }
+  const users = db.get('users', []);
+  const idx = users.findIndex(u => u.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, error: '유저를 찾을 수 없습니다.' });
+
+  const current = users[idx].pawCoins || 0;
+  const amt = Number(amount);
+  if (type === 'spend' && current < amt) {
+    return res.status(400).json({ success: false, error: '포인트가 부족하여 회수할 수 없습니다.' });
+  }
+  const newBalance = type === 'earn' ? current + amt : current - amt;
+  users[idx].pawCoins = newBalance;
+  db.set('users', users);
+
+  // 거래 기록 저장
+  const txs = db.get('transactions', []);
+  txs.push({
+    id: db.generateId(),
+    userId: req.params.id,
+    type,
+    amount: amt,
+    reason: reason || (type === 'earn' ? '관리자 지급' : '관리자 회수'),
+    createdAt: db.now(),
+    balanceAfter: newBalance
+  });
+  db.set('transactions', txs);
+
+  // 서버 사이드 알림 저장 (오프라인 사용자용)
+  const notifKey = 'user_notifs_' + req.params.id;
+  const notifs = db.get(notifKey, []);
+  const notifReason = reason || (type === 'earn' ? '관리자 지급' : '관리자 회수');
+  notifs.unshift({
+    id: db.generateId(),
+    message: type === 'earn'
+      ? `관리자가 ${amt.toLocaleString()} PAW 포인트를 지급했어요 🎁`
+      : `관리자가 ${amt.toLocaleString()} PAW 포인트를 회수했어요`,
+    detail: notifReason,
+    type: 'info',
+    source: 'system',
+    read: false,
+    createdAt: db.now()
+  });
+  if (notifs.length > 30) notifs.splice(30);
+  db.set(notifKey, notifs);
+
+  // 실시간 소켓 전송 (온라인 사용자용)
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) {
+    emitToUser(req.params.id, 'admin-points', {
+      type, amount: amt,
+      reason: reason || (type === 'earn' ? '관리자 지급' : '관리자 회수'),
+      newBalance
+    });
+  }
+
+  res.json({ success: true, newBalance });
+});
+
+// 서버 사이드 사용자 알림 조회 (로그인 시 호출 → 읽으면 삭제)
+router.get('/:id/server-notifs', (req, res) => {
+  const notifKey = 'user_notifs_' + req.params.id;
+  const notifs = db.get(notifKey, []);
+  db.set(notifKey, []);
+  res.json({ success: true, notifications: notifs });
+});
+
 module.exports = router;

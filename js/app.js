@@ -15,7 +15,7 @@ function initApp() {
     Router.register('/ai', renderAiPage);
     Router.register('/ai-symptom', renderAiSymptomPage);
     Router.register('/ai-consult', renderAiPage);
-    Router.register('/community', renderCommunityPage);
+    Router.register('/community', () => { window._communityViewUserId = null; renderCommunityPage(); });
     Router.register('/wallet', renderWalletPage);
     Router.register('/experts', renderExpertsPage);
     Router.register('/matching', renderMatchingPage);
@@ -39,7 +39,7 @@ function initApp() {
     registerRoutes();
     Router.init();
     _handlePaymentRedirect();
-    getNotifications(); updateBellBadge(); loadServerNotices();
+    getNotifications(); updateBellBadge(); loadServerNotices(); loadServerUserNotifs(); initDM();
     console.log('[Pawsitive] 앱이 초기화되었습니다.');
   }).catch(e => {
     console.error('[Pawsitive] 서버 동기화 실패, 로컬 모드로 시작:', e);

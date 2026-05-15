@@ -274,11 +274,11 @@ async function handleBreedRecommend() {
   };
   const count = Math.min(20, Math.max(1, parseInt(document.getElementById('rec-count')?.value, 10) || 3));
 
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0;"></div>AI가 분석 중...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = 'AI가 분석 중...'; }
   if (resultEl) resultEl.innerHTML = `
-    <div class="card" style="padding:32px 40px; display:flex; align-items:center; justify-content:center; gap:12px; min-height:100px;">
-      <div class="spinner" style="flex-shrink:0;"></div>
-      <p style="color:var(--color-text-muted); margin:0; font-size:0.9rem;">AI가 분석 중이에요... 잠시만 기다려주세요 🐾</p>
+    <div class="card" style="padding:32px 40px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; min-height:100px;">
+      <div class="spinner"></div>
+      <p style="color:var(--color-text-muted); margin:0; font-size:0.9rem; text-align:center;">AI가 분석 중이에요... 잠시만 기다려주세요 🐾</p>
     </div>
   `;
 
@@ -303,7 +303,7 @@ async function handleBreedRecommend() {
     resultEl.innerHTML = `<div class="alert alert-error">서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.</div>`;
   }
 
-  if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AI 맞춤 추천 받기'; }
+  if (btn) { btn.disabled = false; btn.innerHTML = '추천 시작하기'; }
 }
 
 // --- 추천 결과 렌더링 ---

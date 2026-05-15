@@ -420,8 +420,7 @@ function filterBreedDropdown(query) {
   const dropdown = document.getElementById('ai-breed-dropdown');
   if (!dropdown || typeof BREEDS_DATA === 'undefined') return;
 
-  const q = query.toLowerCase().trim();
-  const filtered = q ? BREEDS_DATA.filter(b => b.name.toLowerCase().includes(q) || (b.nameEn && b.nameEn.toLowerCase().includes(q))).slice(0, 20) : BREEDS_DATA.slice(0, 20);
+  const filtered = query.trim() ? BreedService.search(query).slice(0, 20) : BREEDS_DATA.slice(0, 20);
 
   if (filtered.length === 0) {
     dropdown.innerHTML = '<div style="padding:10px 12px; font-size:0.78rem; color:#999;">검색 결과가 없어요</div>';

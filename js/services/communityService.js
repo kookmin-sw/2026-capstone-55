@@ -146,10 +146,36 @@ const CommunityService = (() => {
       createdAt: StorageService.now()
     };
 
+    if (newComment.authorProfileImage !== undefined) comment.authorProfileImage = newComment.authorProfileImage;
     post.comments.push(comment);
     savePosts(posts);
 
     return comment;
+  }
+
+  function addReply(postId, commentId, newReply) {
+    if (!newReply.text || !newReply.text.trim()) {
+      throw new Error('답글 내용을 입력하세요.');
+    }
+
+    const posts = getAllPosts();
+    const post = posts.find(p => p.id === postId);
+    if (!post) throw new Error('게시물을 찾을 수 없습니다.');
+    const comment = (post.comments || []).find(c => c.id === commentId);
+    if (!comment) throw new Error('댓글을 찾을 수 없습니다.');
+
+    if (!comment.replies) comment.replies = [];
+    const reply = {
+      id: StorageService.generateId(),
+      authorId: newReply.authorId,
+      authorName: newReply.authorName,
+      authorProfileImage: newReply.authorProfileImage || '',
+      text: newReply.text.trim(),
+      createdAt: StorageService.now()
+    };
+    comment.replies.push(reply);
+    savePosts(posts);
+    return reply;
   }
 
   return {
@@ -158,6 +184,7 @@ const CommunityService = (() => {
     getPostById,
     createPost,
     toggleLike,
-    addComment
+    addComment,
+    addReply
   };
 })();

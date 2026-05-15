@@ -137,4 +137,43 @@ function initRealtimeListeners() {
     addNotification('[공지] ' + (data.text || '새 공지사항이 등록됐어요'), 'info');
     showToast('새 공지사항이 등록됐어요!', 'info');
   });
+
+  // 관리자 포인트 지급/회수 실시간 수신
+  RealtimeService.on('admin-points', (data) => {
+    const { type, amount, reason, newBalance } = data;
+    const isEarn = type === 'earn';
+    const msg = isEarn
+      ? `관리자가 ${amount.toLocaleString()} PAW 포인트를 지급했어요 🎁`
+      : `관리자가 ${amount.toLocaleString()} PAW 포인트를 회수했어요`;
+
+    // 로컬 잔액 즉시 갱신
+    const cur = AuthService.getCurrentUser();
+    if (cur) {
+      const users = StorageService.get('users', []);
+      const idx = users.findIndex(u => u.id === cur.id);
+      if (idx !== -1) { users[idx].pawCoins = newBalance; StorageService.set('users', users); }
+      cur.pawCoins = newBalance;
+      StorageService.set('currentUser', cur);
+    }
+
+    // detail 필드에 사유 저장 (알림 클릭 시 모달로 표시)
+    _notifications.unshift({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      message: msg,
+      detail: reason || (isEarn ? '관리자 지급' : '관리자 회수'),
+      type: 'info',
+      source: 'system',
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+    if (_notifications.length > 50) _notifications = _notifications.slice(0, 50);
+    saveNotifications();
+    showToast(msg, isEarn ? 'success' : 'info');
+    updateBellBadge();
+
+    // 현재 보고 있는 페이지가 프로필/지갑이면 즉시 재렌더
+    const hash = window.location.hash;
+    if (hash === '#/profile' && typeof renderProfilePage === 'function') renderProfilePage();
+    else if (hash === '#/wallet' && typeof renderWalletPage === 'function') renderWalletPage();
+  });
 }

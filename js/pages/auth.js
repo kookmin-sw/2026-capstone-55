@@ -287,7 +287,7 @@ async function handleSocialAgreeSubmit() {
  });
 
  updateNavAuth();
- alert(' 회원가입을 축하해요!\n\n가입 축하 3,000 PAW 코인이 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');
+ alert(' 회원가입을 축하해요!\n\n가입 축하 3,000 PAW 포인트가 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');
  Router.navigate('/welcome-setup');
 }
 
@@ -333,7 +333,7 @@ function renderWelcomeSetupPage() {
  <div style="background:var(--color-bg-warm); border-radius:12px; padding:14px; margin-bottom:20px; text-align:center;">
  <p style="font-size:0.82rem; color:var(--color-text-light);">내 추천인 코드</p>
  <p style="font-size:1.2rem; font-weight:900; color:var(--color-primary-dark); letter-spacing:2px; margin-top:4px;">${user.referralCode || '생성 중...'}</p>
- <p style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">친구에게 공유하고, 친구가 가입 시 입력하면 1,500 PAW 코인을 받아요!</p>
+ <p style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">친구에게 공유하고, 친구가 가입 시 입력하면 1,500 PAW 포인트를 받아요!</p>
  </div>
 
  <button class="btn btn-primary" style="width:100%; font-size:1rem; padding:14px;" onclick="handleWelcomeSetup()">설정 완료 </button>
@@ -395,10 +395,10 @@ function handleWelcomeSetup() {
  }
 
  // 완료 메시지
- let welcomeMsg = ' 회원가입을 축하해요!\n\n가입 축하 3,000 PAW 코인이 지급되었어요!';
+ let welcomeMsg = ' 회원가입을 축하해요!\n\n가입 축하 3,000 PAW 포인트가 지급되었어요!';
  if (referralCode && AuthService.findByReferralCode(referralCode)) {
- welcomeMsg += '\n추천인 보상 3,000 PAW 코인이 추가 지급되었어요!';
- welcomeMsg += '\n\n총 6,000 PAW 코인으로 시작해요! ';
+ welcomeMsg += '\n추천인 보상 3,000 PAW 포인트가 추가 지급되었어요!';
+ welcomeMsg += '\n\n총 6,000 PAW 포인트로 시작해요! ';
  } else {
  welcomeMsg += '\n\nPawsitive에 오신 걸 환영해요! ';
  }
@@ -566,6 +566,8 @@ function handleSocialAuthCallback() {
  });
 
  updateNavAuth();
+ const socialUser = AuthService.getCurrentUser();
+ if (socialUser) { RealtimeService.connect(socialUser.id); initDM(); loadServerUserNotifs(); }
  Router.navigate('/');
  }
  } catch (e) {
@@ -596,6 +598,8 @@ async function handleLogin() {
  }
  updateNavAuth();
  getNotifications(); updateBellBadge(); loadServerNotices();
+ const loggedUser = AuthService.getCurrentUser();
+ if (loggedUser) { RealtimeService.connect(loggedUser.id); initDM(); loadServerUserNotifs(); }
  Router.navigate('/');
  } else {
  if (errEl) errEl.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
@@ -631,7 +635,7 @@ async function handleRegister() {
  const result = await AuthService.register({ name, email, password });
  if (result.success) {
  updateNavAuth();
- alert(' 회원가입을 축하해요!\n\n가입 축하 3,000 PAW 코인이 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');
+ alert(' 회원가입을 축하해요!\n\n가입 축하 3,000 PAW 포인트가 지급되었어요!\n\n닉네임과 추천인 코드를 설정해주세요~');
  Router.navigate('/welcome-setup');
  } else {
  const errEl = document.getElementById('register-error');
@@ -667,7 +671,7 @@ function handleDeleteAccount() {
  <div style="background:#FFF0F0;border:2px solid #FFD4D4;border-radius:12px;padding:16px;margin-bottom:16px;text-align:left;">
  <p style="font-size:0.85rem;color:#D32F2F;font-weight:700;margin-bottom:8px;">탈퇴 시 아래 내용이 모두 삭제됩니다:</p>
  <ul style="font-size:0.82rem;color:#4A3728;padding-left:18px;line-height:1.8;">
- <li>보유 중인 <strong>${pawCoins} PAW 코인</strong></li>
+ <li>보유 중인 <strong>${pawCoins} PAW 포인트</strong></li>
  <li>등록된 반려견 정보</li>
  <li>커뮤니티 활동 내역</li>
  <li>산책 매칭 기록</li>
