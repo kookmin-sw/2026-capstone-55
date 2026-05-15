@@ -1,29 +1,34 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/Lvs6kcL8)
+# 🐾 Pawsitive
 
-<div align="center">
-  <h1>🐾 Pawsitive</h1>
-  <p><strong>반려견과 함께하는 더 나은 일상</strong></p>
-  <p>AI 건강 상담부터 산책 매칭까지, 당신과 반려견을 위한 공간.</p>
-</div>
+**반려견과의 더 나은 일상, Pawsitive — AI 건강 분석부터 산책 매칭까지**
 
-### 🐾 Pawsitive 한 줄 소개
-- **Pawsitive**는 반려견 보호자와 전문 산책 도우미를 연결하고, AI 기반 건강 관리·교육·커뮤니티를 제공하는 **반려견 종합 케어 플랫폼**입니다!
+> 반려견 보호자와 전문 산책 도우미를 연결하고, AI 기반 건강 관리·교육·커뮤니티를 제공하는 반려견 종합 케어 플랫폼
 
-### 🌐 Pawsitive 웹사이트 주소
+---
+
+### 🌐 웹사이트
 - [클릭하여 Pawsitive를 체험해보세요!](https://competent-famished-leatrice.ngrok-free.dev)
 
-### 🎥 Pawsitive 소개 영상
+### 🎥 소개 영상
 - [클릭하여 Pawsitive 소개 영상을 시청해보세요!](https://youtu.be/)
 
-### 💡 Pawsitive 주요 기능
-- 🤝 **산책 매칭** — 위치 기반으로 근처 산책 도우미와 실시간 매칭
-- 🗺️ **GPS 산책 추적** — 실시간 산책 경로 기록 및 공유
-- 🤖 **AI 건강 분석** — Gemini AI 기반 반려견 건강 상담 및 분석
-- 📚 **교육 콘텐츠** — 산책 자세, 리드줄 사용법, 안전 교육
-- 💬 **커뮤니티** — 반려견 보호자 간 소통 및 정보 공유
-- 💰 **PAW 코인** — 플랫폼 내 리워드 시스템
+---
+
+### 💡 주요 기능
+
+| 기능 | 설명 |
+|------|------|
+| 🤝 산책 매칭 | 위치 기반으로 근처 산책 도우미와 실시간 매칭 |
+| 🗺️ GPS 산책 추적 | 실시간 산책 경로 기록 및 공유 |
+| 🤖 AI 건강 분석 | Gemini AI 기반 반려견 건강 상담 및 증상 분석 |
+| 📚 교육 콘텐츠 | 산책 자세, 리드줄 사용법, 안전 교육 |
+| 💬 커뮤니티 | 반려견 보호자 간 소통 및 정보 공유 |
+| 💰 PAW 포인트 | 플랫폼 내 리워드 시스템 |
+
+---
 
 ### 🛠️ 기술 스택
+
 | 구분 | 기술 |
 |------|------|
 | Frontend | HTML, CSS, JavaScript (Vanilla) |
@@ -32,6 +37,8 @@
 | 실시간 통신 | Socket.IO |
 | 인증 | Passport.js (Google, Kakao, Naver OAuth) |
 | 결제 | 토스페이먼츠 |
+
+---
 
 ### 👥 팀 소개
 
@@ -42,18 +49,18 @@
 | 이재준 | 풀스택 개발 | 산책 매칭·GPS 추적, 실시간 채팅, 결제 시스템 구현 |
 | 이충범 | 풀스택 개발 | 교육 콘텐츠, 워커 대시보드, 리뷰·평점 시스템 구현 |
 
-### 4. 사용법
+---
 
-```bash
-# 설치
+### ⚙️ 설치 및 실행
+
+`ash
 git clone https://github.com/kookmin-sw/2026-capstone-55.git
 cd 2026-capstone-55
 npm install
-
-# 실행
 npm start
 # http://localhost:3000 에서 확인
-```
+`
 
-### 5. 기타
-- 팀페이지: https://kookmin-sw.github.io/2026-capstone-55/
+---
+
+팀페이지: [https://kookmin-sw.github.io/2026-capstone-55/](https://kookmin-sw.github.io/2026-capstone-55/)
