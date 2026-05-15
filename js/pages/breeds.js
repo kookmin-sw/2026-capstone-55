@@ -56,12 +56,17 @@ function renderBreedListPage() {
       .breed-recommend-card p { margin:0; max-width:570px; color:#64748B; line-height:1.68; font-size:.9rem; }
       .breed-recommend-card__features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:18px 0 20px; }
       .breed-recommend-card__features span { padding:11px 10px; border-radius:8px; background:#fff; border:1px solid #E5E7EB; color:#334155; font-size:.74rem; font-weight:900; text-align:center; box-shadow:0 8px 18px rgba(15,23,42,.035); }
-      .breed-recommend-card .btn { width:100%; max-width:320px; padding:14px; font-weight:950; }
+      .breed-recommend-card .btn { width:100%; max-width:320px; padding:14px; font-weight:950; display:inline-flex; align-items:center; justify-content:center; gap:9px; text-align:center; }
+      .breed-recommend-btn-loading { display:inline-flex; align-items:center; justify-content:center; gap:9px; line-height:1; }
+      .breed-recommend-btn-loading .spinner { width:20px; height:20px; border-width:2px; border-color:rgba(255,255,255,.28); border-top-color:#fff; flex-shrink:0; margin:0; }
       .breed-recommend-photo { position:relative; min-height:286px; overflow:hidden; border-radius:8px; border:1px solid #DDE6F0; background:url('/breed-detail-feature.png') center / cover no-repeat; box-shadow:0 18px 44px rgba(15,23,42,.08); }
       .breed-recommend-photo::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,18,32,.04), rgba(11,18,32,.58)); }
       .breed-recommend-photo__copy { position:absolute; left:18px; right:18px; bottom:18px; z-index:1; color:#fff; }
       .breed-recommend-photo__copy strong { display:block; font-size:1.02rem; font-weight:950; margin-bottom:5px; }
       .breed-recommend-photo__copy span { display:block; font-size:.78rem; line-height:1.55; opacity:.9; }
+      .breed-recommend-loading-card { min-height:168px; padding:0; display:flex; align-items:center; justify-content:center; background:#fdfdfd; border:1px solid #E1E5EA; border-radius:8px; box-shadow:0 16px 42px rgba(15,23,42,.055); overflow:hidden; }
+      .breed-recommend-loading-card:hover { transform:none; box-shadow:0 16px 42px rgba(15,23,42,.055); }
+      .breed-recommend-loading-video { width:auto; height:min(134px, 80%); max-width:86%; object-fit:contain; display:block; opacity:.96; }
       @media (max-width:920px) { .breed-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .breed-recommend-hero { grid-template-columns:1fr; } }
       @media (max-width:640px) {
         .breed-atlas-hero { min-height:0; background-position:center, 64% center; }
@@ -75,6 +80,8 @@ function renderBreedListPage() {
         .breed-recommend-card { padding:22px 18px; }
         .breed-recommend-card__features { grid-template-columns:1fr; }
         .breed-recommend-photo { min-height:220px; }
+        .breed-recommend-loading-card { min-height:148px; }
+        .breed-recommend-loading-video { height:min(112px, 78%); max-width:90%; }
       }
     </style>
 
@@ -382,12 +389,10 @@ async function handleBreedRecommend() {
   };
   const count = Math.min(20, Math.max(1, parseInt(document.getElementById('rec-count')?.value, 10) || 3));
 
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></div> AI가 분석 중...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="breed-recommend-btn-loading"><span class="spinner"></span><span>AI가 분석 중...</span></span>'; }
   if (resultEl) resultEl.innerHTML = `
-    <div class="card" style="padding:40px; text-align:center;">
-      <div class="spinner" style="margin:0 auto 16px;"></div>
-      <p style="color:var(--color-text-muted);">383종의 품종 데이터를 분석하고 있어요...</p>
-      <p style="color:var(--color-text-muted); font-size:0.85rem;">잠시만 기다려주세요 🐾</p>
+    <div class="card breed-recommend-loading-card">
+      <video class="breed-recommend-loading-video" src="/pawsitive_loading.mp4" autoplay muted loop playsinline preload="auto" aria-label="Pawsitive 로딩 중"></video>
     </div>
   `;
 

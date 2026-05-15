@@ -1,6 +1,214 @@
 // Pawsitive - Profile Page
 // User profile, dog registration, and account management
 
+const PROFILE_DOG_SIZE_LABELS = { small: '소형', medium: '중형', large: '대형' };
+const PROFILE_HEALTH_DOC_TYPES = [
+  { value: 'vaccination', label: '예방접종 증명서', short: '예방접종' },
+  { value: 'checkup', label: '건강검진 결과지', short: '건강검진' },
+  { value: 'treatment', label: '진료 기록 / 처방전', short: '진료/처방' },
+  { value: 'surgery', label: '수술 / 시술 기록', short: '수술/시술' },
+  { value: 'allergy', label: '알러지 / 질병 진단서', short: '알러지/질병' },
+  { value: 'medication', label: '복용 약 / 투약 기록', short: '투약기록' },
+  { value: 'other', label: '기타', short: '기타' }
+];
+
+function profileEscapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+}
+
+function profileEscapeAttr(value) {
+  return profileEscapeHtml(value);
+}
+
+function getProfileDogGenderLabel(dog) {
+  if (dog.gender === 'male') return '♂ 수컷';
+  if (dog.gender === 'female') return '♀ 암컷';
+  return '미등록';
+}
+
+function getProfileDogNeuteredLabel(dog) {
+  if (dog.neutered === true) return '완료';
+  if (dog.neutered === false) return '미완료';
+  return '미등록';
+}
+
+function renderProfileDogField(label, value) {
+  return `
+    <div class="profile-dog-field">
+      <span>${label}</span>
+      <strong>${profileEscapeHtml(value || '미등록')}</strong>
+    </div>
+  `;
+}
+
+function renderProfileHealthDocOptions(selected = 'vaccination') {
+  return PROFILE_HEALTH_DOC_TYPES.map(type =>
+    `<option value="${type.value}" ${selected === type.value ? 'selected' : ''}>${type.label}</option>`
+  ).join('');
+}
+
+function getProfileHealthDocLabel(type, compact = false) {
+  const found = PROFILE_HEALTH_DOC_TYPES.find(item => item.value === type);
+  return found ? (compact ? found.short : found.label) : '기타';
+}
+
+function renderProfileDogDocsPanel(dog, idx) {
+  return `
+    <section class="profile-dog-docs">
+      <div class="profile-dog-docs__head">
+        <div>
+          <strong>건강 서류</strong>
+          <span>예방접종, 검진 결과, 진료 기록을 ${profileEscapeHtml(dog.name)} 정보와 함께 관리해요</span>
+        </div>
+        <div id="upload-msg-${idx}" class="profile-dog-docs__message"></div>
+      </div>
+      <div class="profile-dog-doc-upload">
+        <label>
+          <span>서류 종류</span>
+          <select id="upload-type-${idx}" class="form-select">
+            ${renderProfileHealthDocOptions()}
+          </select>
+        </label>
+        <label>
+          <span>파일 선택</span>
+          <input type="file" id="upload-file-${idx}" accept=".pdf,.jpg,.jpeg,.png" class="form-input">
+        </label>
+        <button class="btn btn-primary btn-sm" onclick="handleUploadDogFile(${idx}, document.getElementById('upload-file-${idx}'))">업로드</button>
+      </div>
+      <div id="dog-files-${idx}" class="profile-dog-file-list"></div>
+    </section>
+  `;
+}
+
+function renderProfileDogDetailView(dog, idx) {
+  return `
+    <div id="dog-view-${idx}">
+      <div class="profile-dog-detail-grid">
+        ${renderProfileDogField('성별', getProfileDogGenderLabel(dog))}
+        ${renderProfileDogField('체중', dog.weight ? `${dog.weight}kg` : '미등록')}
+        ${renderProfileDogField('중성화', getProfileDogNeuteredLabel(dog))}
+        ${renderProfileDogField('성향', dog.personality || '미등록')}
+      </div>
+      <div class="profile-dog-note">
+        <span>건강 관리 정보</span>
+        <p>${profileEscapeHtml(dog.healthNote || '등록된 특이사항이 없습니다.')}</p>
+      </div>
+      <div class="profile-dog-actions">
+        <button class="btn btn-secondary btn-sm" onclick="showEditDogForm(${idx})">수정</button>
+        <button class="btn btn-sm profile-dog-delete-btn" onclick="handleDeleteDog(${idx})">삭제</button>
+      </div>
+      ${renderProfileDogDocsPanel(dog, idx)}
+    </div>
+  `;
+}
+
+function renderProfileDogCard(dog, idx, total) {
+  const avatar = dog.photo
+    ? `<img src="${profileEscapeAttr(dog.photo)}" alt="${profileEscapeAttr(dog.name)}">`
+    : icon('user', 20);
+  const divider = idx < total - 1 ? ' profile-dog-card--divided' : '';
+
+  return `
+    <div class="profile-dog-card${divider}">
+      <button class="profile-dog-summary" onclick="toggleDogDetail(${idx})">
+        <span class="profile-dog-avatar">${avatar}</span>
+        <span class="profile-dog-meta">
+          <strong>${profileEscapeHtml(dog.name)}</strong>
+          <small>${profileEscapeHtml(dog.breed || '품종 미등록')} · ${profileEscapeHtml(dog.age ?? '미등록')}살 · ${profileEscapeHtml(PROFILE_DOG_SIZE_LABELS[dog.size] || dog.size || '크기 미등록')}</small>
+        </span>
+        <span id="dog-arrow-${idx}" class="profile-dog-arrow">▼</span>
+      </button>
+      <div id="dog-detail-${idx}" class="profile-dog-detail" style="display:none;">
+        ${renderProfileDogDetailView(dog, idx)}
+        <div id="dog-edit-${idx}" style="display:none;"></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderProfileDogEditForm(dog, idx) {
+  return `
+    <div id="edit-dog-error-${idx}"></div>
+    <div class="profile-dog-edit-grid">
+      <label>
+        <span>이름</span>
+        <input type="text" id="edit-dog-name-${idx}" class="form-input" value="${profileEscapeAttr(dog.name || '')}">
+      </label>
+      <label>
+        <span>품종</span>
+        <select id="edit-dog-breed-${idx}" class="form-select">
+          <option value="">품종 선택</option>
+          ${typeof BREEDS_DATA !== 'undefined' ? BREEDS_DATA.map(b => `<option value="${profileEscapeAttr(b.name)}" ${dog.breed === b.name ? 'selected' : ''}>${profileEscapeHtml(b.name)}</option>`).join('') : ''}
+        </select>
+      </label>
+      <label>
+        <span>나이</span>
+        <input type="number" id="edit-dog-age-${idx}" class="form-input" value="${profileEscapeAttr(dog.age || '')}" min="0" max="30">
+      </label>
+      <label>
+        <span>크기</span>
+        <select id="edit-dog-size-${idx}" class="form-select">
+          <option value="">크기 선택</option>
+          <option value="small" ${dog.size === 'small' ? 'selected' : ''}>소형</option>
+          <option value="medium" ${dog.size === 'medium' ? 'selected' : ''}>중형</option>
+          <option value="large" ${dog.size === 'large' ? 'selected' : ''}>대형</option>
+        </select>
+      </label>
+      <label>
+        <span>성별</span>
+        <select id="edit-dog-gender-${idx}" class="form-select">
+          <option value="">선택</option>
+          <option value="male" ${dog.gender === 'male' ? 'selected' : ''}>수컷</option>
+          <option value="female" ${dog.gender === 'female' ? 'selected' : ''}>암컷</option>
+        </select>
+      </label>
+      <label>
+        <span>체중</span>
+        <input type="number" id="edit-dog-weight-${idx}" class="form-input" value="${profileEscapeAttr(dog.weight || '')}" min="0" max="100" step="0.1" placeholder="kg">
+      </label>
+      <label>
+        <span>중성화</span>
+        <select id="edit-dog-neutered-${idx}" class="form-select">
+          <option value="">선택</option>
+          <option value="yes" ${dog.neutered === true ? 'selected' : ''}>완료</option>
+          <option value="no" ${dog.neutered === false ? 'selected' : ''}>미완료</option>
+        </select>
+      </label>
+      <label>
+        <span>성향</span>
+        <select id="edit-dog-personality-${idx}" class="form-select">
+          <option value="">선택</option>
+          <option value="활발함" ${dog.personality === '활발함' ? 'selected' : ''}>활발함</option>
+          <option value="온순함" ${dog.personality === '온순함' ? 'selected' : ''}>온순함</option>
+          <option value="겁이 많음" ${dog.personality === '겁이 많음' ? 'selected' : ''}>겁이 많음</option>
+          <option value="사교적" ${dog.personality === '사교적' ? 'selected' : ''}>사교적</option>
+          <option value="독립적" ${dog.personality === '독립적' ? 'selected' : ''}>독립적</option>
+          <option value="공격적 성향" ${dog.personality === '공격적 성향' ? 'selected' : ''}>공격적 성향</option>
+        </select>
+      </label>
+    </div>
+    <label class="profile-dog-edit-note">
+      <span>건강 관리 정보</span>
+      <textarea id="edit-dog-health-${idx}" class="form-input" rows="3" placeholder="알레르기, 지병, 복용 중인 약 등 특이사항을 입력하세요">${profileEscapeHtml(dog.healthNote || '')}</textarea>
+    </label>
+    <div class="profile-dog-actions">
+      <button class="btn btn-primary btn-sm" onclick="handleSaveEditDog(${idx})">저장</button>
+      <button class="btn btn-secondary btn-sm" onclick="cancelEditDog(${idx})">취소</button>
+    </div>
+  `;
+}
+
+function refreshProfileDogFiles(user = AuthService.getCurrentUser()) {
+  if (!user || !Array.isArray(user.dogs)) return;
+  user.dogs.forEach((dog, idx) => loadDogFiles(idx, dog.id, user.id));
+}
+
 function renderProfilePage() {
  const user = AuthService.getCurrentUser();
  if (!user) {
@@ -38,8 +246,6 @@ function renderProfilePage() {
  `);
  return;
  }
-
- const sizeMap = { small: '소형', medium: '중형', large: '대형' };
 
  renderPage(`
  <div class="page-header">
@@ -106,73 +312,15 @@ function renderProfilePage() {
  }
  </div>
 
- <div class="card" style="padding:24px; margin-bottom:16px;">
+ <div class="card profile-dogs-card">
  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
  <h3 style="margin:0;">내 반려견</h3>
  <button class="btn btn-primary btn-sm" onclick="openDogRegisterFlow()">+ 등록</button>
  </div>
  ${user.dogs && user.dogs.length > 0
- ? user.dogs.map((d, idx) => `
- <div style="padding:12px 0; ${idx < user.dogs.length - 1 ? 'border-bottom:1px solid var(--color-border);' : ''}">
- <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="toggleDogDetail(${idx})">
- <div style="width:44px; height:44px; border-radius:50%; background:var(--color-bg-section); display:flex; align-items:center; justify-content:center; overflow:hidden; color:var(--color-text-light); flex-shrink:0;">${d.photo ? `<img src="${d.photo}" alt="${d.name}" style="width:100%;height:100%;object-fit:cover;">` : icon('user', 20)}</div>
- <div style="flex:1;">
- <div style="font-weight:700; font-size:1rem;">${d.name}</div>
- <div style="font-size:0.82rem; color:var(--color-text-light);">${d.breed} · ${d.age}살 · ${sizeMap[d.size] || d.size}</div>
- </div>
- <span id="dog-arrow-${idx}" style="font-size:0.8rem; color:var(--color-text-muted); transition:transform 0.2s;">▼</span>
- </div>
- <div id="dog-detail-${idx}" style="display:none; margin-top:12px; margin-left:56px; background:var(--color-bg); border-radius:12px; padding:16px;">
- <div id="dog-view-${idx}">
- <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
- <div><span style="font-size:0.78rem; color:var(--color-text-muted);">성별</span><div style="font-weight:600; font-size:0.9rem;">${d.gender === 'male' ? '♂ 수컷' : d.gender === 'female' ? '♀ 암컷' : '미등록'}</div></div>
- <div><span style="font-size:0.78rem; color:var(--color-text-muted);">체중</span><div style="font-weight:600; font-size:0.9rem;">${d.weight ? d.weight + 'kg' : '미등록'}</div></div>
- <div><span style="font-size:0.78rem; color:var(--color-text-muted);">중성화</span><div style="font-weight:600; font-size:0.9rem;">${d.neutered === true ? '완료' : d.neutered === false ? '미완료' : '미등록'}</div></div>
- <div><span style="font-size:0.78rem; color:var(--color-text-muted);">성향</span><div style="font-weight:600; font-size:0.9rem;">${d.personality || '미등록'}</div></div>
- </div>
- ${d.healthNote ? `<div style="margin-bottom:12px;"><span style="font-size:0.78rem; color:var(--color-text-muted);">건강 관리 정보</span><div style="font-size:0.85rem; margin-top:4px; padding:10px; background:white; border-radius:8px;">${d.healthNote}</div></div>` : ''}
- <div style="display:flex; gap:8px;">
- <button class="btn btn-secondary btn-sm" style="font-size:0.75rem;" onclick="event.stopPropagation(); showEditDogForm(${idx})">수정</button>
- <button class="btn btn-sm" style="background:#FFF0F0; color:#D32F2F; font-size:0.75rem;" onclick="event.stopPropagation(); handleDeleteDog(${idx})">삭제</button>
- </div>
- </div>
- <div id="dog-edit-${idx}" style="display:none;"></div>
- </div>
- </div>
- `).join('')
- : '<p style="color:var(--color-text-muted);">등록된 반려견이 없습니다.</p>'
+ ? user.dogs.map((d, idx) => renderProfileDogCard(d, idx, user.dogs.length)).join('')
+ : '<p class="profile-dog-empty">등록된 반려견이 없습니다.</p>'
  }
- </div>
-
- <div class="card" style="padding:24px; margin-bottom:16px;">
- <h3 style="margin-bottom:16px;">건강 서류 관리</h3>
- <div id="upload-error"></div>
- <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
- <div style="flex:1; min-width:100px;">
- <label style="font-size:0.85rem; font-weight:600; margin-bottom:4px; display:block;">반려견</label>
- <select id="upload-dog-select" class="form-select" onchange="loadUploadedFiles(null)">
- ${user.dogs && user.dogs.length > 0 ? user.dogs.map(d => `<option value="${d.id}">${d.name}</option>`).join('') : '<option value="">반려견 없음</option>'}
- </select>
- </div>
- <div style="flex:1; min-width:100px;">
- <label style="font-size:0.85rem; font-weight:600; margin-bottom:4px; display:block;">서류 종류</label>
- <select id="upload-type" class="form-select">
- <option value="vaccination">예방접종 증명서</option>
- <option value="checkup">건강검진 결과지</option>
- <option value="treatment">진료 기록 / 처방전</option>
- <option value="surgery">수술 / 시술 기록</option>
- <option value="allergy">알러지 / 질병 진단서</option>
- <option value="medication">복용 약 / 투약 기록</option>
- <option value="other">기타</option>
- </select>
- </div>
- <div style="flex:1; min-width:100px;">
- <label style="font-size:0.85rem; font-weight:600; margin-bottom:4px; display:block;">파일 선택</label>
- <input type="file" id="upload-file" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;">
- </div>
- </div>
- <button class="btn btn-primary btn-sm" onclick="handleUploadFile()">업로드</button>
- <div id="uploaded-files" style="margin-top:16px;"></div>
  </div>
 
  <div id="profile-photo-modal" class="profile-photo-modal" style="display:none;">
@@ -208,7 +356,7 @@ function renderProfilePage() {
  </div>
  `);
 
- loadUploadedFiles(user.id);
+ refreshProfileDogFiles(user);
 }
 
 let _profilePhotoCrop = null;
@@ -414,6 +562,7 @@ const _dogRegSteps = [
  { value: 'medium', label: '중형', desc: '7~15kg' },
  { value: 'large', label: '대형', desc: '15kg~' }
  ]},
+ { key: 'weight', question: '몸무게는 어느 정도예요?', sub: '건강 분석과 서류 관리에 함께 표시돼요', type: 'number', placeholder: '예: 8.2', min: 0, max: 100, step: 0.1, unit: 'kg', required: false },
  { key: 'gender', question: '성별은요?', sub: '', type: 'cards', options: [
  { value: 'male', label: '남아', desc: '수컷' },
  { value: 'female', label: '여아', desc: '암컷' }
@@ -486,7 +635,7 @@ function renderDogRegStep() {
  } else if (step.type === 'text') {
  inputHtml = `<input type="text" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; margin-top:24px;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()">`;
  } else if (step.type === 'number') {
- inputHtml = `<div style="display:flex; align-items:center; gap:8px; margin-top:24px;"><input type="number" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" min="${step.min || 0}" max="${step.max || 100}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; flex:1;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()"><span style="font-size:1rem; font-weight:600; color:var(--color-text-muted);">살</span></div>`;
+ inputHtml = `<div style="display:flex; align-items:center; gap:8px; margin-top:24px;"><input type="number" id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_dogRegData[step.key] || ''}" min="${step.min || 0}" max="${step.max || 100}" ${step.step ? `step="${step.step}"` : ''} style="font-size:1.1rem; padding:14px 16px; border-radius:12px; flex:1;" autofocus onkeydown="if(event.key==='Enter')nextDogRegStep()"><span style="font-size:1rem; font-weight:600; color:var(--color-text-muted);">${step.unit || '살'}</span></div>`;
  } else if (step.type === 'textarea') {
  inputHtml = `<textarea id="dog-reg-input" class="form-input" placeholder="${step.placeholder || ''}" rows="3" style="font-size:1rem; padding:14px 16px; border-radius:12px; margin-top:24px; resize:none;">${_dogRegData[step.key] || ''}</textarea>`;
  } else if (step.type === 'breed-search') {
@@ -684,7 +833,7 @@ function finishDogRegister() {
  age: Number(_dogRegData.age) || 0,
  size: _dogRegData.size || 'medium',
  gender: _dogRegData.gender || '',
- weight: _dogRegData.weight || null,
+ weight: _dogRegData.weight ? Number(_dogRegData.weight) : null,
  neutered: _dogRegData.neutered === 'yes',
  personality: _dogRegData.personality || '',
  healthNote: _dogRegData.healthNote || '',
@@ -879,10 +1028,12 @@ async function handleUploadDogFile(idx, inputEl) {
 
  const dog = user.dogs[idx];
  const file = inputEl.files[0];
- if (!file) return;
-
  const type = document.getElementById(`upload-type-${idx}`)?.value || 'other';
  const msgEl = document.getElementById(`upload-msg-${idx}`);
+ if (!file) {
+ if (msgEl) msgEl.innerHTML = '<span class="is-error">파일을 선택해주세요</span>';
+ return;
+ }
 
  const formData = new FormData();
  formData.append('file', file);
@@ -892,19 +1043,19 @@ async function handleUploadDogFile(idx, inputEl) {
  formData.append('dogName', dog.name);
 
  try {
- if (msgEl) msgEl.innerHTML = '<span style="font-size:0.75rem;color:var(--color-text-muted);">업로드 중...</span>';
+ if (msgEl) msgEl.innerHTML = '<span>업로드 중...</span>';
  const resp = await fetch('/api/upload', { method: 'POST', body: formData });
  const data = await resp.json();
  if (data.success) {
- if (msgEl) msgEl.innerHTML = '<span style="font-size:0.75rem;color:#2D8B5E;">✅ 업로드 완료</span>';
+ if (msgEl) msgEl.innerHTML = '<span class="is-success">업로드 완료</span>';
  inputEl.value = '';
  loadDogFiles(idx, dog.id, user.id);
  setTimeout(() => { if (msgEl) msgEl.innerHTML = ''; }, 2000);
  } else {
- if (msgEl) msgEl.innerHTML = `<span style="font-size:0.75rem;color:#D32F2F;">${data.error}</span>`;
+ if (msgEl) msgEl.innerHTML = `<span class="is-error">${profileEscapeHtml(data.error)}</span>`;
  }
  } catch (e) {
- if (msgEl) msgEl.innerHTML = '<span style="font-size:0.75rem;color:#D32F2F;">업로드 실패</span>';
+ if (msgEl) msgEl.innerHTML = '<span class="is-error">업로드 실패</span>';
  }
 }
 
@@ -917,23 +1068,24 @@ async function loadDogFiles(idx, dogId, userId) {
  const data = await resp.json();
  if (!data.success) { container.innerHTML = ''; return; }
 
- const files = data.files.filter(f => f.dogId === dogId);
+ const user = AuthService.getCurrentUser();
+ const dog = user?.dogs?.[idx];
+ const files = data.files.filter(f => f.dogId === dogId || (dog?.name && f.dogName === dog.name));
  if (files.length === 0) {
- container.innerHTML = '<p style="font-size:0.75rem;color:var(--color-text-muted);margin:4px 0;">등록된 서류 없음</p>';
+ container.innerHTML = '<p class="profile-dog-files-empty">등록된 서류가 없습니다.</p>';
  return;
  }
 
- const typeLabel = { vaccination: '💉 예방접종', checkup: '🩺 건강검진', treatment: '📝 진료/처방', surgery: '🏥 수술/시술', allergy: '⚠️ 알러지/질병', medication: '💊 투약기록', diagnosis: '🏥 진단서', other: '📄 기타' };
  container.innerHTML = files.map(f => `
- <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--color-bg-section);border-radius:6px;margin-bottom:4px;">
- <div style="font-size:0.75rem;">
- <span style="font-weight:600;">${typeLabel[f.type] || '📄'}</span>
- <span style="color:var(--color-text-muted);margin-left:4px;">${f.originalName}</span>
- </div>
- <div style="display:flex;gap:4px;">
- <a href="/api/upload/download/${f.filename}" style="font-size:0.68rem;color:var(--color-mint);text-decoration:none;">다운</a>
- <button style="font-size:0.68rem;color:#D32F2F;background:none;border:none;cursor:pointer;" onclick="handleDeleteFile('${f.id}')">삭제</button>
- </div>
+ <div class="profile-dog-file">
+   <div class="profile-dog-file__meta">
+     <strong>${profileEscapeHtml(getProfileHealthDocLabel(f.type, true))}</strong>
+     <span>${profileEscapeHtml(f.originalName)} · ${(f.size / 1024).toFixed(0)}KB · ${new Date(f.uploadedAt).toLocaleDateString('ko-KR')}</span>
+   </div>
+   <div class="profile-dog-file__actions">
+     <a href="/api/upload/download/${encodeURIComponent(f.filename)}" class="btn btn-secondary btn-sm">다운로드</a>
+     <button class="btn btn-sm profile-dog-delete-btn" onclick="handleDeleteFile('${f.id}', ${idx})">삭제</button>
+   </div>
  </div>
  `).join('');
  } catch (e) {
@@ -941,12 +1093,17 @@ async function loadDogFiles(idx, dogId, userId) {
  }
 }
 
-async function handleDeleteFile(fileId) {
+async function handleDeleteFile(fileId, dogIdx = null) {
  if (!confirm('이 서류를 삭제하시겠어요?')) return;
  try {
  await fetch(`/api/upload/${fileId}`, { method: 'DELETE' });
  const user = AuthService.getCurrentUser();
- if (user) loadUploadedFiles(user.id);
+ if (user && Number.isInteger(dogIdx) && user.dogs?.[dogIdx]) {
+   loadDogFiles(dogIdx, user.dogs[dogIdx].id, user.id);
+ } else if (user) {
+   loadUploadedFiles(user.id);
+   refreshProfileDogFiles(user);
+ }
  } catch (e) {
  alert('삭제 실패');
  }
@@ -980,6 +1137,11 @@ function toggleDogDetail(idx) {
  const isOpen = detail.style.display !== 'none';
  detail.style.display = isOpen ? 'none' : 'block';
  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
+ if (!isOpen) {
+   const user = AuthService.getCurrentUser();
+   const dog = user?.dogs?.[idx];
+   if (user && dog) loadDogFiles(idx, dog.id, user.id);
+ }
 }
 
 function showEditDogForm(idx) {
@@ -993,75 +1155,7 @@ function showEditDogForm(idx) {
 
  viewEl.style.display = 'none';
  editEl.style.display = 'block';
- editEl.innerHTML = `
- <div id="edit-dog-error-${idx}"></div>
- <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
- <div class="form-group" style="margin-bottom:0;">
- <label style="font-size:0.78rem;">이름</label>
- <input type="text" id="edit-dog-name-${idx}" class="form-input" value="${d.name || ''}">
- </div>
- <div class="form-group" style="margin-bottom:0;">
- <label style="font-size:0.78rem;">품종</label>
- <select id="edit-dog-breed-${idx}" class="form-select">
- <option value="">품종 선택</option>
- ${typeof BREEDS_DATA !== 'undefined' ? BREEDS_DATA.map(b => `<option value="${b.name}" ${d.breed === b.name ? 'selected' : ''}>${b.name}</option>`).join('') : ''}
- </select>
- </div>
- <div class="form-group" style="margin-bottom:0;">
- <label style="font-size:0.78rem;">나이 (살)</label>
- <input type="number" id="edit-dog-age-${idx}" class="form-input" value="${d.age || ''}" min="0" max="30">
- </div>
- <div class="form-group" style="margin-bottom:0;">
- <label style="font-size:0.78rem;">크기</label>
- <select id="edit-dog-size-${idx}" class="form-select">
- <option value="">크기 선택</option>
- <option value="small" ${d.size === 'small' ? 'selected' : ''}>소형</option>
- <option value="medium" ${d.size === 'medium' ? 'selected' : ''}>중형</option>
- <option value="large" ${d.size === 'large' ? 'selected' : ''}>대형</option>
- </select>
- </div>
- <div class="form-group" style="margin-bottom:0;">
- <label style="font-size:0.78rem;">성별</label>
- <select id="edit-dog-gender-${idx}" class="form-select">
- <option value="">선택</option>
- <option value="male" ${d.gender === 'male' ? 'selected' : ''}>수컷</option>
- <option value="female" ${d.gender === 'female' ? 'selected' : ''}>암컷</option>
- </select>
- </div>
- <div class="form-group" style="margin-bottom:0;">
- <label style="font-size:0.78rem;">체중 (kg)</label>
- <input type="number" id="edit-dog-weight-${idx}" class="form-input" value="${d.weight || ''}" min="0" max="100" step="0.1">
- </div>
- <div class="form-group" style="margin-bottom:0;">
- <label style="font-size:0.78rem;">중성화</label>
- <select id="edit-dog-neutered-${idx}" class="form-select">
- <option value="">선택</option>
- <option value="yes" ${d.neutered === true ? 'selected' : ''}>완료</option>
- <option value="no" ${d.neutered === false ? 'selected' : ''}>미완료</option>
- </select>
- </div>
- <div class="form-group" style="margin-bottom:0;">
- <label style="font-size:0.78rem;">성향</label>
- <select id="edit-dog-personality-${idx}" class="form-select">
- <option value="">선택</option>
- <option value="활발함" ${d.personality === '활발함' ? 'selected' : ''}>활발함</option>
- <option value="온순함" ${d.personality === '온순함' ? 'selected' : ''}>온순함</option>
- <option value="겁이 많음" ${d.personality === '겁이 많음' ? 'selected' : ''}>겁이 많음</option>
- <option value="사교적" ${d.personality === '사교적' ? 'selected' : ''}>사교적</option>
- <option value="독립적" ${d.personality === '독립적' ? 'selected' : ''}>독립적</option>
- <option value="공격적 성향" ${d.personality === '공격적 성향' ? 'selected' : ''}>공격적 성향</option>
- </select>
- </div>
- </div>
- <div class="form-group" style="margin-bottom:12px;">
- <label style="font-size:0.78rem;">건강 관리 정보</label>
- <textarea id="edit-dog-health-${idx}" class="form-input" rows="3" style="resize:vertical;" placeholder="알레르기, 지병, 복용 중인 약 등 특이사항을 입력하세요">${d.healthNote || ''}</textarea>
- </div>
- <div style="display:flex; gap:8px;">
- <button class="btn btn-primary btn-sm" onclick="handleSaveEditDog(${idx})">저장</button>
- <button class="btn btn-secondary btn-sm" onclick="cancelEditDog(${idx})">취소</button>
- </div>
- `;
+ editEl.innerHTML = renderProfileDogEditForm(d, idx);
 }
 
 function cancelEditDog(idx) {
