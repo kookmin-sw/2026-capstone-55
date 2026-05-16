@@ -66,7 +66,7 @@ Pawsitive는 반려견 보호자와 전문 산책 도우미를 연결하고, AI 
 | Frontend | HTML, CSS, JavaScript (Vanilla) |
 | Backend | Node.js, Express |
 | AI | Google Gemini API, Anthropic Claude API |
-| 지도 | Kakao Maps API |
+| 지도 | OpenStreetMap API |
 | 실시간 통신 | Socket.IO |
 | 인증 | Passport.js (Google, Kakao, Naver OAuth) |
 | 결제 | 토스페이먼츠 |
@@ -79,8 +79,8 @@ Pawsitive는 반려견 보호자와 전문 산책 도우미를 연결하고, AI 
 |------|------|-----------|
 | 조현찬 | 팀장, 풀스택 개발 | 프로젝트 총괄, 서버 아키텍처 설계 및 핵심 기능 구현 |
 | 하준서 | 풀스택 개발 | 프로필·반려견 관리, AI 건강 분석, 커뮤니티 기능 구현 |
-| 이재준 | 풀스택 개발 | 산책 매칭·GPS 추적, 실시간 채팅, 결제 시스템 구현 |
-| 이충범 | 풀스택 개발 | 교육 콘텐츠, 워커 대시보드, 리뷰·평점 시스템 구현 |
+| 이재준 | 풀스택 개발 | 교육 컨텐츠, 실시간 채팅, 결제 시스템 구현 |
+| 이충범 | 풀스택 개발 | 산책 매칭·GPS 추적, 워커 대시보드, 리뷰·평점 시스템 구현 |
 
 ---
 
