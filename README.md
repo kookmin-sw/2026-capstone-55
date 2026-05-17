@@ -12,6 +12,10 @@
 
 Pawsitive는 반려견 보호자와 전문 산책 도우미를 연결하고, AI 기반 건강 관리·교육·커뮤니티를 제공하는 반려견 종합 케어 플랫폼입니다.
 
+<div align="center">
+  <img src="poster.png" alt="Pawsitive 포스터" width="700">
+</div>
+
 - 웹사이트: [Pawsitive 바로가기](https://competent-famished-leatrice.ngrok-free.dev)
 - 소개 영상: [YouTube](https://youtu.be/)
 
