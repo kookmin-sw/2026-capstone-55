@@ -1,7 +1,7 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/Lvs6kcL8)
 
 <div align="center">
-  <h1>🐾 Pawsitive</h1>
+  <img src="pawsitive_logo_transparent.png" alt="Pawsitive" width="400">
   <p><strong>반려견과의 더 나은 일상</strong></p>
   <p>AI 건강 분석부터 산책 매칭까지, 당신과 반려견을 위한 공간.</p>
 </div>
