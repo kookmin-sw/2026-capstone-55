@@ -1,0 +1,128 @@
+[
+  {
+    "id": "expert-vet-mock",
+    "userId": "mock-vet-user",
+    "category": "vet",
+    "categoryLabel": "수의사",
+    "name": "윤서진",
+    "title": "소동물 내과 수의사",
+    "avatar": "윤",
+    "rating": 4.9,
+    "reviews": 184,
+    "price": 39000,
+    "responseTime": "평균 8분",
+    "experience": "9년 경력",
+    "location": "서울 강남",
+    "tags": [
+      "피부/알러지",
+      "소화기",
+      "응급 판단"
+    ],
+    "intro": "병원 방문 전 보호자가 놓치기 쉬운 건강 신호를 정리해드립니다.",
+    "credentials": [
+      {
+        "issuer": "농림축산식품부",
+        "name": "수의사 면허",
+        "grade": "면허",
+        "number": "VET-MOCK-2026"
+      },
+      {
+        "issuer": "동물병원",
+        "name": "재직 확인",
+        "grade": "내과",
+        "number": "CLINIC-SEOUL-01"
+      }
+    ],
+    "verificationBadges": [
+      "수의사 면허 확인",
+      "관리자 서류 심사 통과"
+    ],
+    "status": "approved",
+    "source": "mock",
+    "approvedAt": "2026-05-14T20:03:18.502Z"
+  },
+  {
+    "id": "expert-trainer-mock",
+    "userId": "mock-trainer-user",
+    "category": "trainer",
+    "categoryLabel": "훈련사",
+    "name": "강도윤",
+    "title": "문제행동 교정 훈련사",
+    "avatar": "강",
+    "rating": 4.8,
+    "reviews": 126,
+    "price": 33000,
+    "responseTime": "평균 12분",
+    "experience": "7년 경력",
+    "location": "서울 마포",
+    "tags": [
+      "짖음",
+      "분리불안",
+      "줄 당김"
+    ],
+    "intro": "보호자 루틴과 산책 환경을 함께 보고 단계별 훈련안을 제안합니다.",
+    "credentials": [
+      {
+        "issuer": "농림축산식품부",
+        "name": "반려동물행동지도사",
+        "grade": "2급",
+        "number": "BHV-MOCK-2026"
+      },
+      {
+        "issuer": "KKC 한국애견협회",
+        "name": "반려견지도사",
+        "grade": "1급",
+        "number": "KKC-DI-001"
+      }
+    ],
+    "verificationBadges": [
+      "행동지도 자격 확인",
+      "관리자 서류 심사 통과"
+    ],
+    "status": "approved",
+    "source": "mock",
+    "approvedAt": "2026-05-14T20:03:18.502Z"
+  },
+  {
+    "id": "expert-groomer-mock",
+    "userId": "mock-groomer-user",
+    "category": "groomer",
+    "categoryLabel": "미용사",
+    "name": "정유민",
+    "title": "스트레스 케어 미용사",
+    "avatar": "정",
+    "rating": 4.7,
+    "reviews": 142,
+    "price": 25000,
+    "responseTime": "평균 10분",
+    "experience": "8년 경력",
+    "location": "경기 성남",
+    "tags": [
+      "엉킴 관리",
+      "발톱/발바닥",
+      "미용 공포"
+    ],
+    "intro": "미용을 무서워하는 아이도 무리하지 않도록 홈케어 순서를 안내합니다.",
+    "credentials": [
+      {
+        "issuer": "KKC 한국애견협회",
+        "name": "반려견스타일리스트",
+        "grade": "1급",
+        "number": "KKC-ST-001"
+      },
+      {
+        "issuer": "KKF 한국애견연맹",
+        "name": "애견미용사",
+        "grade": "2급",
+        "number": "KKF-GR-002"
+      }
+    ],
+    "verificationBadges": [
+      "미용 자격 확인",
+      "관리자 서류 심사 통과"
+    ],
+    "status": "approved",
+    "source": "mock",
+    "approvedAt": "2026-05-14T20:03:18.502Z"
+  }
+]

@@ -1,0 +1,217 @@
+[
+  {
+    "id": "id-mp6iqdv1-dbfcg0l",
+    "authorId": "sample-2",
+    "authorName": "뽀삐아빠",
+    "text": "드디어 앉아 성공. 간식보다 칭찬에 더 신나하는 타입.\n\n#훈련성공 #말티즈 #기본훈련",
+    "imageUrls": [],
+    "imageData": "/images/dog_owner.png",
+    "walkData": null,
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-15T06:10:29.677Z"
+  },
+  {
+    "id": "id-mp6iqdv1-95hhqr5",
+    "authorId": "sample-3",
+    "authorName": "해피누나",
+    "text": "비 오는 날 산책은 레인코트가 다 했다. 발 씻기는 아직 어렵지만.\n\n#골든리트리버 #비오는날 #산책",
+    "imageUrls": [],
+    "imageData": "/photos/02_display.png",
+    "walkData": {
+      "dogName": "해피",
+      "distance": 1.5,
+      "duration": 35,
+      "coordinates": []
+    },
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-15T06:10:29.677Z"
+  },
+  {
+    "id": "id-mp6iqdv1-2azqz2i",
+    "authorId": "sample-4",
+    "authorName": "시바집사",
+    "text": "병원 다녀온 뒤 주차장에서 열린 짧고 강렬한 하울링 콘서트.\n\n#시바이누 #시바스크림 #동물병원",
+    "imageUrls": [],
+    "imageData": "/images/dog_walker.png",
+    "walkData": null,
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-15T06:10:29.677Z"
+  },
+  {
+    "id": "id-mp6iqdv1-3a7ahyh",
+    "authorId": "sample-5",
+    "authorName": "댕댕이네",
+    "text": "주말에 가기 좋은 놀이터 찾음. 넓고 조용해서 다시 갈 예정.\n\n#반려견놀이터 #마포구 #추천장소",
+    "imageUrls": [],
+    "imageData": "/photos/03_customers.png",
+    "walkData": null,
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-15T06:10:29.677Z"
+  },
+  {
+    "id": "id-mp6iqdv1-av9ksak",
+    "authorId": "sample-6",
+    "authorName": "비숑프리제",
+    "text": "오늘 미용 끝. 테디베어컷은 볼 때마다 기분 좋아지는 치트키.\n\n#비숑프리제 #미용 #테디베어컷",
+    "imageUrls": [],
+    "imageData": "/pawsitive_logo_transparent.png",
+    "walkData": null,
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-15T06:10:29.677Z"
+  },
+  {
+    "id": "id-mp6iqdv0-qkym8ss",
+    "authorId": "sample-1",
+    "authorName": "초코맘",
+    "text": "오늘 초코랑 한강 산책. 바람이 좋아서 한 시간 넘게 걷고 왔어요.\n\n#한강산책 #포메라니안 #산책일기",
+    "imageUrls": [],
+    "imageData": "/photos/01_interior.png",
+    "walkData": {
+      "dogName": "초코",
+      "distance": 2.3,
+      "duration": 58,
+      "coordinates": []
+    },
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-15T06:10:29.676Z"
+  },
+  {
+    "id": "id-mp5csqbz-9xp23iz",
+    "authorId": "sample-4",
+    "authorName": "시바집사",
+    "text": "병원 다녀온 뒤 주차장에서 열린 짧고 강렬한 하울링 콘서트.\n\n#시바이누 #시바스크림 #동물병원",
+    "imageUrls": [],
+    "imageData": "/images/dog_walker.png",
+    "walkData": null,
+    "oneSecondData": null,
+    "likes": 1,
+    "likedBy": [
+      "id-mol2g5lb-rvnvuvi"
+    ],
+    "comments": [
+      {
+        "id": "id-mp6kjkw9-7dwh8zt",
+        "authorId": "id-mol2g5lb-rvnvuvi",
+        "authorName": "Peter Lee",
+        "authorProfileImage": "https://lh3.googleusercontent.com/a/ACg8ocKBRQuFrTAGFUpPuWf07hd29x5mRV5oU_8sUvKI4mWAO3C9Mw=s96-c",
+        "text": "ㅎㅇ",
+        "createdAt": "2026-05-15T07:01:11.433Z"
+      }
+    ],
+    "createdAt": "2026-05-14T10:36:35.279Z"
+  },
+  {
+    "id": "id-mp5csqbz-8fmskl5",
+    "authorId": "sample-5",
+    "authorName": "댕댕이네",
+    "text": "주말에 가기 좋은 놀이터 찾음. 넓고 조용해서 다시 갈 예정.\n\n#반려견놀이터 #마포구 #추천장소",
+    "imageUrls": [],
+    "imageData": "/photos/03_customers.png",
+    "walkData": null,
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-14T10:36:35.279Z"
+  },
+  {
+    "id": "id-mp5csqbz-zea3nal",
+    "authorId": "sample-6",
+    "authorName": "비숑프리제",
+    "text": "오늘 미용 끝. 테디베어컷은 볼 때마다 기분 좋아지는 치트키.\n\n#비숑프리제 #미용 #테디베어컷",
+    "imageUrls": [],
+    "imageData": "/pawsitive_logo_transparent.png",
+    "walkData": null,
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-14T10:36:35.279Z"
+  },
+  {
+    "id": "id-mp5csqby-rc4df00",
+    "authorId": "sample-1",
+    "authorName": "초코맘",
+    "text": "오늘 초코랑 한강 산책. 바람이 좋아서 한 시간 넘게 걷고 왔어요.\n\n#한강산책 #포메라니안 #산책일기",
+    "imageUrls": [],
+    "imageData": "/photos/01_interior.png",
+    "walkData": {
+      "dogName": "초코",
+      "distance": 2.3,
+      "duration": 58,
+      "coordinates": []
+    },
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-14T10:36:35.278Z"
+  },
+  {
+    "id": "id-mp5csqby-ni1de1v",
+    "authorId": "sample-2",
+    "authorName": "뽀삐아빠",
+    "text": "드디어 앉아 성공. 간식보다 칭찬에 더 신나하는 타입.\n\n#훈련성공 #말티즈 #기본훈련",
+    "imageUrls": [],
+    "imageData": "/images/dog_owner.png",
+    "walkData": null,
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-14T10:36:35.278Z"
+  },
+  {
+    "id": "id-mp5csqby-plq99wt",
+    "authorId": "sample-3",
+    "authorName": "해피누나",
+    "text": "비 오는 날 산책은 레인코트가 다 했다. 발 씻기는 아직 어렵지만.\n\n#골든리트리버 #비오는날 #산책",
+    "imageUrls": [],
+    "imageData": "/photos/02_display.png",
+    "walkData": {
+      "dogName": "해피",
+      "distance": 1.5,
+      "duration": 35,
+      "coordinates": []
+    },
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-14T10:36:35.278Z"
+  },
+  {
+    "id": "id-mp6ogxl4-oim9enq",
+    "authorId": "id-mol2g5lb-rvnvuvi",
+    "authorName": "Peter Lee",
+    "authorProfileImage": "https://lh3.googleusercontent.com/a/ACg8ocKBRQuFrTAGFUpPuWf07hd29x5mRV5oU_8sUvKI4mWAO3C9Mw=s96-c",
+    "text": "zz",
+    "imageUrls": [],
+    "imageData": null,
+    "videoId": null,
+    "walkData": null,
+    "oneSecondData": null,
+    "likes": 0,
+    "likedBy": [],
+    "comments": [],
+    "createdAt": "2026-05-15T08:51:06.376Z"
+  }
+]

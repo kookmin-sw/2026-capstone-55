@@ -1,0 +1,2932 @@
+// Pawsitive - Matching Page
+// Dog walker matching, profiles, and walk management
+
+async function renderMatchingPage() {
+ const user = AuthService.getCurrentUser();
+
+ if (!user) {
+ renderPage(`
+ <div class="page-header match-guest-hero">
+ <h1>산책 매칭</h1>
+ <p>산책 도우미와 요청자를 연결해드려요.</p>
+ </div>
+ <div class="match-role-grid">
+ <div class="match-role-card" onclick="Router.navigate('/login')">
+ <div class="match-role-card__img-wrap">
+ <img src="/images/dog_walker.png" alt="산책 도우미" class="match-role-card__img">
+ </div>
+ <div class="match-role-card__body">
+ <h3 class="match-role-card__title">산책 도우미</h3>
+ <p class="match-role-card__desc">다른 반려견의 산책을<br>도와주세요</p>
+ </div>
+ </div>
+ <div class="match-role-card" onclick="Router.navigate('/login')">
+ <div class="match-role-card__img-wrap">
+ <img src="/images/dog_owner.png" alt="산책 요청자" class="match-role-card__img">
+ </div>
+ <div class="match-role-card__body">
+ <h3 class="match-role-card__title">산책 요청자</h3>
+ <p class="match-role-card__desc">우리 아이 산책을<br>부탁해보세요</p>
+ </div>
+ </div>
+ </div>
+ <div class="card" style="padding:20px;">
+ <h3 style="margin-bottom:12px;">매칭 시스템 안내</h3>
+ <div style="font-size:0.9rem; line-height:1.8; color:var(--color-text);">
+ <p>• <strong>산책 도우미</strong>: 활동 지역, 가능 시간, 수용 가능 견종 크기를 등록하면 요청을 받을 수 있어요.</p>
+ <p>• <strong>산책 요청자</strong>: 근처 도우미에게 산책을 요청하고 실시간으로 매칭 상태를 확인할 수 있어요.</p>
+ <p>• 매칭 완료 후 <strong>실시간 산책 지도</strong>에서 이동 경로를 확인할 수 있어요.</p>
+ </div>
+ </div>
+ `);
+ return;
+ }
+
+ let myProfile = MatchingService.getMyProfile(user.id);
+ if (!myProfile) {
+   await MatchingService.refreshFromServer();
+   myProfile = MatchingService.getMyProfile(user.id);
+ }
+
+ if (!myProfile) {
+ renderMatchingRoleSelect(null);
+ return;
+ }
+
+ // 요청자: 진행 중인 산책이 있으면 무조건 실시간 추적 화면으로 (다른 UI 접근 차단)
+ if (myProfile.role === 'requester') {
+ fetch(`/api/walk-requests?requesterId=${user.id}`)
+ .then(res => res.json())
+ .then(data => {
+ const reqs = data.requests || [];
+ const activeReqs = reqs
+   .filter(r => ['accepted', 'heading', 'arrived', 'handoff', 'walking', 'returning', 'return_arrived'].includes(r.status))
+   .sort((a, b) => new Date(b.updatedAt || b.walkerLocationUpdatedAt || b.requestedStartTime || b.createdAt || 0) - new Date(a.updatedAt || a.walkerLocationUpdatedAt || a.requestedStartTime || a.createdAt || 0));
+
+ // 산책 진행 중 → 실시간 추적 화면 (completed는 제외)
+ const activeReq = activeReqs[0];
+ if (activeReq) {
+   renderRequesterActiveWalkScreen(user, activeReq);
+ } else {
+   MatchingService.refreshFromServer().then(() => renderRequesterDashboard(user, myProfile));
+ }
+ })
+ .catch(() => {
+ MatchingService.refreshFromServer().then(() => renderRequesterDashboard(user, myProfile));
+ });
+ return;
+ }
+
+ if (myProfile.role === 'walker') {
+ renderWalkerDashboard(user, myProfile);
+ }
+}
+
+/** 역할 선택 화면 */
+function renderMatchingRoleSelect(selectedRole) {
+ const user = AuthService.getCurrentUser();
+ const walkerSel = selectedRole === 'walker';
+ const reqSel = selectedRole === 'requester';
+
+ const walkerFormHtml = walkerSel ? `
+ <div class="match-form-card">
+ <h3 class="match-form-title">산책 도우미 등록 및 상태 관리</h3>
+ <div id="match-register-error"></div>
+ <div class="match-form-grid">
+ <div class="form-group">
+ <label for="match-location">활동 지역 <span class="dw-required">*</span></label>
+ <input type="text" id="match-location" class="form-input" placeholder="예: 서울 마포구 합정동">
+ </div>
+ <div class="form-group">
+ <label for="match-time">산책 가능 시간 <span class="dw-required">*</span></label>
+ <select id="match-time" class="form-select">
+ <option value="">선택해주세요</option>
+ <option value="오전 (7-9시)">오전 (7~9시)</option>
+ <option value="오전 (9-11시)">오전 (9~11시)</option>
+ <option value="오후 (2-4시)">오후 (2~4시)</option>
+ <option value="오후 (5-7시)">오후 (5~7시)</option>
+ <option value="저녁 (7-9시)">저녁 (7~9시)</option>
+ <option value="상시 가능">상시 가능</option>
+ </select>
+ </div>
+ <div class="form-group">
+ <label for="match-experience">경력 / 특이사항</label>
+ <input type="text" id="match-experience" class="form-input" placeholder="예: 반려견 2년 경력, 응급처치 자격">
+ </div>
+ </div>
+ <div class="form-group">
+ <label for="match-message">자기소개 <span class="dw-required">*</span></label>
+ <textarea id="match-message" class="form-input" rows="3" placeholder="간단한 자기소개를 적어주세요."></textarea>
+ </div>
+ <div class="form-group">
+ <label>선호 견종 크기 <span class="dw-required">*</span></label>
+ <div class="match-check-group">
+ <label class="dw-check-label"><input type="checkbox" class="match-size-cb" value="small"> 소형견 (~7kg)</label>
+ <label class="dw-check-label"><input type="checkbox" class="match-size-cb" value="medium"> 중형견 (7~15kg)</label>
+ <label class="dw-check-label"><input type="checkbox" class="match-size-cb" value="large"> 대형견 (15kg~)</label>
+ </div>
+ </div>
+ <div class="form-group">
+ <label>산책 경력 <span class="dw-required">*</span></label>
+ <div class="match-check-group">
+ <label class="dw-check-label"><input type="radio" name="match-career" value="under6m"> 6개월 미만</label>
+ <label class="dw-check-label"><input type="radio" name="match-career" value="6m1y"> 6개월~1년</label>
+ <label class="dw-check-label"><input type="radio" name="match-career" value="1y3y"> 1~3년</label>
+ <label class="dw-check-label"><input type="radio" name="match-career" value="over3y"> 3년 이상</label>
+ </div>
+ </div>
+ <div class="form-group">
+ <label>대형견 산책 경험</label>
+ <div class="match-check-group">
+ <label class="dw-check-label"><input type="radio" name="match-large-exp" value="lots"> 많음</label>
+ <label class="dw-check-label"><input type="radio" name="match-large-exp" value="some"> 조금</label>
+ <label class="dw-check-label"><input type="radio" name="match-large-exp" value="none"> 없음</label>
+ </div>
+ </div>
+ <div class="form-group">
+ <label>공격성 대응 가능</label>
+ <div class="match-check-group">
+ <label class="dw-check-label"><input type="radio" name="match-aggr" value="yes"> 가능</label>
+ <label class="dw-check-label"><input type="radio" name="match-aggr" value="some"> 어느 정도</label>
+ <label class="dw-check-label"><input type="radio" name="match-aggr" value="no"> 불가</label>
+ </div>
+ </div>
+ <div class="form-group">
+ <label>반려견 양육 경험</label>
+ <div class="match-check-group">
+ <label class="dw-check-label"><input type="radio" name="match-pet-exp" value="current"> 현재 양육 중</label>
+ <label class="dw-check-label"><input type="radio" name="match-pet-exp" value="past"> 과거 양육</label>
+ <label class="dw-check-label"><input type="radio" name="match-pet-exp" value="none"> 없음</label>
+ </div>
+ </div>
+ <button class="btn btn-primary match-submit-btn" onclick="handleRegisterMatchProfile('walker')">산책 도우미로 등록하기</button>
+ </div>
+ ` : '';
+
+ const reqFormHtml = reqSel ? `
+ <div class="match-form-card">
+ <h3 class="match-form-title">산책 요청자 등록 및 매칭 요청</h3>
+ <div id="match-register-error"></div>
+ ${(() => {
+ const dogs = (user && user.dogs) || [];
+ if (dogs.length === 0) {
+ return `
+ <div class="match-empty-dog-card">
+ <div class="match-empty-dog-card__emoji"></div>
+ <div class="match-empty-dog-card__title">등록된 반려견이 없어요</div>
+ <div class="match-empty-dog-card__desc">산책 요청을 보내려면 먼저 반려견 정보를 등록해야 해요.</div>
+ <button class="btn btn-primary" onclick="Router.navigate('/profile')" style="margin-top:4px;">프로필에서 반려견 등록하기 →</button>
+ </div>`;
+ }
+ const sizeLabel = { small: '소형견', medium: '중형견', large: '대형견' };
+ // 반려견 1마리면 셀렉트, 여러 마리면 체크박스로 복수 선택
+ if (dogs.length === 1) {
+ const d = dogs[0];
+ return `<div class="form-group" style="margin-bottom:16px;">
+ <label>함께할 반려견</label>
+ <div style="padding:12px 14px;border:1px solid var(--color-border);border-radius:10px;background:#fafaf8;display:flex;align-items:center;gap:10px;">
+ <span style="font-size:1.2rem;">🐕</span>
+ <div>
+ <div style="font-weight:700;font-size:0.9rem;">${d.name}</div>
+ <div style="font-size:0.75rem;color:var(--color-text-muted);">${d.breed || ''}${d.size ? ' · ' + (sizeLabel[d.size] || d.size) : ''}</div>
+ </div>
+ <input type="hidden" id="match-dog-select" value="${d.id}">
+ </div>
+ </div>`;
+ }
+ const checkboxes = dogs.map(d =>
+ `<label class="match-dog-check" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--color-border);border-radius:10px;cursor:pointer;transition:all 0.15s;margin-bottom:8px;">
+   <input type="checkbox" class="match-dog-checkbox" value="${d.id}" style="width:18px;height:18px;accent-color:#1a1a1a;cursor:pointer;">
+   <span style="font-size:1.2rem;">🐕</span>
+   <div style="flex:1;min-width:0;">
+     <div style="font-weight:700;font-size:0.88rem;">${d.name}</div>
+     <div style="font-size:0.72rem;color:var(--color-text-muted);">${d.breed || ''}${d.size ? ' · ' + (sizeLabel[d.size] || d.size) : ''}</div>
+   </div>
+ </label>`
+ ).join('');
+ return `<div class="form-group" style="margin-bottom:16px;">
+ <label>함께할 반려견 <span class="dw-required">*</span> <span style="font-size:0.72rem;color:var(--color-text-muted);font-weight:500;">여러 마리 선택 가능</span></label>
+ ${checkboxes}
+ </div>`;
+ })()}
+ <div class="form-group">
+ <label for="match-notes">요청사항</label>
+ <textarea id="match-notes" class="form-input" rows="3" placeholder="특별한 요청사항이 있으면 적어주세요. (예: 목줄이 약해요, 대형견은 어려워해요 등)"></textarea>
+ </div>
+ <div style="padding:12px 14px;background:#f8f8f6;border-radius:10px;font-size:0.78rem;color:var(--color-text-muted);line-height:1.5;margin-bottom:16px;">
+   <span style="font-weight:700;color:var(--color-text);">${icon('map-pin',13)} GPS 즉시 매칭</span> — 산책 위치와 시간은 현재 내 위치와 "지금" 기준으로 자동 설정돼요. 도우미는 실시간으로 가까운 순으로 매칭됩니다.
+ </div>
+ <button class="btn btn-primary match-submit-btn" onclick="handleRegisterMatchProfile('requester')">산책 요청자로 등록하기</button>
+ </div>
+ ` : '';
+
+ renderPage(`
+ <style>
+ .match-flow-hero { position:relative; overflow:hidden; text-align:left; padding:42px 34px 38px; margin-bottom:28px; border:1px solid #DDE6F0; border-radius:8px; background-image:linear-gradient(90deg, rgba(255,255,255,.97) 0%, rgba(255,255,255,.92) 48%, rgba(255,255,255,.68) 72%, rgba(255,255,255,.22) 100%), url('/images/generated/walk-my-hero.png'); background-size:cover, cover; background-position:center, right center; background-repeat:no-repeat; box-shadow:0 18px 44px rgba(15,23,42,.065); }
+ .match-flow-hero h1 { max-width:620px; font-size:1.65rem; font-weight:800; letter-spacing:0; margin-bottom:6px; }
+ .match-flow-hero p { max-width:540px; font-size:0.88rem; line-height:1.65; color:var(--color-text-muted); }
+ .match-flow-cards { display:flex; gap:16px; max-width:480px; margin:0 auto; }
+ .match-flow-card { flex:1; padding:32px 20px; border:1.5px solid var(--color-border); border-radius:16px; text-align:center; cursor:pointer; transition:all 0.2s; background:#fff; }
+ .match-flow-card:hover { border-color:var(--color-text); background:#f9f9f7; }
+ .match-flow-card h3 { font-size:1rem; font-weight:700; margin-bottom:6px; }
+ .match-flow-card p { font-size:0.78rem; color:var(--color-text-muted); line-height:1.5; }
+ @media (max-width:768px) {
+   .match-flow-hero { padding:30px 22px; background-image:linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.92) 62%, rgba(255,255,255,.72) 100%), url('/images/generated/walk-my-hero.png'); background-position:center, 62% center; }
+ }
+ </style>
+
+ <div class="match-flow-hero">
+ <h1>어떤 역할로 참여할까요?</h1>
+ <p>산책 매칭을 시작하려면 역할을 선택해주세요</p>
+ </div>
+
+ <div class="match-role-grid">
+ <div class="match-role-card ${walkerSel ? 'match-role-card--selected' : ''}" onclick="openMatchRegisterFlow('walker')">
+ ${walkerSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
+ <div class="match-role-card__img-wrap">
+ <img src="/images/dog_walker.png" alt="산책 도우미" class="match-role-card__img">
+ </div>
+ <div class="match-role-card__body">
+ <h3 class="match-role-card__title">산책 도우미</h3>
+ <p class="match-role-card__desc">다른 분의 반려견을<br>산책시켜 드려요</p>
+ </div>
+ </div>
+ <div class="match-role-card ${reqSel ? 'match-role-card--selected' : ''}" onclick="openMatchRegisterFlow('requester')">
+ ${reqSel ? '<div class="match-role-card__badge">선택됨 ✓</div>' : ''}
+ <div class="match-role-card__img-wrap">
+ <img src="/images/dog_owner.png" alt="산책 요청자" class="match-role-card__img">
+ </div>
+ <div class="match-role-card__body">
+ <h3 class="match-role-card__title">산책 요청자</h3>
+ <p class="match-role-card__desc">우리 아이 산책을<br>부탁하고 싶어요</p>
+ </div>
+ </div>
+ </div>
+
+ ${walkerFormHtml}${reqFormHtml}
+ ${!selectedRole ? '<p class="match-role-hint">위 카드를 클릭해서 역할을 선택해주세요</p>' : ''}
+ `);
+
+ // Task 7.3: Pre-populate walker form fields if existing profile data is available
+ if (walkerSel && user) {
+ prePopulateWalkerForm(user.id);
+ }
+}
+
+// 토스 스타일 매칭 등록 플로우
+let _matchRegStep = 0;
+let _matchRegData = {};
+let _matchRegRole = '';
+
+function _isUserRegisteredProfilePhoto(photo) {
+ if (!photo) return false;
+ if (photo.startsWith('data:image/')) return true;
+ if (photo.startsWith('/uploads/') || photo.startsWith('/images/')) return true;
+ return false;
+}
+
+const _matchWalkerSteps = [
+ { key: 'location',         question: '어디서 활동하세요?',                   sub: '시/도 → 구/군 → 동 순으로 선택해주세요',   type: 'location',    required: true,  aiScore: true },
+ { key: 'preferredTime',   question: '언제 산책 가능해요?',                  sub: '가능한 시간대를 골라주세요',               type: 'cards',       aiScore: true, options: [
+   { value: '오전 (7-9시)',  label: '이른 아침', desc: '7~9시' },
+   { value: '오전 (9-11시)', label: '오전',     desc: '9~11시' },
+   { value: '오후 (2-4시)',  label: '오후',     desc: '2~4시' },
+   { value: '오후 (5-7시)',  label: '늦은 오후', desc: '5~7시' },
+   { value: '저녁 (7-9시)',  label: '저녁',     desc: '7~9시' },
+   { value: '상시 가능',     label: '상시',     desc: '언제든' }
+ ]},
+ { key: 'careerYears',     question: '산책 경력이 어느 정도예요?',            sub: '대략적인 기간을 선택해주세요',             type: 'cards',       aiScore: true, options: [
+   { value: 'under6m', label: '6개월 미만', desc: '입문 단계' },
+   { value: '6m1y',    label: '6개월~1년', desc: '초보' },
+   { value: '1y3y',    label: '1년~3년',   desc: '중급' },
+   { value: 'over3y',  label: '3년 이상',  desc: '숙련' }
+ ]},
+ { key: 'ownPetExp',       question: '반려견을 직접 키워본 경험이 있나요?',   sub: '',                                       type: 'cards',       aiScore: true, options: [
+   { value: 'current', label: '현재 키우는 중', desc: '반려인' },
+   { value: 'past',    label: '과거에 키웠어요', desc: '경험 있음' },
+   { value: 'none',    label: '없어요',         desc: '경험 없음' }
+ ]},
+ { key: 'largeDogExp',     question: '대형견 산책 경험이 있나요?',            sub: '25kg 이상 기준이에요',                    type: 'cards',       aiScore: true, options: [
+   { value: 'lots', label: '많아요',      desc: '자주 했어요' },
+   { value: 'some', label: '조금 있어요', desc: '몇 번 해봤어요' },
+   { value: 'none', label: '없어요',      desc: '소/중형만 해봤어요' }
+ ]},
+ { key: 'aggressionHandle', question: '공격성 있는 강아지도 산책할 수 있나요?', sub: '솔직하게 답변해주세요',                 type: 'cards',       aiScore: true, options: [
+   { value: 'yes',  label: '가능해요',    desc: '경험 있어요' },
+   { value: 'some', label: '어느 정도요', desc: '경미한 수준은 OK' },
+   { value: 'no',   label: '어려워요',   desc: '온순한 강아지만' }
+ ]},
+ { key: 'breedExp',        question: '어떤 견종을 많이 산책해보셨나요?',      sub: '해당되는 견종을 모두 선택해주세요',        type: 'multicheck',  aiScore: true, options: [
+   '리트리버','푸들','말티즈','진돗개','포메라니안','시바견','허스키','비글','코커스패니얼','기타'
+ ]},
+ { key: 'problemBehavior', question: '어떤 문제 행동을 다뤄봤나요?',          sub: '경험 있는 항목을 모두 선택해주세요',      type: 'multicheck',  aiScore: true, options: [
+   '공격성','짖음','줄 당김','분리불안','낯선 사람 경계','다른 강아지에게 예민함'
+ ]},
+ { key: 'message',         question: '간단히 자기소개 해주세요',              sub: '요청자가 참고할 수 있어요',               type: 'textarea',    required: true,  placeholder: '산책 스타일, 성격 등을 자유롭게 적어주세요' },
+ { key: 'profilePhoto',    question: '프로필 사진을 등록해주세요',            sub: '매칭 시 꼭 필요해요! 요청자 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
+];
+
+const _matchRequesterSteps = [
+ { key: 'dogName',       question: '반려견 이름이 뭐예요?',          sub: '',                                       type: 'text',     required: true,  placeholder: '예: 초코' },
+ { key: 'dogSize',       question: '반려견 크기는요?',               sub: '체중 기준으로 선택해주세요',             type: 'cards',    aiScore: true, options: [
+   { value: 'small',  label: '소형', desc: '~7kg' },
+   { value: 'medium', label: '중형', desc: '7~15kg' },
+   { value: 'large',  label: '대형', desc: '15kg~' }
+ ]},
+ { key: 'dogAggression', question: '반려견에게 공격성이 있나요?',    sub: '정확할수록 더 잘 맞는 도우미를 찾아드려요', type: 'cards',   aiScore: true, options: [
+   { value: 'high',   label: '공격성 강함', desc: '다른 개/사람에게 반응함' },
+   { value: 'medium', label: '약간 있어요', desc: '특정 상황에서만' },
+   { value: 'none',   label: '온순해요',    desc: '공격성 없음' }
+ ]},
+ { key: 'dogPersonality', question: '반려견 성격은 어때요?',          sub: '가장 가까운 항목을 선택해주세요',           type: 'cards',   aiScore: true, options: [
+   { value: 'active', label: '활발해요',    desc: '에너지가 넘쳐요' },
+   { value: 'normal', label: '보통이에요',  desc: '평균적인 편' },
+   { value: 'shy',    label: '겁이 많아요', desc: '낯선 환경에 예민함' }
+ ]},
+ { key: 'walkDifficulty', question: '산책 난이도는 어느 정도예요?',  sub: '줄 당김, 돌발행동 등을 고려해주세요',      type: 'cards',   aiScore: true, options: [
+   { value: 'hard',   label: '어려운 편',  desc: '통제가 쉽지 않아요' },
+   { value: 'medium', label: '보통이에요', desc: '가끔 말 안 들어요' },
+   { value: 'easy',   label: '쉬워요',     desc: '순한 편이에요' }
+ ]},
+ { key: 'location',      question: '어디서 산책하고 싶으세요?',      sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true, aiScore: true },
+ { key: 'preferredTime', question: '원하는 산책 시간은요?',          sub: '',                                       type: 'cards',    aiScore: true, options: [
+   { value: '오전 (7-9시)',  label: '이른 아침', desc: '7~9시' },
+   { value: '오전 (9-11시)', label: '오전',     desc: '9~11시' },
+   { value: '오후 (2-4시)',  label: '오후',     desc: '2~4시' },
+   { value: '오후 (5-7시)',  label: '늦은 오후', desc: '5~7시' },
+   { value: '저녁 (7-9시)',  label: '저녁',     desc: '7~9시' }
+ ]},
+ { key: 'notes',        question: '추가 요청사항이 있나요?',         sub: '없으면 건너뛰어도 돼요',                  type: 'textarea', required: false, placeholder: '예: 목줄 빼지 말아주세요, 간식 챙겨드릴게요' },
+ { key: 'profilePhoto', question: '프로필 사진을 등록해주세요',      sub: '매칭 시 꼭 필요해요! 도우미 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
+];
+
+// 반려견 등록돼있을 때 요청자 스텝 (dogName/dogSize 대신 dog-select)
+const _matchRequesterStepsWithDogs = [
+ { key: 'selectedDogs', question: '어떤 반려견과 산책할까요?', sub: '여러 마리도 선택 가능해요', type: 'dog-select', required: true, aiScore: true },
+ { key: 'dogAggression', question: '반려견에게 공격성이 있나요?', sub: '정확할수록 더 잘 맞는 도우미를 찾아드려요', type: 'cards', aiScore: true, options: [
+   { value: 'high', label: '공격성 강함', desc: '다른 개/사람에게 반응함' },
+   { value: 'medium', label: '약간 있어요', desc: '특정 상황에서만' },
+   { value: 'none', label: '온순해요', desc: '공격성 없음' }
+ ]},
+ { key: 'dogPersonality', question: '반려견 성격은 어때요?', sub: '가장 가까운 항목을 선택해주세요', type: 'cards', aiScore: true, options: [
+   { value: 'active', label: '활발해요',    desc: '에너지가 넘쳐요' },
+   { value: 'normal', label: '보통이에요',  desc: '평균적인 편' },
+   { value: 'shy',    label: '겁이 많아요', desc: '낯선 환경에 예민함' }
+ ]},
+ { key: 'walkDifficulty', question: '산책 난이도는 어느 정도예요?', sub: '줄 당김, 돌발행동 등을 고려해주세요', type: 'cards', aiScore: true, options: [
+   { value: 'hard',   label: '어려운 편',  desc: '통제가 쉽지 않아요' },
+   { value: 'medium', label: '보통이에요', desc: '가끔 말 안 들어요' },
+   { value: 'easy',   label: '쉬워요',     desc: '순한 편이에요' }
+ ]},
+ { key: 'location', question: '어디서 산책하고 싶으세요?', sub: '시/도 → 구/군 → 동 순으로 선택해주세요', type: 'location', required: true, aiScore: true },
+ { key: 'preferredTime', question: '원하는 산책 시간은요?', sub: '', type: 'cards', aiScore: true, options: [
+   { value: '오전 (7-9시)',  label: '이른 아침', desc: '7~9시' },
+   { value: '오전 (9-11시)', label: '오전',     desc: '9~11시' },
+   { value: '오후 (2-4시)',  label: '오후',     desc: '2~4시' },
+   { value: '오후 (5-7시)',  label: '늦은 오후', desc: '5~7시' },
+   { value: '저녁 (7-9시)',  label: '저녁',     desc: '7~9시' }
+ ]},
+ { key: 'notes',        question: '추가 요청사항이 있나요?',    sub: '없으면 건너뛰어도 돼요', type: 'textarea', placeholder: '예: 목줄 빼지 말아주세요, 간식 챙겨드릴게요', required: false },
+ { key: 'profilePhoto', question: '프로필 사진을 등록해주세요', sub: '매칭 시 꼭 필요해요! 도우미 얼굴을 꼭 확인해주세요 🔒', type: 'photo', required: false }
+];
+
+function openMatchRegisterFlow(role) {
+ _matchRegRole = role;
+ _matchRegStep = 0;
+ _matchRegData = {};
+
+ const _flowUser = AuthService.getCurrentUser();
+
+// 앱에서 직접 등록한 사진만 photo 스텝 스킵 대상으로 본다.
+// 구글/소셜 기본 이미지는 요청자 얼굴 확인용 등록 사진으로 간주하지 않는다.
+ const _profilePhoto = _flowUser?.profileImage || '';
+ const _matchingPhoto = MatchingService.getMyProfile(_flowUser?.id)?.profilePhoto || '';
+ const _existingPhoto = _isUserRegisteredProfilePhoto(_profilePhoto)
+   ? _profilePhoto
+   : (_isUserRegisteredProfilePhoto(_matchingPhoto) ? _matchingPhoto : '');
+ if (_existingPhoto) {
+   _matchRegData.profilePhoto = _existingPhoto;
+   _matchRegData._photoFromProfile = true; // 프로필에서 가져온 사진임을 표시
+ }
+
+ // 요청자이고 이미 반려견이 등록돼 있으면 dog-select 플로우 사용
+ if (role === 'requester') {
+   const dogs = _flowUser?.dogs || [];
+   if (dogs.length > 0) {
+     _matchRegData._hasDogProfile = true;
+     _matchRegData._registeredDogs = dogs;
+   }
+ }
+
+ const app = document.getElementById('app');
+ app.innerHTML += `
+ <div id="match-reg-modal" style="position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);">
+ <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;">
+ <div style="background:#fff; border-radius:20px; width:100%; max-width:420px; min-height:380px; padding:40px 32px; position:relative; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+ <button onclick="closeMatchRegisterFlow()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; line-height:1; color:#999; cursor:pointer; padding:4px 8px;">&times;</button>
+ <div id="match-reg-progress" style="display:flex; gap:4px; margin-bottom:32px;"></div>
+ <div id="match-reg-content" style="flex:1; display:flex; flex-direction:column;"></div>
+ </div>
+ </div>
+ </div>
+ `;
+ renderMatchRegStep();
+}
+
+function closeMatchRegisterFlow() {
+ const modal = document.getElementById('match-reg-modal');
+ if (modal) modal.remove();
+}
+
+function _getMatchSteps() {
+ let steps;
+ if (_matchRegRole === 'walker') {
+   steps = _matchWalkerSteps;
+ } else {
+   steps = _matchRegData._hasDogProfile ? _matchRequesterStepsWithDogs : _matchRequesterSteps;
+ }
+ // 프로필에 사진이 이미 있으면 photo 스텝 건너뜀
+ if (_matchRegData._photoFromProfile) {
+   steps = steps.filter(s => s.type !== 'photo');
+ }
+ return steps;
+}
+
+function renderMatchRegStep() {
+ const steps = _getMatchSteps();
+ const step = steps[_matchRegStep];
+ const total = steps.length;
+ const content = document.getElementById('match-reg-content');
+ const progress = document.getElementById('match-reg-progress');
+
+ progress.innerHTML = Array.from({length: total}, (_, i) =>
+ `<div style="flex:1; height:3px; border-radius:2px; background:${i <= _matchRegStep ? '#1a1a1a' : '#e5e3e0'}; transition:background 0.3s;"></div>`
+ ).join('');
+
+ let inputHtml = '';
+ if (step.type === 'text') {
+ inputHtml = `<input type="text" id="match-reg-input" class="form-input" placeholder="${step.placeholder || ''}" value="${_matchRegData[step.key] || ''}" style="font-size:1.1rem; padding:14px 16px; border-radius:12px; margin-top:24px;" autofocus onkeydown="if(event.key==='Enter')nextMatchRegStep()">`;
+ } else if (step.type === 'textarea') {
+ inputHtml = `<textarea id="match-reg-input" class="form-input" placeholder="${step.placeholder || ''}" rows="3" style="font-size:1rem; padding:14px 16px; border-radius:12px; margin-top:24px; resize:none;">${_matchRegData[step.key] || ''}</textarea>`;
+ } else if (step.type === 'cards') {
+ inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;">
+ ${step.options.map(opt => `
+ <button onclick="selectMatchRegCard('${step.key}','${opt.value}')" style="flex:1; min-width:90px; padding:16px 12px; border:1.5px solid ${_matchRegData[step.key] === opt.value ? '#1a1a1a' : '#e5e3e0'}; border-radius:14px; background:${_matchRegData[step.key] === opt.value ? '#f5f3f0' : '#fff'}; text-align:center; cursor:pointer; transition:all 0.15s;">
+ <div style="font-size:0.92rem; font-weight:700; color:#1a1a1a;">${opt.label}</div>
+ <div style="font-size:0.7rem; color:#999; margin-top:3px;">${opt.desc}</div>
+ </button>
+ `).join('')}
+ </div>`;
+ } else if (step.type === 'multicheck') {
+   const selected = _matchRegData[step.key] || [];
+   inputHtml = `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:24px;">
+   ${step.options.map(opt => `
+   <button onclick="toggleMatchRegMulti('${step.key}','${opt}')" style="padding:10px 16px; border:1.5px solid ${selected.includes(opt) ? '#1a1a1a' : '#e5e3e0'}; border-radius:999px; background:${selected.includes(opt) ? '#1a1a1a' : '#fff'}; color:${selected.includes(opt) ? '#fff' : '#333'}; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.15s;">
+   ${opt}
+   </button>
+   `).join('')}
+   </div>
+   <p style="font-size:0.75rem; color:#aaa; margin-top:10px;">해당 없으면 건너뛰기를 눌러주세요</p>`;
+ } else if (step.type === 'dog-select') {
+   const dogs = _matchRegData._registeredDogs || [];
+   const selected = _matchRegData.selectedDogIds || [];
+   const sizeMap = { small:'소형', medium:'중형', large:'대형' };
+   inputHtml = `
+   <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+     ${dogs.map(d => {
+       const isSel = selected.includes(d.id);
+       return `<button onclick="toggleDogSelect('${d.id}')" style="padding:14px 16px;border:2px solid ${isSel?'#1a1a1a':'#e5e3e0'};border-radius:14px;background:${isSel?'#f5f3f0':'#fff'};text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.15s;">
+         <div style="width:44px;height:44px;border-radius:50%;background:#f0f0ee;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+           ${d.photo ? `<img src="${d.photo}" style="width:100%;height:100%;object-fit:cover;">` : '<span style="font-size:1.4rem;">🐶</span>'}
+         </div>
+         <div style="flex:1;">
+           <div style="font-weight:700;font-size:0.95rem;">${d.name}</div>
+           <div style="font-size:0.78rem;color:#999;margin-top:2px;">${d.breed||''}${d.size?` · ${sizeMap[d.size]||d.size}`:''}${d.age?` · ${d.age}살`:''}</div>
+         </div>
+         <div style="width:24px;height:24px;border-radius:50%;border:2px solid ${isSel?'#1a1a1a':'#ddd'};background:${isSel?'#1a1a1a':'#fff'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+           ${isSel?'<svg width="12" height="12" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>':''}
+         </div>
+       </button>`;
+     }).join('')}
+     ${selected.length > 0 ? `<div style="font-size:0.8rem;color:#00AA76;font-weight:600;padding:8px 12px;background:#f0fdf4;border-radius:10px;text-align:center;">✓ ${selected.length}마리 선택됨${selected.length>1?' (다견 산책)':''}</div>` : ''}
+   </div>`;
+ } else if (step.type === 'photo') {
+   const existing = _matchRegData.profilePhoto || '';
+   const isWalker = _matchRegRole === 'walker';
+   inputHtml = `
+   <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:20px;">
+     <div id="photo-preview-wrap" onclick="document.getElementById('match-photo-input').click()"
+       style="width:130px;height:130px;border-radius:50%;overflow:hidden;border:2.5px dashed ${existing?'#1a1a1a':'#ccc'};cursor:pointer;background:#f8f8f6;display:flex;align-items:center;justify-content:center;transition:border-color 0.2s;">
+       ${existing
+         ? `<img src="${existing}" style="width:100%;height:100%;object-fit:cover;">`
+         : `<div style="text-align:center;"><div style="font-size:2.2rem;">📷</div><div style="font-size:0.72rem;color:#aaa;margin-top:6px;">탭하여 선택</div></div>`}
+     </div>
+     <input type="file" id="match-photo-input" accept="image/*" style="display:none;" onchange="_onMatchPhotoSelect(this)">
+     <button onclick="document.getElementById('match-photo-input').click()"
+       style="padding:10px 26px;border:1.5px solid #1a1a1a;border-radius:999px;background:#fff;font-size:0.88rem;font-weight:700;cursor:pointer;">
+       ${existing ? '📷 사진 변경' : '📷 사진 선택'}
+     </button>
+     <div style="padding:14px 16px;background:#FFFBEB;border-radius:14px;font-size:0.82rem;line-height:1.7;color:#92400E;text-align:left;width:100%;box-sizing:border-box;">
+       <strong>🔒 안전 산책을 위해</strong><br>
+       ${isWalker
+         ? '요청자가 도우미의 얼굴을 확인해 신뢰하고 맡길 수 있어요.<br>사진이 있을수록 매칭 확률이 높아집니다.'
+         : '도우미가 요청자의 얼굴을 확인해 안심하고 반려견을 케어할 수 있어요.<br>사진이 있을수록 매칭 확률이 높아집니다.'}
+     </div>
+   </div>`;
+ } else if (step.type === 'location') {
+   const sido     = _matchRegData.locationSido     || '';
+   const sigungu  = _matchRegData.locationSigungu  || '';
+   const dong     = _matchRegData.locationDong     || '';
+   const sidoList = Object.keys(KOREA_REGIONS);
+   const sigunguList = sido ? Object.keys(KOREA_REGIONS[sido] || {}) : [];
+   const dongList    = (sido && sigungu) ? (KOREA_REGIONS[sido]?.[sigungu] || []) : [];
+   const sel = 'padding:13px 14px;border:1.5px solid #e5e3e0;border-radius:12px;font-size:0.95rem;width:100%;background:#fff;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%23999\' stroke-width=\'1.5\' fill=\'none\' stroke-linecap=\'round\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;';
+   inputHtml = `
+   <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+     <div style="position:relative;">
+       <select id="loc-sido" onchange="_onSidoChange()" style="${sel}${sido ? 'border-color:#1a1a1a;' : ''}">
+         <option value="">시 / 도 선택</option>
+         ${sidoList.map(s => `<option value="${s}"${sido===s?' selected':''}>${s}</option>`).join('')}
+       </select>
+     </div>
+     <div style="position:relative;">
+       <select id="loc-sigungu" onchange="_onSigunguChange()" style="${sel}${sigungu ? 'border-color:#1a1a1a;' : ''}color:${sigunguList.length?'#1a1a1a':'#aaa'};">
+         <option value="">구 / 군 / 시 선택</option>
+         ${sigunguList.map(g => `<option value="${g}"${sigungu===g?' selected':''}>${g}</option>`).join('')}
+       </select>
+     </div>
+     <div style="position:relative;">
+       <select id="loc-dong" style="${sel}${dong ? 'border-color:#1a1a1a;' : ''}color:${dongList.length?'#1a1a1a':'#aaa'};">
+         <option value="">동 / 읍 / 면 선택 (선택사항)</option>
+         ${dongList.map(d => `<option value="${d}"${dong===d?' selected':''}>${d}</option>`).join('')}
+       </select>
+     </div>
+     ${sido && sigungu ? `<div style="font-size:0.78rem;color:#00AA76;font-weight:600;padding:8px 12px;background:#f0fdf4;border-radius:8px;">📍 ${[sido,sigungu,dong].filter(Boolean).join(' ')}</div>` : ''}
+   </div>`;
+ }
+
+ const isLast = _matchRegStep === total - 1;
+ const canSkip = !step.required;
+
+ const isWalkerRole = _matchRegRole === 'walker';
+ const aiMsg = isWalkerRole
+   ? '입력할수록 요청자에게 상위 추천돼요'
+   : '입력할수록 딱 맞는 도우미를 찾아드려요';
+
+ content.innerHTML = `
+ <div style="flex:1;">
+ <h2 style="font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; line-height:1.3;">${step.question}</h2>
+ ${step.sub ? `<p style="font-size:0.88rem; color:#999; margin-top:6px;">${step.sub}</p>` : ''}
+ ${step.aiScore ? `<div style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:5px 11px;background:linear-gradient(135deg,#EDE9FE,#F5F3FF);border:1px solid #C4B5FD;border-radius:999px;">
+   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+   <span style="font-size:0.71rem;font-weight:800;color:#6D28D9;letter-spacing:0.2px;">AI 매칭 점수 반영</span>
+   <span style="font-size:0.68rem;color:#8B5CF6;font-weight:500;">· ${aiMsg}</span>
+ </div>` : ''}
+ ${inputHtml}
+ </div>
+ <div style="display:flex; gap:8px; margin-top:24px;">
+ ${_matchRegStep > 0 ? `<button onclick="prevMatchRegStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; cursor:pointer;">이전</button>` : ''}
+ ${canSkip ? `<button onclick="skipMatchRegStep()" style="flex:1; padding:14px; border:1.5px solid #e5e3e0; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; color:#999; cursor:pointer;">건너뛰기</button>` : ''}
+ <button onclick="${isLast ? 'finishMatchRegister()' : 'nextMatchRegStep()'}" style="flex:2; padding:14px; border:none; border-radius:12px; background:#1a1a1a; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">${isLast ? '등록 완료' : '다음'}</button>
+ </div>
+ `;
+ setTimeout(() => document.getElementById('match-reg-input')?.focus(), 100);
+}
+
+/** 프로필 사진을 200×200 JPEG로 압축 후 base64 반환 */
+function _compressProfilePhoto(file, callback) {
+  if (!file || !file.type.startsWith('image/')) { callback(null); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const SIZE = 200;
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      const side = Math.min(img.width, img.height);
+      const ox = (img.width - side) / 2, oy = (img.height - side) / 2;
+      ctx.drawImage(img, ox, oy, side, side, 0, 0, SIZE, SIZE);
+      callback(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function _onMatchPhotoSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _compressProfilePhoto(file, base64 => {
+    if (!base64) return;
+    _matchRegData.profilePhoto = base64;
+    const wrap = document.getElementById('photo-preview-wrap');
+    if (wrap) wrap.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;">`;
+    renderMatchRegStep(); // 버튼 텍스트와 미리보기 갱신
+  });
+}
+
+function toggleDogSelect(dogId) {
+  if (!_matchRegData.selectedDogIds) _matchRegData.selectedDogIds = [];
+  const idx = _matchRegData.selectedDogIds.indexOf(dogId);
+  if (idx === -1) _matchRegData.selectedDogIds.push(dogId);
+  else _matchRegData.selectedDogIds.splice(idx, 1);
+  renderMatchRegStep();
+}
+
+function _onSidoChange() {
+  const sido = document.getElementById('loc-sido')?.value || '';
+  _matchRegData.locationSido = sido;
+  _matchRegData.locationSigungu = '';
+  _matchRegData.locationDong = '';
+  renderMatchRegStep();
+}
+
+function _onSigunguChange() {
+  const sigungu = document.getElementById('loc-sigungu')?.value || '';
+  _matchRegData.locationSigungu = sigungu;
+  _matchRegData.locationDong = '';
+  renderMatchRegStep();
+}
+
+function selectMatchRegCard(key, value) {
+ _matchRegData[key] = value;
+ renderMatchRegStep();
+}
+
+function toggleMatchRegMulti(key, value) {
+ if (!_matchRegData[key]) _matchRegData[key] = [];
+ const arr = _matchRegData[key];
+ const idx = arr.indexOf(value);
+ if (idx === -1) arr.push(value); else arr.splice(idx, 1);
+ renderMatchRegStep();
+}
+
+function nextMatchRegStep() {
+ const steps = _getMatchSteps();
+ const step = steps[_matchRegStep];
+
+ if (step.type === 'dog-select') {
+   const selectedIds = _matchRegData.selectedDogIds || [];
+   if (selectedIds.length === 0) { showToast('반려견을 최소 1마리 선택해주세요.', 'error'); return; }
+   const dogs = _matchRegData._registeredDogs || [];
+   const selected = dogs.filter(d => selectedIds.includes(d.id));
+   const primary = selected[0] || {};
+   _matchRegData.dogName  = selected.map(d => d.name).join(', ');
+   _matchRegData.dogSize  = primary.size  || 'small';
+   _matchRegData.dogBreed = primary.breed || '';
+   _matchRegData.dogIds   = selectedIds;
+   _matchRegData.dogs     = selected;
+ } else if (step.type === 'location') {
+   const sido    = document.getElementById('loc-sido')?.value    || _matchRegData.locationSido    || '';
+   const sigungu = document.getElementById('loc-sigungu')?.value || _matchRegData.locationSigungu || '';
+   const dong    = document.getElementById('loc-dong')?.value    || _matchRegData.locationDong    || '';
+   if (!sido || !sigungu) {
+     showToast('시/도와 구/군/시를 선택해주세요.', 'error');
+     return;
+   }
+   _matchRegData.locationSido    = sido;
+   _matchRegData.locationSigungu = sigungu;
+   _matchRegData.locationDong    = dong;
+   _matchRegData.location = [sido, sigungu, dong].filter(Boolean).join(' ');
+ } else {
+   const input = document.getElementById('match-reg-input');
+   if (input) _matchRegData[step.key] = input.value.trim();
+   if (step.required && !_matchRegData[step.key]) { if(input) input.style.borderColor='#e53e3e'; return; }
+ }
+
+ if (_matchRegStep < steps.length - 1) { _matchRegStep++; renderMatchRegStep(); }
+}
+
+function prevMatchRegStep() {
+ if (_matchRegStep > 0) { _matchRegStep--; renderMatchRegStep(); }
+}
+
+function skipMatchRegStep() {
+ const steps = _getMatchSteps();
+ _matchRegData[steps[_matchRegStep].key] = '';
+ if (_matchRegStep < steps.length - 1) { _matchRegStep++; renderMatchRegStep(); }
+ else finishMatchRegister();
+}
+
+function finishMatchRegister() {
+ const steps = _getMatchSteps();
+ const lastStep = steps[_matchRegStep];
+ // photo/location/dog-select 타입은 match-reg-input 없음
+ if (!['photo', 'location', 'dog-select'].includes(lastStep.type)) {
+   const input = document.getElementById('match-reg-input');
+   if (input) _matchRegData[lastStep.key] = input.value.trim();
+ }
+
+ const user = AuthService.getCurrentUser();
+ if (!user) return;
+
+ const photo = _matchRegData.profilePhoto || user.profileImage || '';
+ if (photo && user.profileImage !== photo) {
+   AuthService.updateProfile(user.id, { profileImage: photo });
+   user.profileImage = photo;
+ }
+
+ if (_matchRegRole === 'walker') {
+ handleRegisterMatchProfile('walker', {
+ location: _matchRegData.location,
+ locationSido: _matchRegData.locationSido || '',
+ locationSigungu: _matchRegData.locationSigungu || '',
+ locationDong: _matchRegData.locationDong || '',
+ preferredTime: _matchRegData.preferredTime,
+ careerYears: _matchRegData.careerYears || '',
+ ownPetExp: _matchRegData.ownPetExp || '',
+ largeDogExp: _matchRegData.largeDogExp || '',
+ aggressionHandle: _matchRegData.aggressionHandle || '',
+ breedExp: _matchRegData.breedExp || [],
+ problemBehavior: _matchRegData.problemBehavior || [],
+ message: _matchRegData.message || '',
+ canWalkLarge: _matchRegData.largeDogExp !== 'none',
+ canWalkMultiple: true,
+ profilePhoto: photo
+ });
+ } else {
+ handleRegisterMatchProfile('requester', {
+ dogName: _matchRegData.dogName,
+ dogSize: _matchRegData.dogSize,
+ dogAggression: _matchRegData.dogAggression || 'none',
+ dogPersonality: _matchRegData.dogPersonality || 'normal',
+ walkDifficulty: _matchRegData.walkDifficulty || 'easy',
+ location: _matchRegData.location,
+ locationSido: _matchRegData.locationSido || '',
+ locationSigungu: _matchRegData.locationSigungu || '',
+ locationDong: _matchRegData.locationDong || '',
+ preferredTime: _matchRegData.preferredTime,
+ notes: _matchRegData.notes || '',
+ profilePhoto: photo
+ });
+ }
+ closeMatchRegisterFlow();
+}
+
+/** Task 7.3: Pre-populate walker form with existing profile data */
+function prePopulateWalkerForm(userId) {
+ fetch('/api/walkers')
+ .then(res => res.json())
+ .then(walkers => {
+ const existing = walkers.find(w => w.userId === userId);
+ if (!existing) return;
+
+ // Text fields
+ const locEl = document.getElementById('match-location');
+ if (locEl && existing.location) locEl.value = existing.location;
+
+ const timeEl = document.getElementById('match-time');
+ if (timeEl && existing.preferredTime) timeEl.value = existing.preferredTime;
+
+ const expEl = document.getElementById('match-experience');
+ if (expEl && existing.experience) expEl.value = existing.experience;
+
+ const msgEl = document.getElementById('match-message');
+ if (msgEl && existing.message) msgEl.value = existing.message;
+
+ // Multi-select checkboxes: acceptedSizes
+ if (existing.acceptedSizes && Array.isArray(existing.acceptedSizes)) {
+ existing.acceptedSizes.forEach(size => {
+   const cb = document.querySelector(`.match-size-cb[value="${size}"]`);
+   if (cb) cb.checked = true;
+ });
+ }
+
+ // Radio: careerYears
+ if (existing.careerYears) {
+ const radio = document.querySelector(`input[name="match-career"][value="${existing.careerYears}"]`);
+ if (radio) radio.checked = true;
+ }
+
+ // Radio: largeDogExp
+ if (existing.largeDogExp) {
+ const radio = document.querySelector(`input[name="match-large-exp"][value="${existing.largeDogExp}"]`);
+ if (radio) radio.checked = true;
+ }
+
+ // Radio: aggressionHandle
+ if (existing.aggressionHandle) {
+ const radio = document.querySelector(`input[name="match-aggr"][value="${existing.aggressionHandle}"]`);
+ if (radio) radio.checked = true;
+ }
+
+ // Radio: ownPetExp
+ if (existing.ownPetExp) {
+ const radio = document.querySelector(`input[name="match-pet-exp"][value="${existing.ownPetExp}"]`);
+ if (radio) radio.checked = true;
+ }
+ })
+ .catch(() => { /* silently ignore fetch errors */ });
+}
+
+function renderMatchingRoleSelectStatic(role) { renderMatchingRoleSelect(role); }
+
+/** 매칭 프로필 등록 핸들러 */
+function handleRegisterMatchProfile(role, flowData) {
+ const user = AuthService.getCurrentUser();
+ if (!user) { Router.navigate('/login'); return; }
+
+ const errEl = document.getElementById('match-register-error');
+ let location, preferredTime, message, extra;
+
+ if (flowData) {
+ // 토스 스타일 플로우에서 전달받은 데이터
+ location = flowData.location;
+ preferredTime = flowData.preferredTime;
+ message = flowData.message || '';
+ if (role === 'walker') {
+ extra = { experience: flowData.experience || '', canWalkLarge: flowData.canWalkLarge || false, canWalkMultiple: flowData.canWalkMultiple || false, profilePhoto: flowData.profilePhoto || user.profileImage || '' };
+ } else {
+ extra = { dogName: flowData.dogName, dogSize: flowData.dogSize, notes: flowData.notes || '', profilePhoto: flowData.profilePhoto || user.profileImage || '' };
+ }
+ } else {
+ // DOM에서 직접 읽기
+ message = document.getElementById('match-message')?.value || '';
+
+ if (role === 'walker') {
+ // 도우미는 활동지역/시간/자기소개 필수
+ location = document.getElementById('match-location')?.value;
+ preferredTime = document.getElementById('match-time')?.value;
+
+ if (!location?.trim()) {
+ if (errEl) errEl.innerHTML = '<div class="alert alert-error">활동 지역을 입력해주세요.</div>'; return;
+ }
+ if (!preferredTime) {
+ if (errEl) errEl.innerHTML = '<div class="alert alert-error">시간대를 선택해주세요.</div>'; return;
+ }
+ if (!message.trim()) {
+ if (errEl) errEl.innerHTML = '<div class="alert alert-error">자기소개를 입력해주세요.</div>'; return;
+ }
+ extra = {
+ experience: document.getElementById('match-experience')?.value || '',
+ acceptedSizes: Array.from(document.querySelectorAll('.match-size-cb:checked')).map(cb => cb.value),
+ careerYears: document.querySelector('input[name="match-career"]:checked')?.value || '',
+ largeDogExp: document.querySelector('input[name="match-large-exp"]:checked')?.value || 'none',
+ aggressionHandle: document.querySelector('input[name="match-aggr"]:checked')?.value || 'no',
+ ownPetExp: document.querySelector('input[name="match-pet-exp"]:checked')?.value || 'none',
+ canWalkLarge: document.querySelectorAll('.match-size-cb[value="large"]:checked').length > 0,
+ canWalkMultiple: false,
+ };
+ if (!extra.acceptedSizes.length) {
+ if (errEl) errEl.innerHTML = '<div class="alert alert-error">선호 크기를 하나 이상 선택해주세요.</div>'; return;
+ }
+ if (!extra.careerYears) {
+ if (errEl) errEl.innerHTML = '<div class="alert alert-error">산책 경력을 선택해주세요.</div>'; return;
+ }
+ } else {
+ // 요청자는 GPS + "지금" 기반 즉시 매칭 → 위치/시간 필드 없음
+ // 다견 동시 산책 지원: 체크박스(다수) 또는 숨김 input(단일)에서 선택된 dogId 수집
+ const checked = Array.from(document.querySelectorAll('.match-dog-checkbox:checked'))
+   .map(el => el.value)
+   .filter(Boolean);
+ const hidden = document.getElementById('match-dog-select');
+ let dogIds = checked;
+ if (dogIds.length === 0 && hidden && hidden.value) dogIds = [hidden.value];
+
+ if (dogIds.length === 0) {
+ if (errEl) errEl.innerHTML = '<div class="alert alert-error">함께할 반려견을 최소 1마리 선택해주세요.</div>'; return;
+ }
+
+ const selectedDogs = (user.dogs || []).filter(d => dogIds.includes(d.id));
+ const primary = selectedDogs[0] || {};
+
+ // 요청자는 현재 위치/"지금" 기준으로 자동 설정 (GPS 매칭은 별도 흐름에서 좌표 덮어씀)
+ location = '현재 위치';
+ preferredTime = '즉시 매칭';
+ extra = {
+ dogId: primary.id || null,
+ dogName: primary.name || '',
+ dogSize: primary.size || '',
+ dogBreed: primary.breed || '',
+ // 다견 동시 산책 지원 ? 전체 목록
+ dogIds,
+ dogs: selectedDogs.map(d => ({ id: d.id, name: d.name, breed: d.breed, size: d.size })),
+ notes: document.getElementById('match-notes')?.value || ''
+ };
+ }
+ }
+
+ const unifiedProfilePhoto = extra.profilePhoto || user.profileImage || '';
+ if (unifiedProfilePhoto && user.profileImage !== unifiedProfilePhoto) {
+   AuthService.updateProfile(user.id, { profileImage: unifiedProfilePhoto });
+   user.profileImage = unifiedProfilePhoto;
+ }
+
+ MatchingService.registerProfile(user.id, { role, location: location.trim(), preferredTime, message: message.trim(), isAvailable: true, profilePhoto: unifiedProfilePhoto, ...extra });
+
+ // 도우미로 등록 시 walkers.json에도 추가 (브로드캐스트 대상에 포함되도록)
+ if (role === 'walker') {
+ fetch('/api/walkers', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ userId: user.id,
+ name: user.name || user.nickname,
+ nickname: user.nickname || user.name,
+ location: location.trim(),
+ locationSido: flowData?.locationSido || '',
+ locationSigungu: flowData?.locationSigungu || '',
+ locationDong: flowData?.locationDong || '',
+ preferredTime: preferredTime,
+ experience: extra.experience || '',
+ message: message.trim(),
+ price: 0,
+ acceptedSizes: extra.acceptedSizes || ['small','medium','large'],
+ careerYears: extra.careerYears || 'under6m',
+ largeDogExp: extra.largeDogExp || 'none',
+ aggressionHandle: extra.aggressionHandle || 'no',
+ ownPetExp: extra.ownPetExp || 'none',
+ profilePhoto: unifiedProfilePhoto,
+ })
+ }).then(() => MatchingService.refreshFromServer()).catch(() => {});
+
+ // 등록 직후 GPS 좌표를 받아서 서버에 위치 업데이트 (지도 표시용)
+ if (navigator.geolocation) {
+   navigator.geolocation.getCurrentPosition(pos => {
+     const lat = pos.coords.latitude;
+     const lng = pos.coords.longitude;
+     // 로컬 프로필에 좌표 저장
+     MatchingService.setAvailability(user.id, true, lat, lng);
+     // 서버 walkers.json에도 좌표 업데이트
+     fetch(`/api/walkers/${user.id}/location`, {
+       method: 'PATCH',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ lat, lng })
+     }).catch(() => {});
+     // 서버 토글 ON (좌표 포함)
+     fetch('/api/walkers/toggle', {
+       method: 'PATCH',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ userId: user.id, lat, lng })
+     }).then(() => MatchingService.refreshFromServer())
+       .then(() => renderMatchingPage())
+       .catch(() => {});
+   }, () => {
+     // GPS 실패해도 등록은 완료 — 토글 ON만 시도
+     fetch('/api/walkers/toggle', {
+       method: 'PATCH',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ userId: user.id })
+     }).catch(() => {});
+   }, { timeout: 6000, enableHighAccuracy: false });
+ }
+ }
+
+ refreshDrawer();
+ renderMatchingPage();
+}
+
+// 도우미 폴링 인터벌 관리
+let _walkerPollInterval = null;
+let _walkerLastRequestIds = new Set();
+
+function startWalkerPolling(userId) {
+ stopWalkerPolling();
+ _walkerPollInterval = setInterval(async () => {
+ try {
+ const requests = await MatchingService.getReceivedRequestsRemote(userId);
+ const pending = requests.filter(r => r.status === 'pending');
+ const newOnes = pending.filter(r => !_walkerLastRequestIds.has(r.id));
+ if (newOnes.length > 0) {
+ newOnes.forEach(r => _walkerLastRequestIds.add(r.id));
+ showWalkerNotification(newOnes.length);
+ const user = AuthService.getCurrentUser();
+ const profile = MatchingService.getMyProfile(userId);
+ if (user && profile) renderWalkerDashboard(user, profile);
+ }
+ } catch (e) { /* 네트워크 오류 무시 */ }
+ }, 5000);
+}
+
+function stopWalkerPolling() {
+ if (_walkerPollInterval) { clearInterval(_walkerPollInterval); _walkerPollInterval = null; }
+}
+
+function showWalkerNotification(count) {
+ let notif = document.getElementById('walker-notif-popup');
+ if (!notif) {
+ notif = document.createElement('div');
+ notif.id = 'walker-notif-popup';
+ notif.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;background:#1A1A1A;color:#fff;padding:16px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25);font-size:0.9rem;font-weight:600;display:flex;align-items:center;gap:10px;animation:slideInRight 0.3s ease;max-width:280px;';
+ document.body.appendChild(notif);
+ }
+ notif.style.cursor = 'pointer';
+ notif.onclick = () => {
+ notif.style.display = 'none';
+ const section = document.getElementById('walker-broadcast-section');
+ if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+ };
+ notif.innerHTML = `
+ <span style="font-size:1.4rem;">${icon('bell',14)}</span>
+ <div style="flex:1;">
+ <div style="font-weight:700;">산책 요청이 들어왔어요!</div>
+ <div style="font-size:0.78rem;opacity:0.8;margin-top:2px;">새 요청 ${count}건 · 탭해서 확인하세요 →</div>
+ </div>
+ <span style="font-size:1.1rem;opacity:0.6;">?</span>`;
+ notif.style.display = 'flex';
+ clearTimeout(notif._hideTimer);
+ notif._hideTimer = setTimeout(() => { if (notif) notif.style.display = 'none'; }, 8000);
+}
+
+/** 산책 도우미 대시보드 */
+async function renderWalkerDashboard(user, myProfile) {
+ const receivedRequests = await MatchingService.getReceivedRequestsRemote(user.id);
+ const isAvail = myProfile.isAvailable;
+
+ // 이미 ON 상태로 앱을 열었을 때 GPS 즉시 재시작 (어제 위치 스테일 방지)
+ if (isAvail) RealtimeService.startGpsUpdates(user.id);
+
+ const statusBanner = `
+ <div class="match-status-banner ${isAvail ? 'match-status-banner--on' : 'match-status-banner--off'}">
+ <div class="match-status-banner__text">
+ <div class="match-status-banner__main">${isAvail ? '현재 산책 요청을 받을 수 있어요.' : '현재 산책 요청을 받지 않고 있어요.'}</div>
+ <div class="match-status-banner__sub">${isAvail ? '주변 산책 요청자에게 노출되고 있어요.' : '산책 요청자에게 노출되지 않습니다.'}</div>
+ </div>
+ <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+ <label class="dw-toggle">
+ <input type="checkbox" id="match-avail-toggle" ${isAvail ? 'checked' : ''} onchange="handleToggleMatcherAvailability()">
+ <span class="dw-toggle__track"></span>
+ </label>
+ <span class="dw-toggle__status">${isAvail ? 'ON' : '? OFF'}</span>
+ </div>
+ </div>
+ `;
+
+ let _serverWalkerPhoto = '';
+ try {
+   const walkers = await (await fetch('/api/walkers')).json();
+   const selfWalker = Array.isArray(walkers) ? walkers.find(w => w.userId === user.id || w.id === user.id) : null;
+   _serverWalkerPhoto = selfWalker?.profilePhoto || selfWalker?.profileImage || '';
+ } catch(e) {}
+
+ const _userPhoto = user.profileImage || myProfile.profilePhoto || _serverWalkerPhoto || '';
+ const profileCard = `
+ <div class="match-profile-card">
+ <div class="match-profile-card__left">
+ <div class="match-profile-card__avatar" style="overflow:hidden;padding:0;">
+   ${_userPhoto
+     ? `<img src="${_userPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
+     : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-weight:800;">${user.name.charAt(0)}</span>`}
+ </div>
+ <div>
+ <div class="match-profile-card__name">${user.name} <span class="badge badge-primary">산책 도우미</span></div>
+ <div class="match-profile-card__meta">${icon('map-pin',13)} ${myProfile.location} · ${icon('clock',13)} ${myProfile.preferredTime}${myProfile.experience ? ' · ' + myProfile.experience : ''}</div>
+ ${myProfile.message ? `<div class="match-profile-card__bio">"${myProfile.message}"</div>` : ''}
+ <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+ ${myProfile.canWalkLarge ? '<span class="dw-size-tag">대형견 가능</span>' : ''}
+ ${myProfile.canWalkMultiple ? '<span class="dw-size-tag">다중 산책 가능</span>' : ''}
+ </div>
+ </div>
+ </div>
+ <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+ <button class="btn btn-secondary btn-sm" onclick="handleSwitchRole()">${icon('refresh-cw',13)} 역할 변경</button>
+ <button class="btn btn-ghost btn-sm" onclick="handleRemoveMatchProfile()" style="font-size:0.75rem;color:var(--color-text-muted);">등록 해제</button>
+ </div>
+ </div>
+ `;
+
+ const sizeLabel = { small: '소형견', medium: '중형견', large: '대형견' };
+ const pendingCount = receivedRequests.filter(r => r.status === 'pending').length;
+
+ const receivedHtml = receivedRequests.length > 0
+ ? receivedRequests.map(r => {
+ const fromName = MatchingService.getUserName(r.fromUserId);
+ const rd = r.requestData || {};
+ const isPending = r.status === 'pending';
+ const dogSizeText = rd.dogSize ? sizeLabel[rd.dogSize] || rd.dogSize : '';
+
+ return `
+ <div class="match-request-card ${isPending ? 'match-request-card--pending' : r.status === 'accepted' ? 'match-request-card--accepted' : ''}">
+ ${isPending ? `<div class="match-request-card__new-badge">${icon('bell',14)} 새 요청</div>` : ''}
+ <div class="match-request-card__header">
+ <div class="match-request-card__avatar">${fromName.charAt(0)}</div>
+ <div>
+ <div class="match-request-card__from">${fromName}</div>
+ <div style="font-size:0.78rem;color:var(--color-text-muted);">${formatRelativeTime(r.createdAt)}</div>
+ </div>
+ ${r.status === 'accepted' ? '<span class="badge badge-success" style="margin-left:auto;">? 수락됨</span>' : ''}
+ ${r.status !== 'pending' && r.status !== 'accepted' ? '<span class="badge" style="margin-left:auto;">처리됨</span>' : ''}
+ </div>
+
+ <div class="match-request-card__body">
+ ${(rd.dogs && rd.dogs.length > 1) ? `
+ <div class="match-request-card__dog" style="align-items:flex-start;">
+ <span style="font-size:1.3rem;">🟢</span>
+ <div style="flex:1;">
+ <div style="font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+ 반려견 ${rd.dogs.length}마리 동시 산책
+ <span style="font-size:0.68rem;background:#fef3c7;color:#b45309;padding:2px 7px;border-radius:999px;font-weight:700;">다견</span>
+ </div>
+ <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+ ${rd.dogs.map(d => `<span style="font-size:0.72rem;background:#f0f0ee;padding:3px 9px;border-radius:999px;">${d.name}${d.size ? ` · ${sizeLabel[d.size] || d.size}` : ''}</span>`).join('')}
+ </div>
+ </div>
+ </div>` : (rd.dogName || dogSizeText) ? `
+ <div class="match-request-card__dog">
+ <span style="font-size:1.3rem;">⭕</span>
+ <div>
+ <div style="font-weight:700;">${rd.dogName || '반려견'}${dogSizeText ? ` <span class="dw-size-tag">${dogSizeText}</span>` : ''}</div>
+ ${rd.dogBreed ? `<div style="font-size:0.8rem;color:var(--color-text-muted);">${rd.dogBreed}</div>` : ''}
+ </div>
+ </div>` : ''}
+ <div class="match-request-card__info-grid">
+ ${rd.location ? `<div class="match-request-card__info-item">${icon('map-pin',13)} ${rd.location}${rd.lat && rd.lng ? ` <span style="font-size:0.68rem;color:#00AA76;font-weight:700;margin-left:4px;">· GPS</span>` : ''}</div>` : ''}
+ ${rd.desiredTime ? `<div class="match-request-card__info-item">${rd.desiredTime === '지금 (즉시 매칭)' ? `<span style="color:#00AA76;font-weight:700;">? 지금 · 즉시 매칭</span>` : `${icon('clock',13)} ${rd.desiredTime}`}</div>` : ''}
+ </div>
+ ${rd.notes ? `<div class="match-request-card__notes">"${rd.notes}"</div>` : ''}
+ </div>
+
+ ${isPending ? `
+ <div class="match-request-card__actions">
+ <button class="btn btn-primary" onclick="handleAcceptBroadcastRequest('${r.id}')" style="flex:1;">수락하기</button>
+ <button class="btn btn-secondary" onclick="handleRejectMatchRequest('${r.id}')" style="flex:1;">거절하기</button>
+ </div>` : ''}
+ </div>`;
+ }).join('')
+ : `<div class="empty-state"><div class="empty-icon">📭</div><p>아직 받은 산책 요청이 없어요.<br>ON 상태를 유지하면 요청이 들어와요.</p></div>`;
+
+ renderPage(`
+ <div class="match-hero">
+ <div class="section-label">산책 도우미</div>
+ <h1 class="match-hero__title">산책 매칭 관리</h1>
+ <p class="match-hero__sub">ON 상태에서만 주변 산책 요청자에게 노출돼요</p>
+ </div>
+ <div id="matching-alert"></div>
+ ${statusBanner}
+ ${profileCard}
+
+ <!-- 도우미 AI 점수 카드 -->
+ ${renderWalkerScoreCard(myProfile)}
+
+ <!-- 산책 요청 목록 -->
+ <div class="match-section" id="walker-broadcast-section">
+ <h2 class="match-section__title">산책 요청</h2>
+ <div id="walker-new-requests-wrap"><div class="spinner" style="margin:20px auto;"></div></div>
+ </div>
+
+ <div class="match-section" id="direct-history-section" style="display:none;">
+ <h2 class="match-section__title">산책 기록</h2>
+ <div id="walker-history-wrap"><div class="spinner" style="margin:20px auto;"></div></div>
+ </div>
+ <div id="review-form-container"></div>
+ `);
+
+ // 직접 요청 목록 비동기 로드
+ renderWalkerRequestsList(user.id).then(({ html, requests }) => {
+ const el = document.getElementById('walker-new-requests-wrap');
+ if (el) {
+ el.innerHTML = html;
+ setTimeout(() => initWalkerNavMaps(requests), 100);
+ }
+ }).catch(e => {
+ const el = document.getElementById('walker-new-requests-wrap');
+ if (el) {
+ el.innerHTML = '<div class="empty-state"><div class="empty-icon">!</div><p>산책 요청을 불러오지 못했어요.<br>잠시 후 다시 시도해주세요.</p></div>';
+ }
+ console.error('[Matching] walker requests load failed:', e);
+ });
+
+ // 직접 요청 산책 기록 비동기 로드
+ renderDirectWalkHistory(user.id, 'walker').then(({ html, hasRecords }) => {
+ const section = document.getElementById('direct-history-section');
+ const wrap = document.getElementById('walker-history-wrap');
+ if (section && wrap) {
+ if (hasRecords) { wrap.innerHTML = html; section.style.display = ''; }
+ else section.style.display = 'none';
+ }
+ });
+
+ // 폴링 시작 — 5초마다 새 요청 확인
+ startWalkerPolling(user.id);
+
+ // Trust Score 비동기 로드
+ fetch(`/api/walkers/${user.id}/stats`)
+   .then(r => r.json())
+   .then(data => {
+     const el = document.getElementById('walker-trust-score-value');
+     if (el && data.success && data.stats) {
+       const ts = data.stats.trustScore;
+       const completed = data.stats.totalCompleted;
+       if (completed === 0) el.textContent = '신규';
+       else el.textContent = `${ts}점 (완료 ${completed}건)`;
+     }
+   })
+   .catch(() => {
+     const el = document.getElementById('walker-trust-score-value');
+     if (el) el.textContent = '신규';
+   });
+}
+
+function renderWalkerScoreCard(profile) {
+  if (!profile) return '';
+  const careerScore  = { over3y:15, '1y3y':10, '6m1y':5, under6m:2 }[profile.careerYears] || 3;
+  const largeScore   = { lots:20, some:10, none:0 }[profile.largeDogExp] || 0;
+  const aggrScore    = { yes:20, some:10, no:0 }[profile.aggressionHandle] || 0;
+  const ownScore     = { current:5, past:3, none:0 }[profile.ownPetExp] || 0;
+  const problemScore = Math.min((profile.problemBehavior || []).length * 2, 10);
+  const ratingScore  = profile.rating ? Math.round((profile.rating - 3) * 2.5) : 0;
+  const profileTotal = Math.max(0, Math.min(100, careerScore + largeScore + aggrScore + ownScore + problemScore + ratingScore + 30));
+
+  const scoreColor   = profileTotal >= 80 ? '#00AA76' : profileTotal >= 60 ? '#F6A623' : '#718096';
+  const scoreLabel   = profileTotal >= 80 ? '상위 매칭' : profileTotal >= 60 ? '평균 이상' : '개선 가능';
+
+  const factors = [
+    { label:'산책 경력', score:careerScore, max:15, tip: getWalkerLabel('careerYears', profile.careerYears) },
+    { label:'대형견 경험', score:largeScore, max:20, tip: getWalkerLabel('largeDogExp', profile.largeDogExp) },
+    { label:'공격성 대응', score:aggrScore, max:20, tip: getWalkerLabel('aggressionHandle', profile.aggressionHandle) },
+    { label:'반려견 양육', score:ownScore, max:5, tip: getWalkerLabel('ownPetExp', profile.ownPetExp) },
+    { label:'문제 행동 대응', score:problemScore, max:10 },
+    { label:'평점', score:Math.max(0,ratingScore), max:5 },
+  ];
+
+  return `<div style="background:#fff;border:1px solid #f0f0ee;border-radius:14px;padding:18px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div><div style="font-size:0.75rem;font-weight:700;color:#aaa;margin-bottom:2px;">AI 매칭 점수</div>
+      <div style="font-size:0.8rem;color:#555;">프로필 기반 적합도 (50%) + 이력 보너스 (30%) + 신뢰도 (20%)</div></div>
+      <div style="text-align:right;"><div style="font-size:2rem;font-weight:900;color:${scoreColor};line-height:1;">${profileTotal}</div>
+      <div style="font-size:0.68rem;font-weight:700;color:${scoreColor};">${scoreLabel}</div></div>
+    </div>
+    <div style="height:6px;background:#f0f0ee;border-radius:3px;margin-bottom:12px;overflow:hidden;">
+      <div style="height:100%;width:${profileTotal}%;background:${scoreColor};border-radius:3px;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+      ${factors.map(f => `<div style="background:#f8f8f6;border-radius:8px;padding:7px 10px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:0.72rem;color:#666;">${f.label}</span>
+        <span style="font-size:0.76rem;font-weight:700;color:${f.score >= f.max*0.7?'#00AA76':f.score>0?'#F6A623':'#ccc'};">${f.score}/${f.max}</span>
+      </div>`).join('')}
+    </div>
+    <div id="walker-trust-score-section" style="margin-top:12px;padding:10px 12px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:0.78rem;font-weight:600;color:#166534;">신뢰도 점수</span>
+      <span id="walker-trust-score-value" style="font-size:0.85rem;font-weight:800;color:#166534;">계산 중...</span>
+    </div>
+    <div style="margin-top:10px;padding:8px 10px;background:#fffbeb;border-radius:8px;font-size:0.74rem;color:#92400e;">프로필을 완성하고 산책을 완료할수록 점수가 올라가요</div>
+  </div>`;
+}
+
+/**
+ * AI 매칭 점수 계산 (0~100)
+ * 강아지 특성 vs 도우미 역량을 비교해 적합도 산출
+ */
+function calcAiMatchScore(walker, requesterProfile, walkHistory) {
+ let score = 35; // 기본 점수 (항목 추가로 기존 50→35 조정)
+
+ const dogSize = requesterProfile.dogSize || 'small';
+ const aggression = requesterProfile.dogAggression || 'none';
+ const difficulty = requesterProfile.walkDifficulty || 'easy';
+
+ // 1. 공격성 대응 능력 (최대 +25점)
+ if (aggression === 'high') {
+ if (walker.aggressionHandle === 'yes') score += 25;
+ else if (walker.aggressionHandle === 'some') score += 10;
+ else score -= 20;
+ } else if (aggression === 'medium') {
+ if (walker.aggressionHandle === 'yes') score += 15;
+ else if (walker.aggressionHandle === 'some') score += 10;
+ else score -= 5;
+ } else {
+ score += 5; // 온순한 강아지는 누구나 OK
+ }
+
+ // 2. 대형견 경험 (최대 +20점)
+ if (dogSize === 'large') {
+ if (walker.largeDogExp === 'lots') score += 20;
+ else if (walker.largeDogExp === 'some') score += 10;
+ else score -= 15;
+ } else if (dogSize === 'medium') {
+ if (walker.largeDogExp === 'lots') score += 8;
+ else if (walker.largeDogExp === 'some') score += 5;
+ } else {
+ score += 5;
+ }
+
+ // 3. 산책 경력 (최대 +15점)
+ const careerScore = { over3y: 15, '1y3y': 10, '6m1y': 5, under6m: 2 };
+ score += careerScore[walker.careerYears] || 3;
+
+ // 4. 반려견 직접 키운 경험 (+5점)
+ if (walker.ownPetExp === 'current') score += 5;
+ else if (walker.ownPetExp === 'past') score += 3;
+
+ // 5. 문제 행동 대응 경험 (최대 +10점)
+ if (difficulty === 'hard') {
+ const problems = walker.problemBehavior || [];
+ score += Math.min(problems.length * 2, 10);
+ }
+
+ // 6. 산책 기록 데이터 반영 (최대 +10점) ? 완료된 산책이 많을수록 신뢰도 UP
+ const completedCount = (walkHistory || []).filter(w => w.walkerId === walker.userId).length;
+ score += Math.min(completedCount * 2, 10);
+
+ // 7. 평점 반영 (+0~5점)
+ if (walker.rating) score += Math.round((walker.rating - 3) * 2.5);
+
+ // 8. 지역 근접성 (최대 +20점)
+ const wSido    = walker.locationSido    || '';
+ const wSigungu = walker.locationSigungu || '';
+ const wDong    = walker.locationDong    || '';
+ const rSido    = requesterProfile.locationSido    || '';
+ const rSigungu = requesterProfile.locationSigungu || '';
+ const rDong    = requesterProfile.locationDong    || '';
+ if (wSido && rSido) {
+   if (wSido === rSido && wSigungu && wSigungu === rSigungu) {
+     score += (wDong && wDong === rDong) ? 20 : 15;
+   } else if (wSido === rSido) {
+     score += 8;
+   }
+ } else if (walker.location && requesterProfile.location) {
+   // 구형 텍스트 데이터 fallback: 공백 토큰 교집합으로 근사 계산
+   const wParts = (walker.location || '').split(/\s+/).filter(Boolean);
+   const rParts = (requesterProfile.location || '').split(/\s+/).filter(Boolean);
+   const matches = wParts.filter(p => rParts.includes(p)).length;
+   if (matches >= 2) score += 12;
+   else if (matches === 1) score += 6;
+ }
+
+ // 9. 원하는 시간대 매칭 (최대 +15점)
+ const wTime = walker.preferredTime || '';
+ const rTime = requesterProfile.preferredTime || '';
+ if (wTime && rTime) {
+   if (wTime === '상시 가능') score += 10;
+   else if (wTime === rTime) score += 15;
+   else {
+     const order = ['오전 (7-9시)','오전 (9-11시)','오후 (2-4시)','오후 (5-7시)','저녁 (7-9시)'];
+     const wi = order.indexOf(wTime), ri = order.indexOf(rTime);
+     if (wi !== -1 && ri !== -1 && Math.abs(wi - ri) === 1) score += 7;
+   }
+ }
+
+ // 10. 최근 활동 보정 (최대 +8점, 장기 미접속 -5점)
+ const mins = walker.minutesSinceSeen;
+ if (mins != null) {
+   if (mins < 30)        score += 8;
+   else if (mins < 120)  score += 5;
+   else if (mins < 720)  score += 2;
+   else if (mins >= 4320) score -= 5;
+ }
+
+ // 11. 견종 경험 매칭 (최대 +8점)
+ const reqBreed = requesterProfile.dogBreed || '';
+ if (reqBreed) {
+   const breedExp = Array.isArray(walker.breedExp) ? walker.breedExp : [];
+   if (breedExp.some(b => reqBreed.includes(b) || b.includes(reqBreed))) score += 8;
+ }
+
+ return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+/** AI breakdown 태그 HTML 생성 */
+function renderAiBreakdownHtml(breakdown) {
+  if (!breakdown) return '';
+  const maxMap = {'경력_적합도':20,'공격성_대응력':25,'체형_적합도':20,'신뢰도':20,'특기_매칭':15};
+  return Object.entries(breakdown).map(([k,v]) => {
+    const pct = Math.round(v / maxMap[k] * 100);
+    const col = pct >= 80 ? '#00AA76' : pct >= 50 ? '#F6A623' : '#ccc';
+    return `<div style="font-size:0.65rem;background:#f0f0ee;border-radius:4px;padding:2px 6px;color:#555;" title="${k}: ${v}/${maxMap[k]}점">
+      <span style="color:${col};font-weight:700;">${v}</span> ${k.replace('_',' ')}
+    </div>`;
+  }).join('');
+}
+
+/** 개별 워커 카드의 AI 점수/이유/breakdown을 DOM에서 업데이트하고 블러 해제 */
+function updateWalkerCardWithAi(userId, score, reason, breakdown, enhancedData) {
+  const card = document.querySelector(`#ai-walker-list .walker-card-item[data-walker-id="${userId}"]`);
+  if (!card) return;
+
+  const scoreColor = score >= 80 ? '#00AA76' : score >= 60 ? '#F6A623' : '#999';
+  const scoreLabel = score >= 80 ? '최적' : score >= 60 ? '적합' : '보통';
+
+  // 점수 업데이트
+  const scoreEl = card.querySelector('.walker-card__score');
+  if (scoreEl) {
+    scoreEl.textContent = `${score}점`;
+    scoreEl.style.color = scoreColor;
+  }
+  const scoreLabelEl = card.querySelector('.walker-card__score-label');
+  if (scoreLabelEl) {
+    scoreLabelEl.textContent = scoreLabel;
+    scoreLabelEl.style.color = scoreColor;
+  }
+
+  // Trust Score 업데이트 (enhanced AI score 응답에서 받은 경우)
+  if (enhancedData && typeof enhancedData.trustScore === 'number') {
+    const ratingEl = card.querySelector('.dw-card__rating');
+    if (ratingEl && !ratingEl.querySelector('.walker-card__trust-badge')) {
+      const trustBadge = document.createElement('span');
+      trustBadge.className = 'walker-card__trust-badge';
+      trustBadge.style.cssText = 'font-size:0.72rem;background:#f0f0ee;padding:2px 8px;border-radius:999px;margin-left:6px;';
+      trustBadge.textContent = `신뢰 ${enhancedData.trustScore}점`;
+      ratingEl.appendChild(trustBadge);
+    }
+  }
+
+  // AI 이유 업데이트
+  const reasonEl = card.querySelector('.walker-card__ai-reason');
+  if (reasonEl) {
+    if (reason) {
+      reasonEl.innerHTML = `${icon('sparkles',11,'#F6A623')} ${reason}`;
+      reasonEl.style.display = 'inline-block';
+    } else {
+      reasonEl.style.display = 'none';
+    }
+  }
+
+  // breakdown 업데이트
+  const breakdownEl = card.querySelector('.walker-card__ai-breakdown');
+  if (breakdownEl) {
+    if (breakdown) {
+      breakdownEl.innerHTML = renderAiBreakdownHtml(breakdown);
+      breakdownEl.style.display = 'flex';
+    } else {
+      breakdownEl.style.display = 'none';
+    }
+  }
+
+  // 블러 오버레이 제거 (애니메이션 후 완전 숨김)
+  card.classList.remove('walker-card-item--pending');
+  card.classList.add('walker-card-item--revealed');
+  const overlay = card.querySelector('.walker-card__ai-overlay');
+  if (overlay) {
+    overlay.style.opacity = '0';
+    setTimeout(() => { overlay.style.display = 'none'; }, 400);
+  }
+}
+
+/** 모든 AI 점수가 도착한 후 점수순으로 카드 재정렬 */
+function resortWalkerCardsByAiScore() {
+  const parent = document.getElementById('ai-walker-list');
+  if (!parent) return;
+  const cards = Array.from(parent.querySelectorAll('.walker-card-item'));
+  if (cards.length < 2) return;
+
+  // 현재 DOM의 점수를 읽어서 정렬
+  const scored = cards.map(card => {
+    const scoreText = card.querySelector('.walker-card__score')?.textContent || '0';
+    const score = parseInt(scoreText.replace(/\D/g, ''), 10) || 0;
+    return { card, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+
+  // INITIAL_LIMIT 기준 가시성 갱신
+  const INITIAL_LIMIT = 5;
+  scored.forEach((item, newIdx) => {
+    const { card } = item;
+    card.setAttribute('data-walker-idx', String(newIdx));
+
+    // AI 추천 1위 뱃지 토글
+    const rankBadge = card.querySelector('.walker-card__rank-badge');
+    if (rankBadge) rankBadge.style.display = newIdx === 0 ? '' : 'none';
+
+    // 1위 테두리/아바타 배경 갱신
+    card.style.borderColor = newIdx === 0 ? '#00AA76' : '';
+    const avatar = card.querySelector('.dw-card__avatar');
+    if (avatar) avatar.style.background = newIdx === 0 ? '#00AA76' : '';
+
+    // 접혀있던 상태 유지: 기본적으로 상위 5명만 표시
+    if (newIdx >= INITIAL_LIMIT) card.style.display = 'none';
+    else card.style.display = '';
+
+    parent.appendChild(card);
+  });
+
+  // 더보기 버튼 라벨 갱신 (접힌 상태로 초기화)
+  const moreBtnEl = document.getElementById('walker-list-more-btn');
+  if (moreBtnEl && scored.length > INITIAL_LIMIT) {
+    moreBtnEl.innerHTML = `도우미 ${scored.length - INITIAL_LIMIT}명 더보기 ↓`;
+  }
+}
+
+/** 백그라운드에서 각 도우미의 Gemini AI 점수를 받아와 개별 카드를 업데이트 */
+async function fetchAiScoresAndUpdateCards(walkers, dog) {
+  if (!Array.isArray(walkers) || walkers.length === 0) return;
+
+  const tasks = walkers.map(async (w) => {
+    let timeoutId;
+    try {
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch('/api/matching/ai-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walker: w, dog }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      const data = await res.json();
+      const score = data.success ? data.score : calcAiMatchScore(w, dog, []);
+      return {
+        userId: w.userId,
+        score,
+        reason: data.reason || '',
+        breakdown: data.breakdown || null,
+        enhancedData: {
+        trustScore: data.trustScore,
+        historyFallback: data.historyFallback || false
+        }
+      };
+    } catch(e) {
+      if (timeoutId) clearTimeout(timeoutId);
+      // 실패 시 로컬 점수로 대체하되 블러는 해제
+      const fallback = calcAiMatchScore(w, dog, []);
+      return { userId: w.userId, score: fallback, reason: '', breakdown: null, enhancedData: null };
+    }
+  });
+
+  // 모든 호출 완료 후 점수순 재정렬
+  const results = await Promise.allSettled(tasks);
+  results.forEach(result => {
+    if (result.status !== 'fulfilled' || !result.value) return;
+    const { userId, score, reason, breakdown, enhancedData } = result.value;
+    updateWalkerCardWithAi(userId, score, reason, breakdown, enhancedData);
+  });
+  resortWalkerCardsByAiScore();
+}
+
+/** AI 점수 계산 방식 설명 토글 */
+function toggleAiScoreExplain() {
+ const el = document.getElementById('ai-score-explain');
+ if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function startAiScoreCalc() {
+ const btn = document.getElementById('ai-calc-btn');
+ const overlay = document.getElementById('ai-score-blur-overlay');
+ const list = document.getElementById('ai-walker-list');
+ if (!btn || !overlay) return;
+ if (window._aiScoreCalcRunning) return;
+ window._aiScoreCalcRunning = true;
+ const originalHtml = btn.innerHTML;
+ const wrapper = document.getElementById('ai-score-wrapper');
+ const originalMinHeight = wrapper?.style.minHeight || '';
+ let snapshot = null;
+ btn.disabled = true;
+ btn.innerHTML = `<span class="spinner" style="width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff;margin-right:8px;"></span> AI 분석 중...`;
+ if (wrapper) wrapper.style.minHeight = `${wrapper.offsetHeight}px`;
+ if (wrapper && list) {
+   const oldSnapshot = document.getElementById('ai-walker-list-snapshot');
+   if (oldSnapshot) oldSnapshot.remove();
+   snapshot = list.cloneNode(true);
+   snapshot.id = 'ai-walker-list-snapshot';
+   snapshot.removeAttribute('onclick');
+   snapshot.querySelectorAll('.walker-card-item').forEach(card => {
+     card.classList.remove('walker-card-item');
+     card.removeAttribute('data-walker-id');
+   });
+   snapshot.style.cssText = 'position:absolute;inset:0;z-index:1;filter:blur(6px);opacity:0.72;pointer-events:none;user-select:none;overflow:hidden;transform:translateZ(0);';
+   wrapper.insertBefore(snapshot, overlay);
+   list.style.visibility = 'hidden';
+   list.style.filter = 'none';
+ }
+ overlay.style.background = 'rgba(255,255,255,0.38)';
+ overlay.style.backdropFilter = 'blur(2px)';
+
+ try {
+ // 버튼 클릭 시 서버에서 최신 워커 목록을 다시 가져옴
+ // (페이지 첫 렌더링 시 GPS가 아직 refresh 전일 수 있어 캐시가 구형일 수 있음)
+ try {
+   await MatchingService.refreshFromServer();
+ } catch (e) {
+   console.warn('[AI Score] walker refresh failed, using cached cards', e);
+ }
+
+ const _user = AuthService.getCurrentUser();
+ const _myProfile = _user ? MatchingService.getMyProfile(_user.id) : {};
+ const freshWalkers = MatchingService.getAvailableWalkers()
+   .filter(w => w.userId !== _user?.id);
+
+ // 화면을 다시 그리지 않고 현재 보이는 카드만 최신 데이터로 보강한다.
+ const domIds = new Set(Array.from(document.querySelectorAll('#ai-walker-list .walker-card-item')).map(c => c.getAttribute('data-walker-id')).filter(Boolean));
+ const freshById = new Map(freshWalkers.map(w => [w.userId, w]));
+ const cachedWalkers = Array.isArray(window._aiCalcWalkers) ? window._aiCalcWalkers : [];
+ const visibleWalkers = cachedWalkers
+   .filter(w => !domIds.size || domIds.has(w.userId))
+   .map(w => freshById.get(w.userId) || w);
+ const walkers = visibleWalkers.length
+   ? visibleWalkers
+   : freshWalkers.filter(w => !domIds.size || domIds.has(w.userId));
+ const profile = window._aiCalcProfile || _myProfile;
+ await fetchAiScoresAndUpdateCards(walkers, profile);
+ } catch (e) {
+   console.error('[AI Score] failed', e);
+ } finally {
+ overlay.style.transition = 'opacity 0.4s';
+ overlay.style.opacity = '0';
+ if (list) { list.style.visibility = ''; list.style.opacity = '1'; list.style.filter = 'none'; list.style.pointerEvents = ''; list.style.userSelect = ''; }
+ btn.disabled = false;
+ btn.innerHTML = originalHtml;
+ window._aiScoreCalcRunning = false;
+ setTimeout(() => {
+   if (snapshot) snapshot.remove();
+   overlay.style.display = 'none';
+   if (wrapper) wrapper.style.minHeight = originalMinHeight;
+  }, 400);
+ }
+}
+
+/** AI 추천 도우미 목록 더보기/접기 토글 */
+function toggleWalkerListMore(btn) {
+ const section = document.getElementById('walker-list-section');
+ if (!section) return;
+ const hiddenCards = section.querySelectorAll('.walker-card-item[style*="display:none"], .walker-card-item[style*="display: none"]');
+ const isExpanding = hiddenCards.length > 0;
+ const allCards = section.querySelectorAll('.walker-card-item');
+
+ if (isExpanding) {
+   // 펼치기
+   allCards.forEach(card => {
+     const idx = parseInt(card.getAttribute('data-walker-idx') || '0', 10);
+     const borderStyle = idx === 0 ? 'border-color:#00AA76;' : '';
+     card.setAttribute('style', borderStyle);
+   });
+   btn.innerHTML = '접기 ↑';
+ } else {
+   // 접기
+   const INITIAL_LIMIT = 5;
+   allCards.forEach(card => {
+     const idx = parseInt(card.getAttribute('data-walker-idx') || '0', 10);
+     const borderStyle = idx === 0 ? 'border-color:#00AA76;' : '';
+     if (idx >= INITIAL_LIMIT) {
+       card.setAttribute('style', borderStyle + 'display:none;');
+     } else {
+       card.setAttribute('style', borderStyle);
+     }
+   });
+   btn.innerHTML = `도우미 ${allCards.length - INITIAL_LIMIT}명 더보기 ↓`;
+   // 섹션 상단으로 스크롤
+   section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+ }
+}
+
+/** 요청자: 매칭 완료 후 도우미 이동 중 화면 */
+/** 요청자 실시간 지도 초기화 */
+/** 프로필 사진 기반 원형 지도 마커 아이콘 생성 */
+function _makePhotoMarker(photoUrl, fallbackChar, borderColor, size, pulse) {
+  const inner = photoUrl
+    ? `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+    : `<div style="width:100%;height:100%;background:${borderColor};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:${Math.round(size*0.3)}px;">${fallbackChar}</div>`;
+  return L.divIcon({
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid #fff;outline:2px solid ${borderColor};overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,0.3);${pulse?'animation:wsmWalkerPulse 2s ease infinite;':''}background:${borderColor};">${inner}</div>`,
+    className: '', iconSize: [size, size], iconAnchor: [size/2, size/2]
+  });
+}
+
+/** 요청자: 진행 중인 요청 취소 */
+async function cancelActiveWalkRequest(requestId) {
+ if (!confirm('정말 요청을 취소할까요? 도우미가 이미 이동 중일 수 있어요.')) return;
+ try {
+   const res = await fetch(`/api/walk-requests/${requestId}/cancel`, {
+     method: 'PATCH',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({ cancelledBy: 'requester' })
+   });
+   const result = await res.json();
+   if (!result.success) { showToast(result.error || '취소에 실패했습니다.', 'error'); return; }
+   showToast('요청이 취소되었습니다.', 'info');
+   if (window._requesterLiveMapPoll) { clearInterval(window._requesterLiveMapPoll); window._requesterLiveMapPoll = null; }
+   window._activeWalkRequestId = null;
+   // 강제로 일반 대시보드 렌더링 (active walk 체크 우회)
+   const user = AuthService.getCurrentUser();
+   const myProfile = user ? MatchingService.getMyProfile(user.id) : null;
+   if (user && myProfile) {
+     MatchingService.refreshFromServer().then(() => renderRequesterDashboard(user, myProfile));
+   } else {
+     renderMatchingPage();
+   }
+ } catch(e) {
+   showToast('취소에 실패했습니다.', 'error');
+ }
+}
+
+/** 도우미: 진행 중인 요청 취소 */
+async function cancelWalkByWalker(requestId) {
+ if (!confirm('정말 산책을 취소할까요? 요청자에게 취소 알림이 전송됩니다.')) return;
+ try {
+   _stopWalkerLocationSharing();
+   await fetch(`/api/walk-requests/${requestId}/cancel`, {
+     method: 'PATCH',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({ cancelledBy: 'walker' })
+   });
+   showToast('산책이 취소되었습니다.', 'info');
+   window._activeWalkRequestId = null;
+   _activeSessionId = null;
+   Router.navigate('/matching');
+ } catch(e) {
+   showToast('취소에 실패했습니다.', 'error');
+ }
+}
+
+/** 산책 요청자 대시보드 */
+async function renderRequesterDashboard(user, myProfile) {
+ // 사진 없는 도우미는 AI 추천에서 제외 (신뢰도 보장)
+ const availWalkers = MatchingService.getAvailableWalkers()
+   .filter(w => w.userId !== user.id && !!(w.profilePhoto || w.profileImage));
+
+ // 내가 보낸 요청 (서버에서 모든 상태 포함, 최신순)
+ let sentRequests = [];
+ try {
+   sentRequests = await MatchingService.getSentRequestsRemote(user.id);
+ } catch(e) { sentRequests = []; }
+
+ // 최근 30분 내 요청만 + "진행 중"으로 간주되는 상태만
+ const ACTIVE_STATUSES = ['pending', 'accepted', 'walker_busy', 'rejected'];
+ const cutoff = Date.now() - 30 * 60 * 1000;
+ const activeRequests = sentRequests.filter(r =>
+   ACTIVE_STATUSES.includes(r.status) &&
+   new Date(r.createdAt).getTime() > cutoff
+ ).slice(0, 5);
+
+ // 쿨다운 맵: toUserId → { status, cooldownEndsAt }
+ // 최근 30분 내 거절/walker_busy/취소 이력이 있으면 재요청 차단
+ const COOLDOWN_MS = 30 * 60 * 1000;
+ const blockedStatuses = ['rejected', 'walker_busy', 'cancelled', 'rejected_matched'];
+ const cooldownMap = {};
+ sentRequests.forEach(r => {
+   if (!blockedStatuses.includes(r.status)) return;
+   const updatedMs = new Date(r.updatedAt || r.createdAt).getTime();
+   const remaining = COOLDOWN_MS - (Date.now() - updatedMs);
+   if (remaining <= 0) return;
+   const prev = cooldownMap[r.toUserId];
+   if (!prev || updatedMs > prev.updatedMs) {
+     cooldownMap[r.toUserId] = { status: r.status, remaining, updatedMs };
+   }
+ });
+
+ // 현재 pending 중인 요청을 맵으로 (같은 도우미에 재요청 방지)
+ const pendingMap = {};
+ sentRequests.forEach(r => { if (r.status === 'pending') pendingMap[r.toUserId] = r; });
+
+ const primaryStatusRequest = activeRequests[0] || null;
+ const requestStatusPanelHtml = primaryStatusRequest ? (() => {
+   const r = primaryStatusRequest;
+   const toName = _dwEscapeHtml(r.walkerName || MatchingService.getUserName(r.toUserId) || '도우미');
+   const dogName = _dwEscapeHtml(r.dogName || myProfile.dogName || (user.dogs || [])[0]?.name || '반려견');
+   const createdLabel = formatRelativeTime(r.createdAt);
+   const statusMap = {
+     pending: {
+       tone: 'waiting',
+       label: '응답 대기',
+       title: '산책 요청을 보냈어요',
+       desc: `${toName}님에게 알림이 전송됐고, 지금 응답을 기다리고 있어요.`,
+       next: '수락되면 픽업 이동 화면으로 자동 전환됩니다.',
+       activeStep: 1
+     },
+     accepted: {
+       tone: 'accepted',
+       label: '수락 완료',
+       title: '도우미가 요청을 수락했어요',
+       desc: `${toName}님이 곧 고정 픽업 지점으로 이동을 시작해요.`,
+       next: '잠시 후 진행 화면에서 도우미 위치를 확인할 수 있습니다.',
+       activeStep: 2
+     },
+     rejected: {
+       tone: 'stopped',
+       label: '요청 거절',
+       title: '이번 요청은 연결되지 않았어요',
+       desc: `${toName}님이 요청을 수락하지 않았어요.`,
+       next: '잠시 후 다른 도우미에게 다시 요청할 수 있습니다.',
+       activeStep: 1
+     },
+     walker_busy: {
+       tone: 'stopped',
+       label: '다른 매칭 중',
+       title: '도우미가 다른 산책을 진행 중이에요',
+       desc: `${toName}님이 지금은 요청을 받을 수 없어요.`,
+       next: '다른 도우미를 선택하거나 잠시 후 다시 요청해 주세요.',
+       activeStep: 1
+     }
+   };
+   const cfg = statusMap[r.status] || statusMap.pending;
+   const steps = [
+     { title: '요청 전송', hint: `${dogName} 산책 요청 접수` },
+     { title: cfg.tone === 'stopped' ? '응답 종료' : '응답 대기', hint: cfg.tone === 'stopped' ? '이번 요청은 대기 종료' : '도우미가 확인 중' },
+     { title: '픽업 이동', hint: '수락 후 위치 확인 시작' }
+   ].map((step, idx) => {
+     const cls = cfg.tone === 'stopped' && idx === 1
+       ? ' is-stopped'
+       : idx < cfg.activeStep
+         ? ' is-done'
+         : idx === cfg.activeStep
+           ? ' is-active'
+           : '';
+     return `<div class="request-status-step${cls}">
+       <span class="request-status-step__mark">${idx < cfg.activeStep ? icon('check-circle', 14) : idx + 1}</span>
+       <span>
+         <strong>${step.title}</strong>
+         <small>${step.hint}</small>
+       </span>
+     </div>`;
+   }).join('');
+
+   return `
+   <section class="request-status-panel request-status-panel--${cfg.tone}">
+     <div class="request-status-panel__top">
+       <div>
+         <div class="request-status-panel__eyebrow">${cfg.label}</div>
+         <h2 class="request-status-panel__title">${cfg.title}</h2>
+         <p class="request-status-panel__copy">${cfg.desc}</p>
+       </div>
+       <div class="request-status-panel__meta">
+         <span>${dogName}</span>
+         <span>${createdLabel}</span>
+       </div>
+     </div>
+     <div class="request-status-steps">${steps}</div>
+     <div class="request-status-panel__bottom">
+       <div class="request-status-panel__notice">${cfg.next}</div>
+       <div class="request-status-panel__actions">
+         ${r.status === 'pending' ? `<button class="request-status-panel__btn request-status-panel__btn--ghost" onclick="handleCancelSentRequest('${r.id}')">요청 취소</button>` : ''}
+         <button class="request-status-panel__btn" onclick="renderMatchingPage()">상태 새로고침</button>
+       </div>
+     </div>
+   </section>`;
+ })() : '';
+
+ const _reqUserPhoto = user.profileImage || myProfile.profilePhoto || '';
+ const profileCard = `
+ <div class="match-profile-card">
+ <div class="match-profile-card__left">
+ <div class="match-profile-card__avatar" style="overflow:hidden;padding:0;">
+   ${_reqUserPhoto
+     ? `<img src="${_reqUserPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
+     : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-weight:800;">${user.name.charAt(0)}</span>`}
+ </div>
+ <div>
+ <div class="match-profile-card__name">${user.name} <span class="badge badge-primary">산책 요청자</span></div>
+ <div class="match-profile-card__meta">
+ ${myProfile.dogName ? `${icon('paw-print',13)} ${myProfile.dogName}${myProfile.dogBreed ? ' · ' + myProfile.dogBreed : ''}` : ''}
+ <span style="display:inline-flex;align-items:center;gap:4px;margin-left:${myProfile.dogName ? '8px' : '0'};padding:2px 8px;background:#E8F5EE;color:#00AA76;border-radius:999px;font-size:0.72rem;font-weight:700;">${icon('map-pin',13)} GPS 즉시 매칭</span>
+ </div>
+ ${myProfile.notes ? `<div class="match-profile-card__bio">"${myProfile.notes}"</div>` : ''}
+ </div>
+ </div>
+ <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+ <button class="btn btn-secondary btn-sm" onclick="handleSwitchRole()">${icon('refresh-cw',13)} 역할 변경</button>
+ <button class="btn btn-ghost btn-sm" onclick="handleRemoveMatchProfile()" style="font-size:0.75rem;color:var(--color-text-muted);">등록 해제</button>
+ </div>
+ </div>
+ `;
+
+ // 1차: 로컬 휴리스틱 점수로 즉시 계산 (AI 호출 없음 → 페이지 즉시 렌더링)
+ let scoredWalkers = availWalkers.map(w => ({
+   ...w,
+   aiScore: calcAiMatchScore(w, myProfile, []),
+   aiReason: '',
+   aiBreakdown: null,
+   aiPending: true  // AI 점수 도착 전이라는 표시
+ }));
+ scoredWalkers.sort((a, b) => b.aiScore - a.aiScore);
+
+ const WALKER_INITIAL_LIMIT = 5;
+ const hasMoreWalkers = scoredWalkers.length > WALKER_INITIAL_LIMIT;
+
+ // 요청자 반려견 기반 최소 가격 (카드 표시용)
+ const reqDogs = user.dogs || [];
+ const minDogSize = reqDogs.length > 0 ? reqDogs.reduce((min, d) => {
+   const order = { small: 0, medium: 1, large: 2 };
+   return (order[d.size] || 0) < (order[min.size] || 0) ? d : min;
+ }, reqDogs[0]).size : 'small';
+ const minWalkPrice = WALK_PRICING[minDogSize] || WALK_PRICING.small;
+ const hasMultipleDogs = reqDogs.length > 1;
+
+ const walkerListHtml = scoredWalkers.length > 0
+ ? scoredWalkers.map((w, idx) => {
+ const displayName = w.userName || w.name || '도우미';
+ const stars = '★'.repeat(Math.round(w.rating || 5)) + '☆'.repeat(5 - Math.round(w.rating || 5));
+ const scoreColor = w.aiScore >= 80 ? '#00AA76' : w.aiScore >= 60 ? '#F6A623' : '#999';
+ const scoreLabel = w.aiScore >= 80 ? '최적' : w.aiScore >= 60 ? '적합' : '보통';
+ const isHidden = idx >= WALKER_INITIAL_LIMIT;
+ return `
+ <div class="dw-card walker-card-item${w.aiPending ? ' walker-card-item--pending' : ''}" data-walker-idx="${idx}" data-walker-id="${w.userId}" style="${idx === 0 ? 'border-color:#00AA76;' : ''}${isHidden ? 'display:none;' : ''}">
+ <div class="dw-card__avatar" style="${idx === 0 ? 'background:#00AA76;' : ''}overflow:hidden;padding:0;">
+  ${(w.profilePhoto || w.profileImage)
+    ? `<img src="${w.profilePhoto || w.profileImage}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
+     : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#fff;font-weight:800;">${displayName.charAt(0)}</span>`}
+ </div>
+ <div class="dw-card__body">
+ <div class="dw-card__top">
+ <div>
+ <div class="dw-card__name">
+ ${(() => {
+   if (!w.isAvailable) return '<span class="dw-avail-dot dw-avail-dot--off"></span>';
+   if (w.isStale) return '<span class="dw-avail-dot" style="background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,0.2);"></span>';
+   return '<span class="dw-avail-dot dw-avail-dot--on"></span>';
+ })()}${displayName}
+ ${w.isStale && w.minutesSinceSeen != null ? `<span style="font-size:0.65rem;color:#b45309;background:#fef3c7;padding:1px 6px;border-radius:999px;margin-left:6px;font-weight:600;">${w.minutesSinceSeen < 60 ? w.minutesSinceSeen + '분 전 접속' : Math.floor(w.minutesSinceSeen / 60) + '시간 전 접속'}</span>` : ''}
+ <span class="walker-card__rank-badge" style="${idx === 0 ? '' : 'display:none;'}font-size:0.68rem;background:#00AA76;color:#fff;padding:2px 7px;border-radius:999px;margin-left:6px;font-weight:700;">AI 추천 1위</span>
+ </div>
+ <div class="dw-card__rating"><span class="dw-stars">${stars}</span> ${(w.rating || 5).toFixed(1)} · 리뷰 ${w.reviewCount || 0}건${typeof w.trustScore === 'number' ? `<span style="font-size:0.72rem;background:#f0f0ee;padding:2px 8px;border-radius:999px;margin-left:6px;">신뢰 ${w.trustScore}점</span>` : ''}</div>
+ </div>
+ <div class="walker-card__score-wrap" style="text-align:right;">
+ <div class="walker-card__score" style="font-size:1.1rem;font-weight:800;color:${scoreColor};">${w.aiScore}점</div>
+ <div class="walker-card__score-label" style="font-size:0.68rem;color:${scoreColor};font-weight:600;">${scoreLabel}</div>
+ </div>
+ </div>
+ <div class="walker-card__ai-reason" style="${w.aiReason ? '' : 'display:none;'}font-size:0.75rem;color:#718096;margin-bottom:6px;padding:4px 8px;background:#f8f8f6;border-radius:6px;display:${w.aiReason ? 'inline-block' : 'none'};">${w.aiReason ? `${icon('sparkles',11,'#F6A623')} ${w.aiReason}` : ''}</div>
+ <div class="walker-card__ai-breakdown" style="${w.aiBreakdown ? 'display:flex;' : 'display:none;'}gap:4px;flex-wrap:wrap;margin-bottom:4px;">${w.aiBreakdown ? renderAiBreakdownHtml(w.aiBreakdown) : ''}</div>
+ <div class="dw-card__meta">${icon('map-pin',13)} ${w.location || ''} · ${icon('clock',13)} ${w.preferredTime || ''}</div>
+ <div class="dw-card__sizes">
+ ${w.careerYears ? `<span class="dw-size-tag">${getWalkerLabel('careerYears', w.careerYears)}</span>` : ''}
+ ${w.largeDogExp && w.largeDogExp !== 'none' ? `<span class="dw-size-tag">대형견: ${getWalkerLabel('largeDogExp', w.largeDogExp)}</span>` : ''}
+ ${w.aggressionHandle && w.aggressionHandle !== 'no' ? `<span class="dw-size-tag">공격성: ${getWalkerLabel('aggressionHandle', w.aggressionHandle)}</span>` : ''}
+ ${w.ownPetExp && w.ownPetExp !== 'none' ? `<span class="dw-size-tag">양육: ${getWalkerLabel('ownPetExp', w.ownPetExp)}</span>` : ''}
+ ${(w.acceptedSizes || []).map(s => `<span class="dw-size-tag" style="background:#E8F5EE;color:#2e7d32;">${getWalkerLabel('dogSize', s)}</span>`).join('')}
+ </div>
+ ${w.message ? `<div class="dw-card__bio">"${w.message}"</div>` : ''}
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px 10px;background:#f8f8f6;border-radius:8px;">
+ <span style="font-size:0.72rem;color:#718096;">40분 기준</span>
+ <span style="font-size:0.92rem;font-weight:800;color:#1a1a1a;">${minWalkPrice.toLocaleString()}원${hasMultipleDogs ? '~' : ''}</span>
+ </div>
+ </div>
+ <div class="dw-card__action">
+ ${pendingMap[w.userId] ? `
+   <button class="btn btn-secondary btn-sm" disabled style="opacity:0.65;cursor:not-allowed;white-space:nowrap;">⏳ 응답 대기 중</button>
+ ` : cooldownMap[w.userId] ? (() => {
+   const cd = cooldownMap[w.userId];
+   const mins = Math.max(1, Math.ceil(cd.remaining / 60000));
+   const label = cd.status === 'rejected' ? '최근 거절됨'
+               : cd.status === 'walker_busy' ? '다른 매칭 중'
+               : cd.status === 'cancelled' ? '최근 취소됨'
+               : '최근 매칭 실패';
+   return `<button class="btn btn-secondary btn-sm" disabled title="${label} · ${mins}분 후 재요청 가능" style="opacity:0.55;cursor:not-allowed;white-space:nowrap;font-size:0.72rem;">🕒 ${mins}분 후</button>`;
+ })() : `<button class="btn btn-primary btn-sm" onclick="handleSendMatchRequest('${w.userId}')" style="white-space:nowrap;">${minWalkPrice.toLocaleString()}원${hasMultipleDogs ? '~' : ''} · 요청</button>`}
+ </div>
+ <div class="walker-card__ai-overlay" style="${w.aiPending ? '' : 'display:none;'}">
+   <div class="walker-card__ai-overlay-inner">
+     <div class="walker-card__ai-spinner"></div>
+     <div class="walker-card__ai-msg">
+       <span class="walker-card__ai-title">AI가 적합도를 분석 중이에요</span>
+       <span class="walker-card__ai-sub">잠시만 기다려주세요</span>
+     </div>
+   </div>
+ </div>
+ </div>`;
+ })
+ .join('')
+ : `<div class="empty-state"><div class="empty-icon">${icon('search',16)}</div><p>현재 매칭 가능한 도우미가 없습니다.<br>잠시 후 다시 확인해 주세요.</p></div>`;
+
+ // 내가 보낸 요청 카드 HTML (최근 30분 내, 진행 중 상태)
+ const sentRequestsHtml = activeRequests.length > 0
+ ? activeRequests.map(r => {
+ const toName = MatchingService.getUserName(r.toUserId) || '도우미';
+ const relative = formatRelativeTime(r.createdAt);
+
+ let statusBadge = '';
+ let statusBgColor = '#fff';
+ let statusBorderColor = 'var(--color-border)';
+ let footerAction = '';
+
+ if (r.status === 'pending') {
+   statusBadge = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#fef3c7;color:#b45309;border-radius:999px;font-size:0.72rem;font-weight:700;">
+     <span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;animation:dotPulse 1.5s ease-in-out infinite;"></span>응답 대기 중
+   </span>`;
+   statusBorderColor = '#fcd34d';
+   footerAction = `<button class="btn btn-ghost btn-sm" onclick="handleCancelSentRequest('${r.id}')" style="font-size:0.75rem;color:var(--color-text-muted);white-space:nowrap;">요청 취소</button>`;
+ } else if (r.status === 'accepted') {
+   statusBadge = `<span style="padding:4px 10px;background:#d1fae5;color:#047857;border-radius:999px;font-size:0.72rem;font-weight:700;">? 수락됨</span>`;
+   statusBgColor = '#f0fdf4';
+   statusBorderColor = '#86efac';
+ } else if (r.status === 'rejected') {
+   statusBadge = `<span style="padding:4px 10px;background:#fee2e2;color:#b91c1c;border-radius:999px;font-size:0.72rem;font-weight:700;">? 거절됨</span>`;
+   statusBorderColor = '#fca5a5';
+ } else if (r.status === 'walker_busy') {
+   statusBadge = `<span style="padding:4px 10px;background:#fed7aa;color:#9a3412;border-radius:999px;font-size:0.72rem;font-weight:700;">다른 산책 수락됨</span>`;
+   statusBorderColor = '#fdba74';
+ }
+
+ return `
+ <div style="background:${statusBgColor};border:1px solid ${statusBorderColor};border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">
+ <div style="width:40px;height:40px;border-radius:50%;background:var(--color-text);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">${toName.charAt(0)}</div>
+ <div style="flex:1;min-width:0;">
+ <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+ <span style="font-weight:700;font-size:0.9rem;">${toName}님에게 요청</span>
+ ${statusBadge}
+ </div>
+ <div style="font-size:0.72rem;color:var(--color-text-muted);">${relative}</div>
+ </div>
+ ${footerAction}
+ </div>`;
+ }).join('')
+ : '';
+
+ renderPage(`
+ <div class="match-hero">
+ <div class="section-label">산책 요청자</div>
+ <h1 class="match-hero__title">주변 산책 도우미를<br>찾아보세요</h1>
+ <p class="match-hero__sub">가장 빠른 매칭을 원하면 지금 바로를 눌러주세요</p>
+ </div>
+
+ <!-- 빠른 매칭 vs 직접 선택 안내 -->
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 24px;">
+   <div style="padding:18px;background:#1a1a1a;border-radius:14px;display:flex;flex-direction:column;gap:10px;">
+     <div>
+       <div style="font-size:0.68rem;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">빠른 매칭</div>
+       <div style="font-size:0.92rem;font-weight:700;color:#fff;line-height:1.3;">지금 바로</div>
+       <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:4px;">온라인 도우미 전체에게 동시 알림 · 선착순 수락</div>
+     </div>
+     <button onclick="openBroadcastModal()" style="padding:10px;background:#00AA76;border:none;border-radius:10px;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;">
+       지금 바로 요청
+     </button>
+   </div>
+   <div style="padding:18px;background:#f8f8f6;border:1px solid #e8e8e6;border-radius:14px;display:flex;flex-direction:column;gap:10px;">
+     <div>
+       <div style="font-size:0.68rem;font-weight:700;color:#aaa;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">직접 선택</div>
+       <div style="font-size:0.92rem;font-weight:700;color:#1a1a1a;line-height:1.3;">도우미 지정</div>
+       <div style="font-size:0.72rem;color:#aaa;margin-top:4px;">AI 추천 점수 확인 후 원하는 도우미에게 직접 요청</div>
+     </div>
+     <button onclick="document.getElementById('walker-list-section')?.scrollIntoView({behavior:'smooth'})" style="padding:10px;background:#fff;border:1.5px solid #1a1a1a;border-radius:10px;color:#1a1a1a;font-size:0.85rem;font-weight:700;cursor:pointer;">
+       도우미 목록 보기
+     </button>
+   </div>
+ </div>
+
+ <div id="matching-alert"></div>
+ ${requestStatusPanelHtml}
+ ${profileCard}
+
+ ${sentRequestsHtml ? `<div class="match-section">
+   <h2 class="match-section__title" style="display:flex;align-items:center;gap:8px;">
+     ${icon("flag",16)} 내가 보낸 요청
+     <span style="font-size:0.7rem;color:var(--color-text-muted);font-weight:500;">실시간 상태</span>
+   </h2>
+   ${sentRequestsHtml}
+ </div>` : ''}
+
+ <!-- GPS 지도 (메인) -->
+ <div class="match-section">
+ <div class="dw-section__header" style="margin-bottom:12px;">
+ <h2 class="match-section__title" style="margin:0;">${icon('map-pin',13)} 내 근처 산책 도우미</h2>
+ <div class="dw-map-controls">
+ <select id="dw-radius-sel" class="form-select" style="width:auto;padding:6px 12px;font-size:0.82rem;" onchange="loadDWDiscovery()">
+ <option value="3">반경 3km</option>
+ <option value="5" selected>반경 5km</option>
+ <option value="10">반경 10km</option>
+ <option value="20">반경 20km</option>
+ </select>
+ </div>
+ </div>
+ <div class="dw-map-wrap">
+ <div id="dw-disc-map" class="dw-map"></div>
+ <div class="dw-map-hint dw-map-hint--loading" id="dw-map-hint" style="flex-direction:column;gap:0;background:#fdfdfd;backdrop-filter:none;">
+ <video class="dw-map-loading-video" src="/pawsitive_loading.mp4" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
+ </div>
+ </div>
+ </div>
+
+ <!-- AI 추천 도우미 목록 -->
+ <div class="match-section" id="walker-list-section">
+   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+     <h2 class="match-section__title" style="margin:0;">${icon('sparkles',16)} AI 추천 도우미</h2>
+     <button onclick="toggleAiScoreExplain()" style="font-size:0.75rem;color:#718096;background:none;border:1px solid #e2e8f0;border-radius:999px;padding:4px 12px;cursor:pointer;transition:all 0.15s;">점수 계산 방식 ?</button>
+   </div>
+   <div id="ai-score-explain" style="display:none;background:#f8f8f6;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:16px;font-size:0.8rem;line-height:1.6;color:#4A5568;">
+     <div style="font-weight:800;margin-bottom:12px;color:#1a1a1a;font-size:0.88rem;">AI 추천 점수는 이렇게 계산돼요</div>
+     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e8f5e9;">
+         <span style="width:8px;height:8px;border-radius:50%;background:#00AA76;flex-shrink:0;"></span><span><strong>공격성 대응력</strong> — 내 반려견의 공격성 수준에 맞는 도우미 경험치</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e3f2fd;">
+         <span style="width:8px;height:8px;border-radius:50%;background:#2196F3;flex-shrink:0;"></span><span><strong>지역 근접성</strong> — 같은 동네일수록 높은 점수, 가까울수록 더 잘 매칭돼요</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #fce4ec;">
+         <span style="width:8px;height:8px;border-radius:50%;background:#E91E63;flex-shrink:0;"></span><span><strong>대형견 경험</strong> — 내 반려견 크기에 맞는 도우미 경험 보유 여부</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #fff3e0;">
+         <span style="width:8px;height:8px;border-radius:50%;background:#FF9800;flex-shrink:0;"></span><span><strong>시간대 매칭</strong> — 원하는 산책 시간과 도우미 가능 시간 일치 여부</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #f3e5f5;">
+         <span style="width:8px;height:8px;border-radius:50%;background:#9C27B0;flex-shrink:0;"></span><span><strong>산책 경력</strong> — 도우미의 산책 경력 연수, 경험이 많을수록 유리해요</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e8f5e9;">
+         <span style="width:8px;height:8px;border-radius:50%;background:#4CAF50;flex-shrink:0;"></span><span><strong>완료 산책 수</strong> — 실제 완료한 산책 기록이 많을수록 신뢰도 가산점</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #e3f2fd;">
+         <span style="width:8px;height:8px;border-radius:50%;background:#607D8B;flex-shrink:0;"></span><span><strong>최근 활동</strong> — 최근에 접속한 도우미일수록 빠른 응답을 기대할 수 있어요</span>
+       </div>
+       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid #fff8e1;">
+         <span style="width:8px;height:8px;border-radius:50%;background:#FFC107;flex-shrink:0;"></span><span><strong>견종 경험 매칭</strong> — 내 반려견 견종을 산책해본 도우미를 우선 추천해요</span>
+       </div>
+     </div>
+     <div style="font-size:0.73rem;color:#999;padding:8px 10px;background:#fff;border-radius:8px;">점수가 높을수록 내 반려견과 잘 맞는 도우미예요. Gemini AI 분석 버튼을 누르면 더 정밀한 매칭 결과를 볼 수 있어요.</div>
+   </div>
+   <div id="ai-score-wrapper" style="position:relative;">
+     <div id="ai-score-blur-overlay" style="position:absolute;inset:0;z-index:10;backdrop-filter:blur(6px);background:rgba(255,255,255,0.55);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+       <div style="font-size:0.9rem;font-weight:700;color:#1a1a1a;">${icon('sparkles',16,'#7c6ff7')} AI 적합도 분석 준비됨</div>
+       <div style="font-size:0.78rem;color:#718096;text-align:center;line-height:1.6;">버튼을 누르면 Gemini AI가 내 반려견에게<br>가장 잘 맞는 도우미를 분석해드려요</div>
+       <button id="ai-calc-btn" onclick="startAiScoreCalc()" style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:linear-gradient(135deg,#7c6ff7,#6c47ff);color:#fff;border:none;border-radius:999px;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(108,71,255,0.35);">
+         ${icon('sparkles',15,'#fff')} AI 적합도 계산하기
+       </button>
+     </div>
+     <div id="ai-walker-list" style="filter:blur(4px);pointer-events:none;user-select:none;">${walkerListHtml}</div>
+   </div>
+   ${hasMoreWalkers ? `
+   <div id="walker-list-more-wrap" style="text-align:center;margin-top:16px;">
+     <button type="button" id="walker-list-more-btn" onclick="toggleWalkerListMore(this)" style="padding:10px 24px;background:#fff;border:1.5px solid #1a1a1a;border-radius:999px;color:#1a1a1a;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
+       도우미 ${scoredWalkers.length - WALKER_INITIAL_LIMIT}명 더보기 ↓
+     </button>
+   </div>` : ''}
+ </div>
+
+ <div class="match-section" id="direct-history-section" style="display:none;">
+ <h2 class="match-section__title">산책 기록</h2>
+ <div id="requester-history-wrap"><div class="spinner" style="margin:20px auto;"></div></div>
+ </div>
+ `);
+
+ // GPS 자동 로드
+ setTimeout(() => loadDWDiscovery(), 300);
+
+ // AI 점수는 버튼 클릭 시에만 계산 (API 토큰 절약)
+ window._aiCalcWalkers = availWalkers;
+ window._aiCalcProfile = myProfile;
+
+ renderDirectWalkHistory(user.id, 'requester').then(({ html, hasRecords }) => {
+ const section = document.getElementById('direct-history-section');
+ const wrap = document.getElementById('requester-history-wrap');
+ if (section && wrap) {
+ if (hasRecords) { wrap.innerHTML = html; section.style.display = ''; }
+ else section.style.display = 'none';
+ }
+ });
+}
+
+let _dwDiscoveryMap = null;
+let _dwDiscoveryLayer = null;
+
+function _dwEscapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+}
+
+function _dwIsDemoWalker(userId) {
+  return String(userId || '').startsWith('dummy-walker-');
+}
+
+function _dwHideDiscoveryLoading() {
+  const hint = document.getElementById('dw-map-hint');
+  if (!hint) return;
+  hint.style.opacity = '0';
+  setTimeout(() => {
+    if (hint) hint.style.display = 'none';
+  }, 250);
+}
+
+function _dwGetDiscoveryPosition() {
+  if (!navigator.geolocation) return Promise.reject(new Error('GPS unavailable'));
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 7000,
+      maximumAge: 60000
+    });
+  });
+}
+
+function _dwWalkerDiscoveryIcon(walker) {
+  const name = walker.userName || walker.name || '도우미';
+  const photo = walker.profilePhoto || walker.profileImage || '';
+  const initial = _dwEscapeHtml(name.charAt(0) || '도');
+  const color = walker.isAvailable ? '#F59E0B' : '#94A3B8';
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:${color};box-shadow:0 4px 14px rgba(15,23,42,.22);display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:900;color:#fff;">
+      ${photo ? `<img src="${_dwEscapeHtml(photo)}" alt="" style="width:100%;height:100%;object-fit:cover;">` : initial}
+    </div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -20]
+  });
+}
+
+function _dwWalkerPopupHtml(walker) {
+  const name = walker.userName || walker.name || '산책 도우미';
+  const photo = walker.profilePhoto || walker.profileImage || '';
+  const initial = _dwEscapeHtml(name.charAt(0) || '?');
+  const distanceText = Number.isFinite(Number(walker.distance)) ? `${Number(walker.distance).toFixed(1)}km` : '위치 확인중';
+  const ratingText = Number.isFinite(Number(walker.rating)) ? Number(walker.rating).toFixed(1) : '5.0';
+  const trustText = typeof walker.trustScore === 'number' ? `${walker.trustScore}점` : '신규';
+  const safe = _dwEscapeHtml;
+  const label = (field, value) => {
+    try { return getWalkerLabel(field, value); } catch (e) { return value || '-'; }
+  };
+  const statItems = [
+    ['산책 경력', label('careerYears', walker.careerYears || 'under6m')],
+    ['대형견 경험', label('largeDogExp', walker.largeDogExp || 'none')],
+    ['공격성 대응', label('aggressionHandle', walker.aggressionHandle || 'no')],
+    ['양육 경험', label('ownPetExp', walker.ownPetExp || 'none')]
+  ];
+  const sizeChips = (walker.acceptedSizes || ['small', 'medium', 'large'])
+    .map(size => `<span class="dw-popup-chip dw-popup-chip--green">${safe(label('dogSize', size))}</span>`)
+    .join('');
+  const breedChips = (walker.breedExp || []).slice(0, 4)
+    .map(item => `<span class="dw-popup-chip">${safe(item)}</span>`)
+    .join('');
+  const behaviorChips = (walker.problemBehavior || []).slice(0, 4)
+    .map(item => `<span class="dw-popup-chip dw-popup-chip--amber">${safe(item)}</span>`)
+    .join('');
+  const capabilityChips = [
+    walker.canWalkLarge ? '대형견 가능' : '',
+    walker.canWalkMultiple ? '다견 산책 가능' : ''
+  ].filter(Boolean).map(item => `<span class="dw-popup-chip dw-popup-chip--dark">${safe(item)}</span>`).join('');
+  const specialty = walker.specialty || walker.introTitle || '';
+  const message = walker.message || walker.intro || '';
+
+  return `
+  <article class="dw-popup-card">
+    <div class="dw-popup-card__hero">
+      <span class="dw-popup-card__status">GPS 매칭</span>
+      <span class="dw-popup-card__distance">${safe(distanceText)}</span>
+      <div class="dw-popup-card__avatar">
+        ${photo ? `<img src="${safe(photo)}" alt="${safe(name)}">` : `<span>${initial}</span>`}
+      </div>
+    </div>
+    <div class="dw-popup-card__body">
+      <h3 class="dw-popup-card__name">${safe(name)}</h3>
+      <div class="dw-popup-card__score">
+        <span>★ ${safe(ratingText)}</span>
+        <span>리뷰 ${Number(walker.reviewCount || 0)}건</span>
+        <span>신뢰 ${safe(trustText)}</span>
+      </div>
+      <div class="dw-popup-card__meta">
+        <span>${safe(walker.location || '위치 정보 없음')}</span>
+        <span>${safe(walker.preferredTime || '시간 협의')}</span>
+      </div>
+      ${specialty ? `<div class="dw-popup-card__specialty">${safe(specialty)}</div>` : ''}
+      <div class="dw-popup-card__stats">
+        ${statItems.map(([key, value]) => `<div><span>${safe(key)}</span><strong>${safe(value)}</strong></div>`).join('')}
+      </div>
+      <div class="dw-popup-card__chips">${sizeChips}${capabilityChips}</div>
+      ${breedChips ? `<div class="dw-popup-card__group"><span>경험 견종</span><div>${breedChips}</div></div>` : ''}
+      ${behaviorChips ? `<div class="dw-popup-card__group"><span>케어 가능 성향</span><div>${behaviorChips}</div></div>` : ''}
+      ${message ? `<p class="dw-popup-card__message">"${safe(message)}"</p>` : ''}
+      <button class="dw-popup-card__button" onclick="handleSendMatchRequest('${safe(walker.userId)}')">요청하기</button>
+    </div>
+  </article>`;
+}
+
+async function loadDWDiscovery() {
+  const mapEl = document.getElementById('dw-disc-map');
+  if (!mapEl || typeof L === 'undefined') {
+    _dwHideDiscoveryLoading();
+    return;
+  }
+
+  const radiusKm = Number(document.getElementById('dw-radius-sel')?.value || 5);
+  let lat = null;
+  let lng = null;
+  let gpsOk = false;
+
+  try {
+  try {
+    const pos = await _dwGetDiscoveryPosition();
+    lat = pos.coords.latitude;
+    lng = pos.coords.longitude;
+    gpsOk = true;
+  } catch (e) {
+    const user = AuthService.getCurrentUser();
+    const profile = user ? MatchingService.getMyProfile(user.id) : null;
+    if (Number.isFinite(Number(profile?.lat)) && Number.isFinite(Number(profile?.lng))) {
+      lat = Number(profile.lat);
+      lng = Number(profile.lng);
+    }
+  }
+
+  try {
+    await MatchingService.refreshFromServer();
+  } catch (e) {}
+
+  const walkersWithCoords = MatchingService.getAvailableWalkers()
+    .filter(w => Number.isFinite(Number(w.lat)) && Number.isFinite(Number(w.lng)))
+    .map(w => ({ ...w, lat: Number(w.lat), lng: Number(w.lng) }));
+
+  if (lat === null || lng === null) {
+    const firstWalker = walkersWithCoords[0];
+    lat = firstWalker?.lat ?? 37.5665;
+    lng = firstWalker?.lng ?? 126.9780;
+  }
+
+  const walkers = gpsOk
+    ? MatchingService.getNearbyWalkers(lat, lng, radiusKm)
+    : walkersWithCoords;
+
+  if (_dwDiscoveryMap) {
+    try { _dwDiscoveryMap.remove(); } catch (e) {}
+    _dwDiscoveryMap = null;
+  }
+  if (mapEl._leaflet_id) {
+    try { delete mapEl._leaflet_id; } catch (e) {}
+  }
+
+  _dwDiscoveryMap = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView([lat, lng], gpsOk ? 15 : 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(_dwDiscoveryMap);
+
+  _dwDiscoveryLayer = L.layerGroup().addTo(_dwDiscoveryMap);
+  const bounds = [];
+
+  if (gpsOk) {
+    const myIcon = L.divIcon({
+      className: '',
+      html: '<div style="width:18px;height:18px;border-radius:50%;background:#2563EB;border:3px solid #fff;box-shadow:0 2px 10px rgba(37,99,235,.35);"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+    L.marker([lat, lng], { icon: myIcon }).bindPopup('내 위치').addTo(_dwDiscoveryLayer);
+    L.circle([lat, lng], {
+      radius: radiusKm * 1000,
+      color: '#2563EB',
+      weight: 1,
+      fillColor: '#2563EB',
+      fillOpacity: 0.05
+    }).addTo(_dwDiscoveryLayer);
+    bounds.push([lat, lng]);
+  }
+
+  walkers.forEach(walker => {
+    const name = walker.userName || walker.name || '산책 도우미';
+    const distanceText = Number.isFinite(Number(walker.distance)) ? `${Number(walker.distance).toFixed(1)}km` : '위치 확인됨';
+    L.marker([walker.lat, walker.lng], { icon: _dwWalkerDiscoveryIcon(walker) })
+      .bindPopup(`<div style="min-width:130px;"><div style="font-weight:800;margin-bottom:4px;">${_dwEscapeHtml(name)}</div><div style="font-size:12px;color:#64748B;margin-bottom:8px;">${_dwEscapeHtml(distanceText)}</div><button style="width:100%;border:none;border-radius:8px;background:#111827;color:#fff;font-size:12px;font-weight:800;padding:7px 10px;cursor:pointer;" onclick="handleSendMatchRequest('${_dwEscapeHtml(walker.userId)}')">요청하기</button></div>`)
+      .bindPopup(_dwWalkerPopupHtml(walker), {
+        className: 'dw-walker-popup',
+        maxWidth: 320,
+        minWidth: 292,
+        autoPanPadding: [24, 24]
+      })
+      .addTo(_dwDiscoveryLayer);
+    bounds.push([walker.lat, walker.lng]);
+  });
+
+  if (bounds.length >= 2) {
+    _dwDiscoveryMap.fitBounds(L.latLngBounds(bounds), { padding: [42, 42], maxZoom: 15 });
+  } else {
+    _dwDiscoveryMap.setView([lat, lng], gpsOk ? 15 : 12);
+  }
+
+  setTimeout(() => {
+    if (_dwDiscoveryMap) _dwDiscoveryMap.invalidateSize();
+  }, 80);
+
+  if (!gpsOk) {
+    showToast('GPS 위치를 받지 못해 저장된 위치 기준으로 지도를 열었어요.', 'info');
+  }
+  } catch (e) {
+    console.warn('[DW Discovery] 지도 초기화 실패:', e);
+    if (!_dwDiscoveryMap) {
+      try {
+        _dwDiscoveryMap = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView([37.5665, 126.9780], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(_dwDiscoveryMap);
+      } catch (fallbackError) {}
+    }
+  } finally {
+    _dwHideDiscoveryLoading();
+  }
+}
+
+/** 매칭 프로필 등록 해제 */
+function handleRemoveMatchProfile() {
+ if (!confirm('매칭 등록을 해제하시겠어요?')) return;
+ const user = AuthService.getCurrentUser();
+ if (!user) return;
+ MatchingService.removeProfile(user.id);
+ refreshDrawer();
+ renderMatchingPage();
+}
+
+function handleSwitchRole() {
+ const user = AuthService.getCurrentUser();
+ if (!user) return;
+ const myProfile = MatchingService.getMyProfile(user.id);
+ const currentRole = myProfile?.role === 'walker' ? '산책 도우미' : '산책 요청자';
+ const nextRole = myProfile?.role === 'walker' ? '산책 요청자' : '산책 도우미';
+ if (!confirm(`현재 ${currentRole} 역할을 해제하고 ${nextRole}로 변경할까요?`)) return;
+ MatchingService.removeProfile(user.id);
+ refreshDrawer();
+ renderMatchingRoleSelect(myProfile?.role === 'walker' ? 'requester' : 'walker');
+}
+
+/** 도우미 가용 상태 토글 */
+async function _syncWalkerState(userId, wantOn, lat, lng) {
+ try {
+ const res = await fetch('/api/walkers');
+ const walkers = await res.json();
+ const serverWalker = walkers.find(w => w.userId === userId);
+ const serverIsOn = serverWalker?.isAvailable ?? false;
+
+ if (wantOn && !serverIsOn) {
+ // OFF → ON: toggle (lat/lng 포함 가능)
+ await fetch('/api/walkers/toggle', {
+ method: 'PATCH',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ userId, ...(lat && lng ? { lat, lng } : {}) })
+ });
+ } else if (wantOn && serverIsOn && lat && lng) {
+ // 이미 ON, GPS만 업데이트
+ await fetch(`/api/walkers/${userId}/location`, {
+ method: 'PATCH',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ lat, lng })
+ }).catch(() => {});
+ } else if (!wantOn && serverIsOn) {
+ // ON → OFF: toggle
+ await fetch('/api/walkers/toggle', {
+ method: 'PATCH',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ userId })
+ });
+ }
+
+ await MatchingService.refreshFromServer();
+ } catch(e) { console.warn('워커 상태 동기화 실패:', e); }
+}
+
+async function handleToggleMatcherAvailability() {
+ const user = AuthService.getCurrentUser();
+ if (!user) return;
+
+ const currentProfile = MatchingService.getMyProfile(user.id);
+ const turningOn = !(currentProfile?.isAvailable);
+
+ if (turningOn) {
+ // ON 전환: GPS 먼저 받은 뒤 lat/lng 포함해서 토글
+ const statusEl = document.getElementById('dw-avail-status');
+ if (statusEl) statusEl.textContent = '위치 감지 중...';
+
+ if (!navigator.geolocation) {
+ alert('이 브라우저는 GPS를 지원하지 않아요.');
+ if (statusEl) statusEl.textContent = '? 매칭 OFF';
+ // 체크박스 원복
+ const cb = document.getElementById('match-avail-toggle');
+ if (cb) cb.checked = false;
+ return;
+ }
+
+ navigator.geolocation.getCurrentPosition(async pos => {
+ const lat = pos.coords.latitude;
+ const lng = pos.coords.longitude;
+ MatchingService.setAvailability(user.id, true, lat, lng);
+ await _syncWalkerState(user.id, true, lat, lng);
+ renderMatchingPage();
+ }, async () => {
+ // GPS 실패 시 프로필에 저장된 마지막 위치 사용
+ const fallbackProfile = MatchingService.getMyProfile(user.id);
+ const fallbackLat = fallbackProfile?.lat || null;
+ const fallbackLng = fallbackProfile?.lng || null;
+ MatchingService.setAvailability(user.id, true, fallbackLat, fallbackLng);
+ await _syncWalkerState(user.id, true, fallbackLat, fallbackLng);
+ if (!fallbackLat) {
+   showToast('GPS를 받지 못했어요. 위치 권한을 확인해주세요.', 'warning');
+ }
+ renderMatchingPage();
+ }, { timeout: 6000, enableHighAccuracy: false });
+
+ } else {
+ MatchingService.setAvailability(user.id, false, null, null);
+ await _syncWalkerState(user.id, false, null, null);
+ renderMatchingPage();
+ }
+}
+
+/** 브로드캐스트 요청 수락 (선착순 매칭) */
+async function handleAcceptBroadcastRequest(requestId) {
+ const result = await MatchingService.acceptBroadcastRequest(requestId);
+ const alertEl = document.getElementById('matching-alert');
+ if (result.success) {
+ stopWalkerPolling();
+ if (alertEl) {
+ alertEl.innerHTML = '<div class="alert alert-success">산책 요청을 수락했습니다. 매칭이 완료되었습니다!</div>';
+ setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
+ }
+ renderMatchingPage();
+ } else if (result.alreadyMatched) {
+ if (alertEl) {
+ alertEl.innerHTML = '<div class="alert alert-error">이미 다른 도우미와 매칭이 완료된 요청입니다.</div>';
+ setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; renderMatchingPage(); }, 3000);
+ }
+ }
+}
+
+/** 요청 거절 */
+async function handleRejectMatchRequest(requestId) {
+ await MatchingService.rejectRequestRemote(requestId);
+ renderMatchingPage();
+}
+
+/** 보낸 요청 취소 (요청자) */
+async function handleCancelSentRequest(requestId) {
+ if (!confirm('이 요청을 취소할까요?')) return;
+ const result = await MatchingService.cancelSentRequest(requestId);
+ const alertEl = document.getElementById('matching-alert');
+ if (result && result.success) {
+ if (alertEl) {
+ alertEl.innerHTML = '<div class="alert alert-success">요청이 취소되었습니다.</div>';
+ setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 3000);
+ }
+ renderMatchingPage();
+ } else {
+ if (alertEl) {
+ alertEl.innerHTML = `<div class="alert alert-error">${result?.error || '요청 취소에 실패했습니다.'}</div>`;
+ setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 3000);
+ }
+ }
+}
+
+/** 개별 요청 보내기 (요청자 → 특정 도우미) */
+function handleSendMatchRequest(toUserId) {
+ const user = AuthService.getCurrentUser();
+ if (!user) { Router.navigate('/login'); return; }
+ if (_dwIsDemoWalker(toUserId)) {
+   showToast('이 도우미는 AI 추천/GPS 표시용 샘플이에요. 실제 매칭 테스트는 실시간 접속 도우미를 선택해주세요.', 'info');
+   return;
+ }
+
+ const myProfile = MatchingService.getMyProfile(user.id) || {};
+ const selectedDog = (user.dogs || [])[0] || {};
+
+ // 결제 정보 저장 후 결제 모달 표시
+ window._pendingPaymentWalkerId = toUserId;
+ window._pendingPaymentType = 'direct';
+
+ showPaymentConfirmModal({ dogSize: selectedDog.size || 'small', dogName: selectedDog.name || '반려견' })
+ .then(paymentResult => {
+   // redirect 방식이라 여기 도달 안 함 (토스 결제창으로 이동)
+   // 만약 도달하면 (팝업 방식 등) 직접 요청 전송
+   _sendMatchRequestAfterPayment(toUserId, paymentResult);
+ })
+ .catch(e => {
+   if (e === 'cancelled') showToast('결제가 취소되었어요.', 'info');
+ });
+}
+
+/** 결제 완료 후 매칭 요청 전송 (redirect 복귀 시 또는 직접 호출) */
+async function _sendMatchRequestAfterPayment(toUserId, paymentResult) {
+ const user = AuthService.getCurrentUser();
+ if (!user) return;
+ const myProfile = MatchingService.getMyProfile(user.id) || {};
+ const selectedDog = (user.dogs || [])[0] || {};
+
+ const alertEl = document.getElementById('matching-alert');
+
+ let lat = paymentResult?.pickupLatitude || null;
+ let lng = paymentResult?.pickupLongitude || null;
+ try {
+   const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 }));
+   lat = pos.coords.latitude; lng = pos.coords.longitude;
+ } catch(e) {}
+ if ((!lat || !lng) && toUserId) {
+   try {
+     const walkers = await (await fetch('/api/walkers')).json();
+     const walker = walkers.find(w => w.userId === toUserId);
+     if (walker?.lat && walker?.lng) { lat = walker.lat; lng = walker.lng; }
+   } catch(e) {}
+ }
+
+ const requestData = {
+   dogId: selectedDog.id || null,
+   dogName: selectedDog.name || '',
+   dogBreed: selectedDog.breed || '',
+   dogSize: selectedDog.size || '',
+   dogs: paymentResult?.dogs || [{ name: selectedDog.name, size: selectedDog.size }],
+   location: '현재 위치',
+   lat, lng,
+   desiredTime: '지금 (즉시 매칭)',
+   notes: myProfile.notes || '',
+   paymentOrderId: paymentResult?.orderId || null,
+   paymentAmount: paymentResult?.amount || 0,
+   duration: paymentResult?.duration || 40
+ };
+
+ const result = await MatchingService.sendRequest(user.id, toUserId, requestData);
+ if (result && result.success) {
+   // 서버에 결제 완료 처리
+   if (paymentResult?.orderId) {
+     _markPaymentCompleted(paymentResult.orderId, result.request?.id || result.id || null);
+   }
+   if (alertEl) {
+     alertEl.innerHTML = '<div class="alert alert-success">결제 완료! 매칭 요청을 보냈습니다 💳</div>';
+     setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 4000);
+   }
+   renderMatchingPage();
+ } else {
+   // 요청 실패 시 재시도 기록
+   if (paymentResult?.orderId) {
+     _markPaymentRetry(paymentResult.orderId, result?.error || '요청 전송 실패');
+   }
+   if (alertEl) {
+     alertEl.innerHTML = `<div class="alert alert-error">${result?.error || '요청 전송에 실패했습니다.'}</div>`;
+     setTimeout(() => { if (alertEl) alertEl.innerHTML = ''; }, 5000);
+   }
+ }
+}
+
+// --- 프로필 페이지 (플레이스홀더) ---
+function renderRequesterActiveWalkScreen(user, req) {
+  if (window._requesterLiveMapPoll) { clearInterval(window._requesterLiveMapPoll); window._requesterLiveMapPoll = null; }
+  if (window._requesterWalkTimer) { clearInterval(window._requesterWalkTimer); window._requesterWalkTimer = null; }
+
+  const walkerName = req.walkerName || '도우미';
+  const statusText = ({ accepted:'매칭 완료', heading:'이동 중', arrived:'도착', handoff:'산책 시작 준비', walking:'산책 중', returning:'복귀 중', return_arrived:'복귀 도착' })[req.status] || '매칭 완료';
+  const descText = ({ accepted:'도우미가 곧 이동을 시작해요', heading:'도우미가 픽업 장소로 오고 있어요', arrived:'반려견 전달을 진행해주세요', handoff:'전달 확인을 산책 시작으로 반영하고 있어요', walking:'도우미와 반려견의 이동 경로를 보고 있어요', returning:'도우미가 반려견과 함께 돌아오고 있어요', return_arrived:'도우미와 함께 반려견 재인계를 확인해주세요' })[req.status] || '도우미 위치를 확인할 수 있어요';
+  const sessionId = req.sessionId || '';
+  const premiumEscReq = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const premiumWalkerName = premiumEscReq(req.walkerName || '도우미');
+  const premiumDogName = premiumEscReq(req.dogName || '반려견');
+  const requesterStatusMap = {
+    accepted: {
+      accent: '#2563eb',
+      title: '매칭 완료',
+      copy: `${premiumWalkerName}님이 곧 픽업 이동을 시작해요.`,
+      map: '고정 픽업 지점 기준 위치'
+    },
+    heading: {
+      accent: '#2563eb',
+      title: '도우미 이동 중',
+      copy: `${premiumWalkerName}님이 요청 시점에 고정된 픽업 지점으로 오고 있어요.`,
+      map: '도우미 접근 위치'
+    },
+    arrived: {
+      accent: '#d97706',
+      title: '픽업 지점 도착',
+      copy: '반려견을 전달한 뒤 확인을 눌러주세요.',
+      map: '픽업 지점 도착'
+    },
+    handoff: {
+      accent: '#7c3aed',
+      title: '산책 시작 준비',
+      copy: '전달 확인을 반영하고 산책 기록을 시작하고 있어요.',
+      map: '산책 시작 준비'
+    },
+    walking: {
+      accent: '#00a876',
+      title: '산책 진행 중',
+      copy: `${premiumWalkerName}님과 ${premiumDogName}의 산책 경로를 확인할 수 있어요.`,
+      map: '실시간 산책 경로'
+    },
+    returning: {
+      accent: '#0284c7',
+      title: '복귀 중',
+      copy: `${premiumWalkerName}님이 처음 픽업 지점으로 돌아오고 있어요.`,
+      map: '복귀 경로 확인'
+    },
+    return_arrived: {
+      accent: '#e11d48',
+      title: '복귀 지점 도착',
+      copy: '반려견을 인계받은 뒤 완료 확인을 눌러주세요.',
+      map: '반려견 인계 대기'
+    }
+  };
+  const requesterStatus = requesterStatusMap[req.status] || requesterStatusMap.accepted;
+  const requesterStepMap = { accepted: 0, heading: 0, arrived: 1, handoff: 1, walking: 2, returning: 3, return_arrived: 3 };
+  const requesterActiveStep = requesterStepMap[req.status] ?? 0;
+  const requesterSteps = [
+    { title: '픽업 이동', hint: '요청 시점 위치로 안내' },
+    { title: '전달 확인', hint: '반려견 전달을 확인' },
+    { title: '산책 진행', hint: '시간과 경로를 실시간 확인' },
+    { title: '복귀 인계', hint: '처음 픽업 지점에서 마무리' }
+  ].map((step, idx) => {
+    const cls = idx < requesterActiveStep ? ' is-done' : idx === requesterActiveStep ? ' is-active' : '';
+    return `<div class="wsp-step${cls}">
+      <div class="wsp-step-index">${idx < requesterActiveStep ? icon('check-circle', 14) : idx + 1}</div>
+      <div>
+        <div class="wsp-step-title">${step.title}</div>
+        <div class="wsp-step-hint">${step.hint}</div>
+      </div>
+    </div>`;
+  }).join('');
+  const requesterStatsVisible = ['walking','returning','return_arrived'].includes(req.status);
+  const requesterPickupNote = '산책 요청을 보낸 순간의 GPS 위치가 픽업 지점으로 고정돼요. 도우미는 이 지점을 기준으로 찾아오며, 요청자 화면은 그 첫 픽업 지점을 중심으로 보여줍니다.';
+  const requesterInitial = premiumEscReq((req.walkerName || '도').trim().charAt(0) || '도');
+  const requesterMapCaption = req.status === 'walking'
+    ? '실시간 산책 경로'
+    : req.status === 'returning'
+      ? '복귀 경로를 따라오는 중'
+      : req.status === 'return_arrived'
+        ? '반려견 인계 대기 중'
+        : '요청 시점 픽업 지점 기준';
+  let requesterAction = '';
+  if (req.status === 'arrived' && sessionId) {
+    requesterAction = `<button class="wsp-action wsp-action--primary" onclick="confirmHandoff('${sessionId}')">${icon('check-circle', 15)} 반려견 전달 완료</button>`;
+  } else if (req.status === 'return_arrived' && sessionId) {
+    requesterAction = req.requesterReturnHandoffConfirmedAt
+      ? `<span class="wsp-action wsp-action--muted">도우미 인계 확인 대기</span>`
+      : `<button class="wsp-action wsp-action--accent" onclick="confirmReturnHandoff('${sessionId}')">${icon('check-circle', 15)} 인계 확인 완료</button>`;
+  }
+
+  renderPage(`
+  <div class="wsp-root" style="--wsp-accent:${requesterStatus.accent};--wsp-accent-soft:${requesterStatus.accent}18;">
+    <section class="wsp-hero">
+      <div>
+        <div class="wsp-kicker">
+          <span class="wsp-status-dot is-live"></span>
+          요청자 진행 화면
+        </div>
+        <h1 class="wsp-title">${requesterStatus.title}</h1>
+        <p class="wsp-sub">${requesterStatus.copy}</p>
+      </div>
+      <div class="wsp-actions">${requesterAction}</div>
+    </section>
+
+    <section class="wsp-grid">
+      <aside class="wsp-panel">
+        <div class="wsp-panel__label">산책 매칭 프로세스</div>
+        <div class="wsp-panel__title">${premiumDogName} 산책 흐름</div>
+        <div class="wsp-steps">${requesterSteps}</div>
+
+        <div class="match-face-notice match-face-notice--process">
+          <strong>! 도우미 얼굴을 잘 확인하세요</strong>
+          <span>실제 개인 얼굴이 보이는 프로필 사진을 기준으로 안전하게 매칭돼요.</span>
+        </div>
+
+        <div class="wsp-note">
+          <div class="wsp-note__label">픽업 지점 안내</div>
+          <div class="wsp-note__copy">${requesterPickupNote}</div>
+        </div>
+
+        <div class="wsp-partner">
+          <div class="wsp-partner__avatar">${requesterInitial}</div>
+          <div class="wsp-partner__meta">
+            <div class="wsp-partner__name">${premiumWalkerName}</div>
+            <div class="wsp-partner__role">산책 도우미</div>
+          </div>
+          <button class="wsp-action wsp-action--secondary" onclick="openChatModal('${req.id}')">${icon('message-circle', 15)} 채팅</button>
+        </div>
+      </aside>
+
+      <main class="wsp-map-panel">
+        <div class="wsp-map-head">
+          <div>
+            <div class="wsp-map-head__label">Live map</div>
+            <div class="wsp-map-head__title">${requesterStatus.map}</div>
+          </div>
+          <div class="wsp-map-head__label">${premiumDogName}</div>
+        </div>
+        <div class="wsp-map-wrap">
+          <div id="requester-live-map" class="wsp-map"></div>
+          <div class="wsp-map-caption">${requesterMapCaption}</div>
+        </div>
+      </main>
+    </section>
+
+    <section class="wsp-stats${requesterStatsVisible ? '' : ' wsp-stats--hidden'}">
+      <div class="wsp-stat">
+        <div>
+          <div class="wsp-stat-val" id="rw-time">00:00</div>
+          <div class="wsp-stat-key">산책 시간</div>
+        </div>
+      </div>
+      <div class="wsp-stat">
+        <div>
+          <div class="wsp-stat-val" id="rw-dist">0.00 km</div>
+          <div class="wsp-stat-key">이동 거리</div>
+        </div>
+      </div>
+      <div class="wsp-stat">
+        <div>
+          <div class="wsp-stat-val" id="rw-points">0</div>
+          <div class="wsp-stat-key">위치 포인트</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wsp-footer">
+      <button class="wsp-action wsp-action--danger" onclick="cancelActiveWalkRequest('${req.id}')">요청 취소</button>
+    </div>
+  </div>`);
+
+  setTimeout(() => _initRequesterLiveMap(req), 200);
+  showChatButton(req.id);
+  return;
+}
+
+function _initRequesterLiveMap(req) {
+  const container = document.getElementById('requester-live-map');
+  if (!container) return;
+
+  if (window._requesterLiveMapPoll) { clearInterval(window._requesterLiveMapPoll); window._requesterLiveMapPoll = null; }
+  if (window._requesterWalkTimer) { clearInterval(window._requesterWalkTimer); window._requesterWalkTimer = null; }
+
+  const reqPickupLat = Number(req.pickupLatitude);
+  const reqPickupLng = Number(req.pickupLongitude);
+  const reqWalkerLat = Number(req.walkerCurrentLat);
+  const reqWalkerLng = Number(req.walkerCurrentLng);
+  const hasPickup = Number.isFinite(reqPickupLat) && Number.isFinite(reqPickupLng);
+  const hasInitialWalker = Number.isFinite(reqWalkerLat) && Number.isFinite(reqWalkerLng);
+  const pickupLat = hasPickup ? reqPickupLat : (hasInitialWalker ? reqWalkerLat : 37.5665);
+  const pickupLng = hasPickup ? reqPickupLng : (hasInitialWalker ? reqWalkerLng : 126.9780);
+  const map = L.map(container).setView([pickupLat, pickupLng], hasPickup || hasInitialWalker ? 16 : 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+  const user = AuthService.getCurrentUser();
+  const myProfile = user ? MatchingService.getMyProfile(user.id) : null;
+  const myPhoto = user?.profileImage || myProfile?.profilePhoto || '';
+  const myName = user?.nickname || user?.name || '나';
+  let walkerPhoto = '';
+  const walkerName = req.walkerName || '도우미';
+  const requesterIcon = _makePhotoMarker(myPhoto, myName.charAt(0), '#3182CE', 36, false);
+  const getWalkerIcon = (pulse = true) => _makePhotoMarker(walkerPhoto, walkerName.charAt(0), '#F59E0B', 44, pulse);
+  const requesterMarker = L.marker([pickupLat, pickupLng], { icon: requesterIcon, zIndexOffset: 800 })
+    .bindPopup(hasPickup ? '내 픽업 장소' : '요청자 위치 기준점')
+    .addTo(map);
+
+  let walkerMarker = null;
+  let routePolyline = null;
+  let routePoints = [];
+  let walkStartTime = req.walkStartedAt ? new Date(req.walkStartedAt).getTime() : Date.now();
+
+  const hav = (la1, lo1, la2, lo2) => {
+    const R = 6371000;
+    const r = Math.PI / 180;
+    const dLa = (la2 - la1) * r;
+    const dLo = (lo2 - lo1) * r;
+    const a = Math.sin(dLa / 2) ** 2 + Math.cos(la1 * r) * Math.cos(la2 * r) * Math.sin(dLo / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+  const routeKm = () => {
+    let meters = 0;
+    for (let i = 1; i < routePoints.length; i++) meters += hav(routePoints[i - 1][0], routePoints[i - 1][1], routePoints[i][0], routePoints[i][1]);
+    return meters / 1000;
+  };
+  const updateWalkStats = () => {
+    const pointsEl = document.getElementById('rw-points');
+    const distEl = document.getElementById('rw-dist');
+    if (pointsEl) pointsEl.textContent = routePoints.length;
+    if (distEl) distEl.textContent = `${routeKm().toFixed(2)} km`;
+  };
+  const fitPickupAndWalker = (walkerLat, walkerLng) => {
+    if (!Number.isFinite(walkerLat) || !Number.isFinite(walkerLng)) return;
+    if (hav(pickupLat, pickupLng, walkerLat, walkerLng) < 8) {
+      map.setView([pickupLat, pickupLng], 17, { animate: true });
+      return;
+    }
+    const bounds = L.latLngBounds([[pickupLat, pickupLng], [walkerLat, walkerLng]]);
+    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 17 });
+  };
+  const moveWalker = (lat, lng, fitMode = 'pickup') => {
+    const nearRequester = hav(pickupLat, pickupLng, lat, lng) < 8;
+    const markerLatLng = nearRequester ? [lat + 0.00008, lng + 0.00008] : [lat, lng];
+    if (!walkerMarker) walkerMarker = L.marker(markerLatLng, { icon: getWalkerIcon(req.status !== 'return_arrived'), zIndexOffset: 900 }).bindPopup(`${walkerName} 위치`).addTo(map);
+    else walkerMarker.setLatLng(markerLatLng);
+    if (fitMode === 'pickup') fitPickupAndWalker(lat, lng);
+    else map.setView([lat, lng], map.getZoom() > 10 ? map.getZoom() : 16, { animate: true, duration: 0.4 });
+  };
+
+  fetch('/api/walkers').then(r => r.json()).then(walkers => {
+    const walker = walkers.find(w => w.userId === req.walkerId);
+    if (walker?.profilePhoto || walker?.profileImage) walkerPhoto = walker.profilePhoto || walker.profileImage;
+  }).catch(() => {});
+
+  const fetchWalkerLocation = async () => {
+    try {
+      const res = await fetch(`/api/walk-requests/${req.id}/walker-location`);
+      const data = await res.json();
+      if (data.success && data.lat && data.lng) moveWalker(data.lat, data.lng, req.status === 'walking' ? 'free' : 'pickup');
+    } catch (e) {}
+  };
+
+  if (['walking','returning','return_arrived'].includes(req.status)) {
+    routePolyline = L.polyline([], { color: '#F59E0B', weight: 5, opacity: 0.88 }).addTo(map);
+    if (req.sessionId) {
+      fetch(`/api/walk-sessions/${req.sessionId}/route`).then(r => r.json()).then(data => {
+        if (data.points?.length) {
+          routePoints = data.points.map(p => [p.latitude, p.longitude]);
+          routePoints.forEach(point => routePolyline.addLatLng(point));
+          const last = routePoints[routePoints.length - 1];
+          moveWalker(last[0], last[1], req.status === 'walking' ? 'free' : 'pickup');
+          if (req.status === 'walking') map.fitBounds(routePolyline.getBounds(), { padding: [36, 36], maxZoom: 17 });
+          updateWalkStats();
+        }
+      }).catch(() => {});
+    }
+    window._requesterWalkTimer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - walkStartTime) / 1000);
+      const min = Math.floor(elapsed / 60);
+      const sec = elapsed % 60;
+      const timeEl = document.getElementById('rw-time');
+      if (timeEl) timeEl.textContent = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  fetchWalkerLocation();
+  if (hasInitialWalker) moveWalker(reqWalkerLat, reqWalkerLng, req.status === 'walking' ? 'free' : 'pickup');
+  window._requesterLiveMapPoll = setInterval(fetchWalkerLocation, req.status === 'walking' ? 5000 : 3000);
+
+  if (typeof RealtimeService !== 'undefined') {
+    RealtimeService.on('walker-location-update', data => {
+      if (data.requestId !== req.id) return;
+      moveWalker(data.lat, data.lng, req.status === 'walking' ? 'free' : 'pickup');
+    });
+    RealtimeService.on('walker-position', data => {
+      if (data.sessionId !== req.sessionId) return;
+      if (req.status !== 'walking') return;
+      const latlng = [data.latitude, data.longitude];
+      if (routePolyline) routePolyline.addLatLng(latlng);
+      routePoints.push(latlng);
+      moveWalker(latlng[0], latlng[1], 'free');
+      updateWalkStats();
+    });
+  }
+}
