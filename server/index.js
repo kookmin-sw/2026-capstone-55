@@ -25,6 +25,9 @@ const matchingRoutes     = require('./routes/matching');
 const chatRoutes         = require('./routes/chat');
 const walkRequestRoutes  = require('./routes/walk-requests');
 const walkSessionRoutes  = require('./routes/walk-sessions');
+const walkChatRoutes     = require('./routes/walk-chat');
+const walkReviewRoutes   = require('./routes/walk-review');
+const phoneRoutes        = require('./routes/phone');
 
 const app    = express();
 const server = http.createServer(app);
@@ -73,7 +76,10 @@ app.use('/api/matching', matchingRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/walk-requests', walkRequestRoutes);
 app.use('/api/walk-sessions', walkSessionRoutes);
+app.use('/api/walk-chat',     walkChatRoutes);
+app.use('/api/walk-review',   walkReviewRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/phone', phoneRoutes);
 
 // --- 정적 파일 (프론트엔드) ---
 app.use(express.static(path.join(__dirname, '..')));
@@ -92,6 +98,16 @@ io.on('connection', (socket) => {
     if (userId) {
       userSockets[userId] = socket.id;
       socket.userId = userId;
+      // walker 프로필이 있으면 lastSeenAt 갱신 (신선도 반영)
+      try {
+        const db = require('./db');
+        const walkers = db.get('walkers', []);
+        const idx = walkers.findIndex(w => w.userId === userId);
+        if (idx >= 0) {
+          walkers[idx].lastSeenAt = new Date().toISOString();
+          db.set('walkers', walkers);
+        }
+      } catch (e) { /* noop */ }
     }
   });
 
@@ -102,15 +118,72 @@ io.on('connection', (socket) => {
   });
 });
 
-// 특정 userId에게 이벤트 전송 (라우터에서 사용)
+// 특정 userId에게 이벤트 전송
 function emitToUser(userId, event, data) {
   const sid = userSockets[userId];
   if (sid) io.to(sid).emit(event, data);
 }
 
+// 온라인 상태인 모든 도우미에게 브로드캐스트
+function emitToAvailableWalkers(event, data) {
+  const db = require('./db');
+  const walkers = db.get('walkers', []);
+
+  // isAvailable + 소켓 연결된 워커에게 개인 emit
+  const availableWalkerIds = walkers
+    .filter(w => w.isAvailable && userSockets[w.userId])
+    .map(w => w.userId);
+  availableWalkerIds.forEach(uid => {
+    io.to(userSockets[uid]).emit(event, data);
+  });
+
+  // 소켓 연결은 됐지만 isAvailable 체크 안 된 워커도 포함 (클라이언트가 필터링)
+  const connectedWalkerIds = walkers
+    .filter(w => userSockets[w.userId] && !availableWalkerIds.includes(w.userId))
+    .map(w => w.userId);
+  connectedWalkerIds.forEach(uid => {
+    io.to(userSockets[uid]).emit(event, { ...data, _softBroadcast: true });
+  });
+
+  // 최후 수단: 연결된 모든 소켓에 emit (클라이언트가 워커 여부 판단)
+  if (availableWalkerIds.length === 0) {
+    io.emit(event, { ...data, _fallback: true });
+  }
+
+  return availableWalkerIds.length;
+}
+
 app.set('emitToUser', emitToUser);
+app.set('emitToAvailableWalkers', emitToAvailableWalkers);
 
 // --- 서버 시작 ---
+// 오래된 요청 자동 만료 (10분마다 실행)
+const db = require('./db');
+setInterval(() => {
+  const now = Date.now();
+  const cutoff24h = now - 24 * 60 * 60 * 1000;
+  const cutoff2h  = now - 2  * 60 * 60 * 1000;
+
+  const requests = db.get('walkRequests', []);
+  let changed = false;
+  requests.forEach(r => {
+    const created = new Date(r.createdAt).getTime();
+    // pending 상태로 2시간 지난 것 → expired
+    if (r.status === 'pending' && created < cutoff2h) {
+      r.status = 'expired'; changed = true;
+    }
+    // accepted/heading 상태로 24시간 지난 것 → expired
+    if (['accepted','heading'].includes(r.status) && created < cutoff24h) {
+      r.status = 'expired'; changed = true;
+    }
+    // broadcasting 상태 만료 체크
+    if (r.status === 'broadcasting' && r.expiresAt && new Date(r.expiresAt) < new Date()) {
+      r.status = 'expired'; changed = true;
+    }
+  });
+  if (changed) db.set('walkRequests', requests);
+}, 10 * 60 * 1000);
+
 server.listen(PORT, () => {
   console.log(`🐾 Pawsitive 서버가 http://localhost:${PORT} 에서 실행 중!`);
   console.log('');

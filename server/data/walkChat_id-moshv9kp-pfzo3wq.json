@@ -1,0 +1,18 @@
+[
+  {
+    "id": "id-mosi74np-drknii9",
+    "requestId": "id-moshv9kp-pfzo3wq",
+    "senderId": "test-walker-001",
+    "senderName": "민준워커",
+    "content": "gd",
+    "createdAt": "2026-05-05T10:46:44.821Z"
+  },
+  {
+    "id": "id-mosi76g1-qfeymmy",
+    "requestId": "id-moshv9kp-pfzo3wq",
+    "senderId": "id-mol2g5lb-rvnvuvi",
+    "senderName": "Peter Lee",
+    "content": "gd",
+    "createdAt": "2026-05-05T10:46:47.137Z"
+  }
+]

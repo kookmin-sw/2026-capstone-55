@@ -44,11 +44,18 @@ router.post('/', (req, res) => {
     return res.status(400).json({ success: false, error: 'requestId, walkerId, requesterId가 필요합니다.' });
   }
 
-  // walk request 상태 → walking
+  // 동일 요청에 대한 진행 중 세션이 이미 있으면 기존 세션 반환 (중복 방지)
+  const existingSessions = db.get('walkSessions', []);
+  const dup = existingSessions.find(s => s.requestId === requestId && ['heading','arrived','handoff','walking'].includes(s.status));
+  if (dup) {
+    return res.json({ success: true, session: dup });
+  }
+
+  // walk request 상태 → heading (픽업 이동 중)
   const requests = db.get('walkRequests', []);
   const reqIdx   = requests.findIndex(r => r.id === requestId);
   if (reqIdx !== -1) {
-    requests[reqIdx].status    = 'walking';
+    requests[reqIdx].status    = 'heading';
     requests[reqIdx].updatedAt = db.now();
     db.set('walkRequests', requests);
   }
@@ -58,20 +65,56 @@ router.post('/', (req, res) => {
     requestId,
     walkerId,
     requesterId,
-    dogName:   dogName || '',
-    status:    'walking',
-    startedAt: db.now(),
-    endedAt:   null
+    dogName:       dogName || '',
+    status:        'heading',
+    startedAt:     db.now(),
+    arrivedAt:     null,
+    walkStartedAt: null,
+    endedAt:       null
   };
 
   const sessions = db.get('walkSessions', []);
   sessions.push(session);
   db.set('walkSessions', sessions);
 
+  // 요청 객체에 sessionId 저장 + status를 heading으로 업데이트
+  if (reqIdx !== -1) {
+    requests[reqIdx].sessionId = session.id;
+    requests[reqIdx].status = 'heading';
+    requests[reqIdx].updatedAt = db.now();
+    db.set('walkRequests', requests);
+  }
+
   const emitToUser = req.app.get('emitToUser');
-  if (emitToUser) emitToUser(requesterId, 'walk-started', { sessionId: session.id, walkerId });
+  if (emitToUser) emitToUser(requesterId, 'walk-started', { sessionId: session.id, walkerId, requestId });
 
   res.json({ success: true, session });
+});
+
+// 도우미 취소 (heading/arrived/handoff 상태에서만)
+router.patch('/:id/cancel', (req, res) => {
+  const { reason } = req.body;
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (!['heading', 'arrived', 'handoff'].includes(sessions[idx].status)) {
+    return res.json({ success: false, error: '산책 중에는 취소할 수 없습니다.' });
+  }
+
+  sessions[idx].status     = 'cancelled';
+  sessions[idx].cancelledAt = db.now();
+  sessions[idx].cancelReason = reason || '';
+  db.set('walkSessions', sessions);
+
+  const s = sessions[idx];
+  const requests = db.get('walkRequests', []);
+  const ri = requests.findIndex(r => r.id === s.requestId);
+  if (ri !== -1) { requests[ri].status = 'cancelled'; requests[ri].updatedAt = db.now(); db.set('walkRequests', requests); }
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) emitToUser(s.requesterId, 'walk-request-cancelled', { requestId: s.requestId, cancelledBy: 'walker', reason });
+
+  res.json({ success: true });
 });
 
 // 세션 종료
@@ -101,6 +144,83 @@ router.patch('/:id/end', (req, res) => {
   if (emitToUser) emitToUser(s.requesterId, 'walk-ended', { sessionId: s.id, totalDistanceKm: totalDist });
 
   res.json({ success: true, session: sessions[idx], totalDistanceKm: totalDist });
+});
+
+// 도우미 도착 (heading → arrived)
+router.patch('/:id/arrive', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status !== 'heading') {
+    return res.json({ success: false, error: '이동 중 상태가 아닙니다.' });
+  }
+  sessions[idx].status    = 'arrived';
+  sessions[idx].arrivedAt = db.now();
+  db.set('walkSessions', sessions);
+
+  const s = sessions[idx];
+
+  // 요청 상태도 업데이트
+  const requests = db.get('walkRequests', []);
+  const reqIdx = requests.findIndex(r => r.id === s.requestId);
+  if (reqIdx !== -1) { requests[reqIdx].status = 'arrived'; db.set('walkRequests', requests); }
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) emitToUser(s.requesterId, 'walker-arrived', { sessionId: s.id, walkerName: req.body.walkerName || '' });
+
+  res.json({ success: true, session: sessions[idx] });
+});
+
+// 요청자가 반려견 전달 완료 확인 (arrived → handoff)
+router.patch('/:id/confirm-handoff', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (sessions[idx].status !== 'arrived') {
+    return res.json({ success: false, error: '도우미가 도착한 후 전달 확인이 가능합니다.' });
+  }
+  sessions[idx].status    = 'handoff';
+  sessions[idx].handoffAt = db.now();
+  db.set('walkSessions', sessions);
+
+  const s = sessions[idx];
+  // walk request 상태도 handoff로 동기화
+  const walkRequests = db.get('walkRequests', []);
+  const reqIdx = walkRequests.findIndex(r => r.id === s.requestId);
+  if (reqIdx !== -1) { walkRequests[reqIdx].status = 'handoff'; walkRequests[reqIdx].updatedAt = db.now(); db.set('walkRequests', walkRequests); }
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) emitToUser(s.walkerId, 'handoff-confirmed', { sessionId: s.id });
+
+  res.json({ success: true, session: sessions[idx] });
+});
+
+// 산책 실제 시작 (handoff → walking) — 도우미가 반려견 픽업 후 누름
+router.patch('/:id/start-walk', (req, res) => {
+  const sessions = db.get('walkSessions', []);
+  const idx = sessions.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false });
+  if (!['arrived', 'handoff'].includes(sessions[idx].status)) {
+    return res.json({ success: false, error: '도착 확인 후 산책을 시작할 수 있습니다.' });
+  }
+  sessions[idx].status        = 'walking';
+  sessions[idx].walkStartedAt = db.now();
+  db.set('walkSessions', sessions);
+
+  // walk-request status도 walking으로 업데이트 (요청자 화면 동기화)
+  const s = sessions[idx];
+  const walkRequests = db.get('walkRequests', []);
+  const reqIdx = walkRequests.findIndex(r => r.id === s.requestId);
+  if (reqIdx !== -1) {
+    walkRequests[reqIdx].status = 'walking';
+    walkRequests[reqIdx].updatedAt = db.now();
+    db.set('walkRequests', walkRequests);
+  }
+
+  const emitToUser = req.app.get('emitToUser');
+  if (emitToUser) emitToUser(s.requesterId, 'walk-tracking-started', { sessionId: s.id });
+
+  res.json({ success: true, session: sessions[idx] });
 });
 
 // 경로 포인트 추가 (세션별 파일에 직접 append)

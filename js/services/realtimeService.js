@@ -23,9 +23,21 @@ const RealtimeService = (() => {
     });
 
     const EVENTS = [
+      // walk-requests (1:1 직접 요청 / 브로드캐스트)
       'walk-request', 'walk-request-accepted', 'walk-request-rejected',
-      'walk-request-cancelled', 'walk-started', 'walk-ended',
-      'walker-position', 'walker-status-changed', 'walker-location-updated'
+      'walk-request-cancelled', 'walk-request-walker-busy',
+      'walk-started', 'walk-ended',
+      'walker-position', 'walker-status-changed', 'walker-location-updated',
+      'walker-location-update',
+      // matching (AI 매칭 직접 요청)
+      'match-request', 'match-request-accepted', 'match-request-rejected',
+      'match-request-walker-busy', 'match-request-cancelled',
+      // broadcast
+      'broadcast-walk-request', 'broadcast-matched', 'broadcast-cancelled',
+      // 산책 진행 단계
+      'walker-arrived', 'walk-tracking-started', 'handoff-confirmed',
+      // 채팅
+      'walk-chat-message'
     ];
     EVENTS.forEach(evt => {
       _socket.on(evt, data => {
@@ -92,13 +104,13 @@ const RealtimeService = (() => {
     return setInterval(send, intervalMs);
   }
 
-  function startGpsUpdates(userId, intervalMs = 8000) {
+  function startGpsUpdates(userId, intervalMs = 6000) {
     stopGpsUpdates();
     _gpsInterval = _startGeoPolling(
       `/api/walkers/${userId}/location`,
       'PATCH',
       coords => ({ lat: coords.latitude, lng: coords.longitude }),
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 3000 },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
       intervalMs
     );
   }
@@ -107,7 +119,7 @@ const RealtimeService = (() => {
     if (_gpsInterval) { clearInterval(_gpsInterval); _gpsInterval = null; }
   }
 
-  function startRouteTracking(sessionId, intervalMs = 7000) {
+  function startRouteTracking(sessionId, intervalMs = 3000) {
     stopRouteTracking();
     _sessionRouteInterval = _startGeoPolling(
       `/api/walk-sessions/${sessionId}/route`,

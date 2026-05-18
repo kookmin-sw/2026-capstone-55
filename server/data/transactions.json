@@ -61,5 +61,50 @@
     "reason": "교육 콘텐츠 완료",
     "createdAt": "2026-04-17T10:43:13.078Z",
     "balanceAfter": 20
+  },
+  {
+    "id": "id-momgpnqe-0115wul",
+    "userId": "id-momgpnqa-1jk1m8l",
+    "type": "earn",
+    "amount": 3000,
+    "reason": "회원가입 축하 보상 🎉",
+    "createdAt": "2026-05-01T05:18:33.062Z",
+    "balanceAfter": 3000
+  },
+  {
+    "id": "id-mp26ph3r-f6202mk",
+    "userId": "id-mp26ph36-8vccnr4",
+    "type": "earn",
+    "amount": 3000,
+    "reason": "회원가입 축하 보상 ",
+    "createdAt": "2026-05-12T05:22:47.127Z",
+    "balanceAfter": 3000
+  },
+  {
+    "id": "id-mp3la96u-e7h991l",
+    "userId": "id-mo2r9f31-nmcx76f",
+    "type": "earn",
+    "amount": 75200000,
+    "reason": "f",
+    "createdAt": "2026-05-13T04:58:37.446Z",
+    "balanceAfter": 75200000
+  },
+  {
+    "id": "id-mp3lalme-nmz2lb6",
+    "userId": "id-mo2r9f31-nmcx76f",
+    "type": "spend",
+    "amount": 75200000,
+    "reason": "r",
+    "createdAt": "2026-05-13T04:58:53.558Z",
+    "balanceAfter": 0
+  },
+  {
+    "id": "id-mp3ln14l-g2dybw5",
+    "userId": "id-mp26ph36-8vccnr4",
+    "type": "spend",
+    "amount": 3000,
+    "reason": "실험",
+    "createdAt": "2026-05-13T05:08:33.525Z",
+    "balanceAfter": 0
   }
 ]

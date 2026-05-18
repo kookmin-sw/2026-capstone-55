@@ -19,6 +19,107 @@ try {
   console.warn('[RAG] 지식 데이터 로드 실패:', e.message);
 }
 
+// ===== RAG: 벡터 임베딩 로드 =====
+let embeddingMap = new Map(); // id → Float32Array
+let embeddingsLoaded = false;
+try {
+  const embPath = path.join(__dirname, '..', 'data', 'knowledge-embeddings.json');
+  if (fs.existsSync(embPath)) {
+    const raw = JSON.parse(fs.readFileSync(embPath, 'utf8'));
+    raw.forEach(e => embeddingMap.set(e.id, new Float32Array(e.embedding)));
+    embeddingsLoaded = embeddingMap.size > 0;
+    console.log(`[RAG] 벡터 임베딩 ${embeddingMap.size}개 로드 완료 → 하이브리드 검색 활성화`);
+  } else {
+    console.log('[RAG] knowledge-embeddings.json 없음 → 키워드 검색만 사용');
+  }
+} catch (e) {
+  console.warn('[RAG] 임베딩 로드 실패:', e.message);
+}
+
+// ===== 벡터 검색 유틸 =====
+function cosineSimilarity(a, b) {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+async function getQueryEmbedding(query) {
+  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes('여기에')) return null;
+  try {
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-embedding-2' });
+    const result = await model.embedContent(query);
+    return new Float32Array(result.embedding.values);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 하이브리드 검색: 벡터(코사인 유사도) + 키워드 가중치 결합
+ * 임베딩 없으면 키워드 검색으로 자동 폴백
+ */
+async function searchKnowledgeHybrid(query, maxResults = 5) {
+  if (knowledgeBase.length === 0) return [];
+
+  // 키워드 검색 점수 계산
+  const rawWords = query.toLowerCase().replace(/[?!.,~\-()]/g, '').split(/\s+/).filter(w => w.length >= 2);
+  const expandedWords = expandWithSynonyms(rawWords);
+
+  const keywordScored = knowledgeBase.map(item => {
+    const text = (item.title + ' ' + item.content + ' ' + item.category).toLowerCase();
+    let score = 0;
+    rawWords.forEach(word => { if (text.includes(word)) score += 2; });
+    expandedWords.forEach(word => { if (!rawWords.includes(word) && text.includes(word)) score += 1; });
+    const titleText = item.title.toLowerCase();
+    rawWords.forEach(word => { if (titleText.includes(word)) score += 3; });
+    return { item, keywordScore: score };
+  });
+
+  // 임베딩 없으면 키워드만 사용
+  if (!embeddingsLoaded) {
+    return keywordScored
+      .filter(x => x.keywordScore > 0)
+      .sort((a, b) => b.keywordScore - a.keywordScore)
+      .slice(0, maxResults)
+      .map(x => x.item);
+  }
+
+  // 벡터 검색
+  const queryVec = await getQueryEmbedding(query);
+  if (!queryVec) {
+    // 임베딩 API 실패 시 키워드 폴백
+    return keywordScored
+      .filter(x => x.keywordScore > 0)
+      .sort((a, b) => b.keywordScore - a.keywordScore)
+      .slice(0, maxResults)
+      .map(x => x.item);
+  }
+
+  // 키워드 최대값 계산 (정규화용)
+  const maxKw = Math.max(...keywordScored.map(x => x.keywordScore), 1);
+
+  // 하이브리드 점수: 벡터 70% + 키워드 30%
+  const hybridScored = keywordScored.map(({ item, keywordScore }) => {
+    const vec = embeddingMap.get(item.id);
+    const vectorScore = vec ? cosineSimilarity(queryVec, vec) : 0;
+    const normalizedKw = keywordScore / maxKw;
+    const hybridScore = vectorScore * 0.7 + normalizedKw * 0.3;
+    return { ...item, hybridScore, vectorScore, keywordScore };
+  });
+
+  return hybridScored
+    .filter(x => x.hybridScore > 0.1) // 너무 관련 없는 항목 제외
+    .sort((a, b) => b.hybridScore - a.hybridScore)
+    .slice(0, maxResults);
+}
+
 /**
  * 동의어 사전 - 일상 표현 ↔ 전문 용어 매핑
  */
@@ -103,6 +204,11 @@ const SYNONYM_MAP = {
   '예방접종': ['백신', '접종', '예방접종스케줄'],
   '중성화': ['중성화', '수술', '불임', '거세'],
   '보험': ['반려동물보험', '의료비', '보장'],
+  // 견종 별칭 관련
+  '시바견': ['시바이누', '시바', 'shiba'],
+  '시바': ['시바이누', '시바견', 'shiba'],
+  '코커': ['코카스파니엘', '코커스패니얼', '코카', 'cocker'],
+  '코카': ['코커스패니얼', '코카스파니엘', '코커', 'cocker'],
 };
 
 /**
@@ -267,7 +373,7 @@ router.post('/symptom', async (req, res) => {
     return res.status(400).json({ success: false, error: '증상을 입력해주세요.' });
   }
 
-  const ragResults = searchKnowledge(symptoms + ' ' + (breed || ''));
+  const ragResults = await searchKnowledgeHybrid(symptoms + ' ' + (breed || ''));
   let ragContext = '';
   if (ragResults.length > 0) {
     ragContext = '\n\n[참고 자료]\n' + ragResults.map(r => `- ${r.title}: ${r.content}`).join('\n');
@@ -294,7 +400,7 @@ router.post('/symptom', async (req, res) => {
       return res.status(503).json({ success: false, error: 'AI 서비스가 일시적으로 불안정해요.' });
     }
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: SYSTEM_PROMPTS.symptom,
       messages: [{ role: 'user', content: `[반려견 정보]\n품종: ${breed || '미상'}\n나이: ${age || '미상'}\n\n[증상]\n${symptoms}${ragContext}` }]
@@ -322,7 +428,7 @@ async function consultWithClaude(message, history, systemPrompt) {
   userContent += message;
 
   const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 1024,
     system: systemPrompt || SYSTEM_PROMPTS.consult,
     messages: [{ role: 'user', content: userContent }]
@@ -332,7 +438,7 @@ async function consultWithClaude(message, history, systemPrompt) {
 
 // ===== Gemini: 통합 AI 상담 (모드별 프롬프트 + RAG) =====
 router.post('/consult', async (req, res) => {
-  const { message, history, mode, aiName } = req.body;
+  const { message, history, mode, aiName, userId } = req.body;
   if (!message) {
     return res.status(400).json({ success: false, error: '메시지를 입력해주세요.' });
   }
@@ -343,14 +449,51 @@ router.post('/consult', async (req, res) => {
     systemPrompt = `당신의 이름은 "${aiName}"입니다. 사용자가 설정한 이름이니 자연스럽게 사용하세요.\n\n` + systemPrompt;
   }
 
+  // 산책 데이터 & 건강 서류 컨텍스트 추가
+  let petDataContext = '';
+  if (userId) {
+    try {
+      // 산책 데이터 로드
+      const walksPath = path.join(__dirname, '..', 'data', 'walks.json');
+      if (fs.existsSync(walksPath)) {
+        const allWalks = JSON.parse(fs.readFileSync(walksPath, 'utf8'));
+        const userWalks = allWalks.filter(w => w.userId === userId).slice(-10);
+        if (userWalks.length > 0) {
+          const totalDist = userWalks.reduce((s, w) => s + (w.distance || 0), 0);
+          const totalDur = userWalks.reduce((s, w) => s + (w.duration || 0), 0);
+          petDataContext += `\n[산책 데이터] 최근 ${userWalks.length}회 산책, 총 ${totalDist.toFixed(1)}km, 총 ${totalDur}분\n`;
+          petDataContext += userWalks.map(w => `- ${w.dogName || '반려견'}: ${w.distance}km, ${w.duration}분 (${w.createdAt?.split('T')[0]})`).join('\n');
+          petDataContext += '\n';
+        }
+      }
+      // 건강 서류 로드
+      const metaPath = path.join(__dirname, '..', 'uploads', 'metadata.json');
+      if (fs.existsSync(metaPath)) {
+        const allDocs = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+        const userDocs = allDocs.filter(d => d.userId === userId);
+        if (userDocs.length > 0) {
+          const typeLabel = { vaccination: '예방접종 증명서', checkup: '건강검진 결과지', treatment: '진료 기록/처방전', surgery: '수술/시술 기록', allergy: '알러지/질병 진단서', medication: '투약 기록', other: '기타' };
+          petDataContext += `\n[건강 서류] 등록된 서류 ${userDocs.length}건\n`;
+          petDataContext += userDocs.map(d => `- ${d.dogName || '반려견'}: ${typeLabel[d.type] || d.type} (${d.originalName}, ${new Date(d.uploadedAt).toLocaleDateString('ko-KR')})`).join('\n');
+          petDataContext += '\n';
+        }
+      }
+    } catch(e) { /* 데이터 로드 실패해도 상담은 계속 */ }
+  }
+
   // 1차: Gemini 시도
   const model = getGeminiModel();
   if (model) {
     try {
       let prompt = systemPrompt + '\n\n';
 
+      // 산책/서류 컨텍스트 추가
+      if (petDataContext) {
+        prompt += petDataContext + '\n';
+      }
+
       // RAG: 모드에 따라 검색 범위 조정
-      const ragResults = searchKnowledge(message);
+      const ragResults = await searchKnowledgeHybrid(message);
       if (ragResults.length > 0) {
         prompt += '[참고 자료 - 이 내용을 바탕으로 답변해주세요]\n';
         ragResults.forEach(r => { prompt += `- ${r.title}: ${r.content}\n`; });
@@ -412,7 +555,7 @@ router.post('/consult-with-image', async (req, res) => {
       // 프롬프트 구성
       let textPrompt = systemPrompt + '\n\n';
 
-      const ragResults = searchKnowledge(message || '');
+      const ragResults = await searchKnowledgeHybrid(message || '');
       if (ragResults.length > 0) {
         textPrompt += '[참고 자료]\n';
         ragResults.forEach(r => { textPrompt += `- ${r.title}: ${r.content}\n`; });
@@ -468,7 +611,7 @@ router.post('/consult-with-image', async (req, res) => {
     content.push({ type: 'text', text: message || '이 이미지를 분석해주세요.' });
 
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: systemPrompt,
       messages: [{ role: 'user', content }]
@@ -587,7 +730,7 @@ router.post('/pet-consult', async (req, res) => {
     res.flushHeaders?.();
 
     const stream = client.messages.stream({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: systemPrompt,
       messages: messages.map(m => ({ role: m.role, content: m.content }))

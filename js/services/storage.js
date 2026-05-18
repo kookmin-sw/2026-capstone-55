@@ -9,6 +9,9 @@ const StorageService = (() => {
   const SHARED_KEYS = ['users', 'communityPosts', 'transactions', 'matchRequests',
     'walkSchedules', 'reviews', 'matchProfiles', 'notices', 'walkers'];
 
+  // 탭별로 독립 유지해야 할 키 (sessionStorage 사용)
+  const SESSION_KEYS = ['currentUser', 'authToken'];
+
   // 로컬 캐시 (서버 데이터의 메모리 캐시)
   const cache = {};
 
@@ -26,6 +29,17 @@ const StorageService = (() => {
         body: JSON.stringify(value)
       }).catch(e => console.warn('[Storage] 서버 저장 실패:', e.message));
       return true;
+    }
+
+    // 탭 독립 데이터 → sessionStorage
+    if (SESSION_KEYS.includes(key)) {
+      try {
+        sessionStorage.setItem('pawsitive_' + key, JSON.stringify(value));
+        return true;
+      } catch (e) {
+        console.error('[Storage] 저장 실패:', e);
+        return false;
+      }
     }
 
     // 개인 데이터 → localStorage
@@ -47,6 +61,17 @@ const StorageService = (() => {
       return cache[key] !== undefined ? cache[key] : defaultValue;
     }
 
+    // 탭 독립 데이터 → sessionStorage
+    if (SESSION_KEYS.includes(key)) {
+      try {
+        const raw = sessionStorage.getItem('pawsitive_' + key);
+        if (raw === null) return defaultValue;
+        return JSON.parse(raw);
+      } catch (e) {
+        return defaultValue;
+      }
+    }
+
     // 개인 데이터 → localStorage
     try {
       const raw = localStorage.getItem('pawsitive_' + key);
@@ -65,6 +90,15 @@ const StorageService = (() => {
       delete cache[key];
       return true;
     }
+    if (SESSION_KEYS.includes(key)) {
+      try {
+        sessionStorage.removeItem('pawsitive_' + key);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
     try {
       localStorage.removeItem('pawsitive_' + key);
       return true;
@@ -112,7 +146,11 @@ const StorageService = (() => {
     return new Date().toISOString();
   }
 
+  function setCache(key, value) {
+    if (SHARED_KEYS.includes(key)) { cache[key] = value; }
+  }
+
   return {
-    set, get, remove, clear, isUsingMemory, generateId, now, syncFromServer
+    set, get, remove, clear, isUsingMemory, generateId, now, syncFromServer, setCache
   };
 })();

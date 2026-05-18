@@ -43,16 +43,17 @@ const AuthService = (() => {
    * 회원가입 (서버 API 연동)
    */
   async function register(data) {
-    const { name, email, password } = data;
+    const { name, email, password, phoneToken } = data;
     if (!name || !name.trim()) return { success: false, error: '이름을 입력하세요.' };
     if (!email || !email.trim()) return { success: false, error: '이메일을 입력하세요.' };
     if (!password || password.length < 4) return { success: false, error: '비밀번호는 4자 이상이어야 합니다.' };
+    if (!phoneToken) return { success: false, error: '핸드폰 인증을 완료해주세요.' };
 
     try {
       const res = await fetch('/api/users/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, phoneToken })
       });
       const result = await res.json();
       if (!result.success) return { success: false, error: result.error };
@@ -151,7 +152,9 @@ const AuthService = (() => {
    */
   function getCurrentUser() {
     const token = StorageService.get(AUTH_TOKEN_KEY);
-    if (!token) return null;
+    if (!token) {
+      return null;
+    }
 
     // 토큰 만료 확인
     if (new Date(token.expiresAt) < new Date()) {
@@ -165,19 +168,34 @@ const AuthService = (() => {
   /**
    * 사용자 프로필 업데이트
    * @param {string} userId
-   * @param {{ name?: string }} data
+   * @param {{ name?: string, profileImage?: string }} data
    * @returns {{ success: boolean, user?: User, error?: string }}
    */
   function updateProfile(userId, data) {
+    const applyUpdates = (user) => {
+      const updated = { ...user };
+      if (data.name) {
+        updated.name = data.name.trim();
+      }
+      if (data.profileImage !== undefined) {
+        updated.profileImage = data.profileImage;
+      }
+      return updated;
+    };
+
     const users = getUsers();
     const index = users.findIndex(u => u.id === userId);
     if (index === -1) {
+      const currentUser = StorageService.get(CURRENT_USER_KEY, null);
+      if (currentUser && currentUser.id === userId) {
+        const updatedUser = applyUpdates(currentUser);
+        setCurrentUser(updatedUser);
+        return { success: true, user: updatedUser };
+      }
       return { success: false, error: '사용자를 찾을 수 없습니다.' };
     }
 
-    if (data.name) {
-      users[index].name = data.name.trim();
-    }
+    users[index] = applyUpdates(users[index]);
 
     saveUsers(users);
     setCurrentUser(users[index]);
@@ -221,7 +239,8 @@ const AuthService = (() => {
       weight: dogData.weight ? Number(dogData.weight) : null,
       neutered: dogData.neutered != null ? dogData.neutered : null,
       personality: dogData.personality || null,
-      healthNote: dogData.healthNote || null
+      healthNote: dogData.healthNote || null,
+      photo: dogData.photo || null
     };
 
     if (!users[index].dogs) {

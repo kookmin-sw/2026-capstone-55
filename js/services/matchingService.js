@@ -29,11 +29,45 @@ const MatchingService = (() => {
 
   /**
    * 내 매칭 프로필 조회
+   * matchProfiles에 없으면 서버 워커 캐시에서도 확인 (refreshFromServer 정리 후 복구)
    * @param {string} userId
    * @returns {Object|null}
    */
   function getMyProfile(userId) {
-    return getAllProfiles().find(p => p.userId === userId) || null;
+    const local = getAllProfiles().find(p => p.userId === userId);
+    if (local) return local;
+
+    // matchProfiles에서 삭제됐지만 서버 walkers.json에는 있는 경우 (동기화 타이밍 이슈 복구)
+    if (_serverWalkersCache) {
+      const serverWalker = _serverWalkersCache.find(w => w.userId === userId);
+      if (serverWalker) {
+        // 서버 워커 데이터를 matchProfile 형태로 변환하여 반환
+        return {
+          userId: serverWalker.userId,
+          userName: serverWalker.userName || serverWalker.name || '도우미',
+          role: 'walker',
+          location: serverWalker.location || '',
+          lat: serverWalker.lat || null,
+          lng: serverWalker.lng || null,
+          preferredTime: serverWalker.preferredTime || '',
+          message: serverWalker.message || serverWalker.intro || '',
+          price: serverWalker.price || 0,
+          experience: serverWalker.experience || '',
+          acceptedSizes: serverWalker.acceptedSizes || ['small', 'medium', 'large'],
+          careerYears: serverWalker.careerYears || 'under6m',
+          largeDogExp: serverWalker.largeDogExp || 'none',
+          aggressionHandle: serverWalker.aggressionHandle || 'no',
+          ownPetExp: serverWalker.ownPetExp || 'none',
+          isAvailable: serverWalker.isAvailable ?? false,
+          rating: serverWalker.rating || 5.0,
+          reviewCount: serverWalker.reviewCount || 0,
+          profilePhoto: serverWalker.profilePhoto || serverWalker.profileImage || '',
+          createdAt: serverWalker.createdAt || ''
+        };
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -65,6 +99,7 @@ const MatchingService = (() => {
       experience: data.experience || '없음',
       acceptedSizes: data.acceptedSizes || ['small', 'medium', 'large'],
       specialty: data.specialty || '',
+      profilePhoto: data.profilePhoto || user?.profileImage || '',
       isAvailable: true,
       rating: 5.0,
       reviewCount: 0,
@@ -129,27 +164,98 @@ const MatchingService = (() => {
     StorageService.set(REVIEWS_KEY, reviews);
   }
 
+  function normalizeWalkRequest(r) {
+    if (!r) return r;
+    return {
+      ...r,
+      fromUserId: r.fromUserId || r.requesterId,
+      toUserId: r.toUserId || r.walkerId,
+      fromUserName: r.fromUserName || r.requesterName,
+      requestData: r.requestData || {
+        dogId: r.dogId || null,
+        dogName: r.dogName || '',
+        dogBreed: r.dogBreed || '',
+        dogSize: r.dogSize || '',
+        location: r.pickupLatitude && r.pickupLongitude ? '현재 위치' : '',
+        lat: r.pickupLatitude || null,
+        lng: r.pickupLongitude || null,
+        desiredTime: r.requestedStartTime ? '지금 (즉시 매칭)' : '',
+        notes: r.requestMessage || r.dogSpecialNotes || '',
+        dogs: r.dogs || null,
+        duration: r.duration || null,
+        paymentOrderId: r.paymentOrderId || null,
+        paymentAmount: r.paymentAmount || r.totalPrice || 0
+      }
+    };
+  }
+
+  /**
   /**
    * 매칭 요청 보내기
+   * @param {string} fromId
+   * @param {string} toId
+   * @param {Object} [requestData] - { dogName, dogBreed, dogSize, dogId, location, lat, lng, desiredTime, notes }
+   * @returns {Promise<{success: boolean, request?: Object, error?: string, cooldown?: boolean, retryAfterMs?: number}>}
    */
-  function sendRequest(fromId, toId) {
-    const requests = getAllRequests();
-    const existing = requests.find(
-      r => r.fromUserId === fromId && r.toUserId === toId && r.status === 'pending'
-    );
-    if (existing) return existing;
+  async function sendRequest(fromId, toId, requestData) {
+    // 실제 산책 세션과 이어지는 walk-requests API로 통합
+    try {
+      const payload = requestData || {};
+      const res = await fetch('/api/walk-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requesterId: fromId,
+          walkerId: toId,
+          dogId: payload.dogId || null,
+          dogName: payload.dogName || '',
+          dogBreed: payload.dogBreed || '',
+          dogSize: payload.dogSize || '',
+          dogs: payload.dogs || null,
+          dogSpecialNotes: payload.notes || '',
+          requestMessage: payload.notes || '',
+          duration: payload.duration || 40,
+          totalPrice: payload.paymentAmount || 0,
+          paymentOrderId: payload.paymentOrderId || null,
+          paymentAmount: payload.paymentAmount || 0,
+          requestedStartTime: new Date().toISOString(),
+          requestedEndTime: new Date(Date.now() + (payload.duration || 40) * 60000).toISOString(),
+          pickupLatitude: payload.lat || null,
+          pickupLongitude: payload.lng || null
+        })
+      });
+      const data = await res.json();
+      if (data && data.success && data.request) {
+        data.request = normalizeWalkRequest(data.request);
+        // 로컬 캐시에도 반영
+        const requests = getAllRequests();
+        if (!requests.find(r => r.id === data.request.id)) {
+          requests.push(data.request);
+          saveRequests(requests);
+        }
+      }
+      return data || { success: false };
+    } catch (e) {
+      // 네트워크 오류 시 로컬 폴백
+      const requests = getAllRequests();
+      const existing = requests.find(
+        r => r.fromUserId === fromId && r.toUserId === toId && r.status === 'pending'
+      );
+      if (existing) return { success: true, request: existing };
 
-    const request = {
-      id: StorageService.generateId(),
-      fromUserId: fromId,
-      toUserId: toId,
-      status: 'pending',
-      createdAt: StorageService.now()
-    };
-
-    requests.push(request);
-    saveRequests(requests);
-    return request;
+      const request = {
+        id: StorageService.generateId(),
+        fromUserId: fromId,
+        toUserId: toId,
+        requestData: requestData || {},
+        status: 'pending',
+        createdAt: StorageService.now(),
+        updatedAt: StorageService.now()
+      };
+      requests.push(request);
+      saveRequests(requests);
+      return { success: true, request };
+    }
   }
 
   /**
@@ -168,7 +274,7 @@ const MatchingService = (() => {
       id: StorageService.generateId(),
       matchRequestId: req.id,
       participants: [req.fromUserId, req.toUserId],
-      scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      scheduledAt: StorageService.now(),  // 즉시 매칭
       status: 'scheduled'
     };
 
@@ -186,42 +292,65 @@ const MatchingService = (() => {
     saveRequests(requests);
   }
 
-  function completeWalk(scheduleId) {
+  function completeWalk(scheduleId, actorUserId) {
     const schedules = getAllSchedules();
     const index = schedules.findIndex(s => s.id === scheduleId);
-    if (index === -1) return;
+    if (index === -1) return false;
+
+    // 이미 완료/취소된 스케줄은 중복 처리 불가
+    if (schedules[index].status !== 'scheduled') return false;
+
+    // 참가자만 완료 처리 가능
+    if (actorUserId && !schedules[index].participants.includes(actorUserId)) return false;
 
     schedules[index].status = 'completed';
+    schedules[index].completedAt = StorageService.now();
+    schedules[index].completedBy = actorUserId || null;
     saveSchedules(schedules);
 
-    const participants = schedules[index].participants;
-    if (typeof WalletService !== 'undefined' && WalletService.earnCoins) {
-      participants.forEach(userId => {
-        WalletService.earnCoins(userId, 10, '산책 완료 보상');
-      });
-    }
+    // 코인 보상 제거 (자기거래 어뷰징 방지)
+    return true;
   }
 
   function addReview(scheduleId, reviewData) {
     const schedules = getAllSchedules();
     const schedule = schedules.find(s => s.id === scheduleId);
-    if (!schedule || schedule.status !== 'completed') return null;
+    if (!schedule) return { success: false, error: '스케줄을 찾을 수 없습니다.' };
+    if (schedule.status !== 'completed') return { success: false, error: '완료된 산책만 리뷰할 수 있습니다.' };
+
+    const { reviewerId, targetId, rating, text } = reviewData || {};
+    if (!reviewerId || !targetId) return { success: false, error: '작성자/대상 정보가 필요합니다.' };
+
+    // 자기 자신 리뷰 금지
+    if (reviewerId === targetId) return { success: false, error: '본인에게 리뷰를 작성할 수 없습니다.' };
+
+    // 둘 다 스케줄 참가자여야 함
+    if (!schedule.participants.includes(reviewerId) || !schedule.participants.includes(targetId)) {
+      return { success: false, error: '산책 참가자만 리뷰를 작성할 수 있습니다.' };
+    }
+
+    // 별점 범위 강제 (1~5)
+    const numRating = Math.max(1, Math.min(5, Math.round(Number(rating) || 0)));
+
+    // 같은 스케줄에 같은 리뷰어 중복 방지
+    const reviews = getAllReviews();
+    const already = reviews.some(r => r.scheduleId === scheduleId && r.reviewerId === reviewerId);
+    if (already) return { success: false, error: '이미 이 산책에 리뷰를 작성했습니다.' };
 
     const review = {
       id: StorageService.generateId(),
       scheduleId,
-      reviewerId: reviewData.reviewerId,
-      targetId: reviewData.targetId,
-      rating: reviewData.rating,
-      text: reviewData.text,
+      reviewerId,
+      targetId,
+      rating: numRating,
+      text: String(text || '').slice(0, 500),
       createdAt: StorageService.now()
     };
 
-    const reviews = getAllReviews();
     reviews.push(review);
     saveReviews(reviews);
-    recalculateRating(reviewData.targetId);
-    return review;
+    recalculateRating(targetId);
+    return { success: true, review };
   }
 
   function recalculateRating(targetId) {
@@ -263,12 +392,47 @@ const MatchingService = (() => {
 
   async function refreshFromServer() {
     try {
+      // walkers.json 동기화
       const res = await fetch('/api/walkers');
-      _serverWalkersCache = await res.json();
+      const data = await res.json();
+      _serverWalkersCache = data.map(w => ({
+        ...w,
+        userName: w.userName || w.name || '도우미',
+        preferredTime: w.preferredTime || '',
+        acceptedSizes: w.acceptedSizes || ['small', 'medium', 'large'],
+      }));
+
+      // 서버 워커 목록을 기준으로 localStorage 구형 더미 워커 정리
+      // 서버 walkers.json에 실제로 존재하는 워커는 절대 삭제하지 않음
+      if (_serverWalkersCache.length > 0) {
+        const serverIds = new Set(_serverWalkersCache.map(w => w.userId));
+        const profiles = StorageService.get('matchProfiles', []);
+        const cleaned = profiles.filter(p => {
+          if (p.role === 'walker' && p.userId) {
+            // 서버에 존재하는 워커는 보호 (실제 등록된 사용자)
+            if (serverIds.has(p.userId)) return true;
+            // 서버에 없는 dummy-/test- 접두사 워커만 제거 (레거시 로컬 데이터)
+            if (p.userId.startsWith('dummy-') || p.userId.startsWith('test-')) return false;
+          }
+          return true;
+        });
+        if (cleaned.length !== profiles.length) {
+          StorageService.set('matchProfiles', cleaned);
+        }
+      }
     } catch(e) {
       console.error('[MatchingService] 서버 동기화 실패:', e);
       _serverWalkersCache = null;
     }
+
+    try {
+      // matchProfiles 동기화 (다른 탭/사용자가 업데이트한 내용 반영)
+      const res2 = await fetch('/api/data/matchProfiles');
+      if (res2.ok) {
+        const profiles = await res2.json();
+        if (Array.isArray(profiles)) StorageService.setCache('matchProfiles', profiles);
+      }
+    } catch(e) {}
   }
 
   function getAllWalkers() {
@@ -290,6 +454,11 @@ const MatchingService = (() => {
       price: data.price || 0,
       experience: data.experience || '없음',
       acceptedSizes: data.acceptedSizes || ['small', 'medium', 'large'],
+      careerYears: data.careerYears || 'under6m',
+      largeDogExp: data.largeDogExp || 'none',
+      aggressionHandle: data.aggressionHandle || 'no',
+      ownPetExp: data.ownPetExp || 'none',
+      preferredTimeSlots: data.preferredTimeSlots || [],
       specialty: data.specialty || '',
       message: data.message || ''
     };
@@ -324,6 +493,32 @@ const MatchingService = (() => {
     profiles[idx].isAvailable = !profiles[idx].isAvailable;
     saveProfiles(profiles);
     return profiles[idx];
+  }
+
+  /**
+   * matchProfiles에 GPS 좌표 저장
+   */
+  function updateProfileLocation(userId, lat, lng) {
+    const profiles = getAllProfiles();
+    const idx = profiles.findIndex(p => p.userId === userId);
+    if (idx === -1) return;
+    profiles[idx].lat = lat;
+    profiles[idx].lng = lng;
+    saveProfiles(profiles);
+  }
+
+  function setAvailability(userId, isAvailable, lat, lng) {
+    const profiles = getAllProfiles();
+    const idx = profiles.findIndex(p => p.userId === userId);
+    if (idx === -1) return;
+    profiles[idx].isAvailable = isAvailable;
+    if (isAvailable && lat && lng) {
+      profiles[idx].lat = lat;
+      profiles[idx].lng = lng;
+    }
+    // OFF 시에도 마지막 위치는 유지 (지도 표시용, isAvailable로 필터링)
+    // lat/lng를 null로 만들면 다시 ON할 때 GPS 재획득 전까지 지도에서 사라짐
+    saveProfiles(profiles);
   }
 
   /**
@@ -363,61 +558,66 @@ const MatchingService = (() => {
     return user ? user.name : '알 수 없음';
   }
 
-  /** 산책 매칭 가능 상태인 도우미 반환 (로컬 matchProfiles + 서버 walkers 합산) */
+  /** 산책 매칭 가능 상태인 도우미 반환 — 서버 데이터 우선, 로컬은 보완 */
   function getAvailableWalkers() {
     const localWalkers = getAllProfiles().filter(p => p.role === 'walker' && p.isAvailable);
 
     if (_serverWalkersCache !== null && _serverWalkersCache.length > 0) {
-      const localIds = new Set(localWalkers.map(w => w.userId));
-      const serverAvailable = _serverWalkersCache.filter(w => w.isAvailable && !localIds.has(w.userId));
-      return [...localWalkers, ...serverAvailable];
+      const serverAvailable = _serverWalkersCache.filter(w => w.isAvailable);
+      const serverIds = new Set(serverAvailable.map(w => w.userId));
+      // 서버에 없는 로컬 전용 워커만 추가 (서버 데이터가 항상 우선)
+      const localOnly = localWalkers.filter(w => !serverIds.has(w.userId));
+      return [...serverAvailable, ...localOnly];
     }
 
     return localWalkers;
   }
 
-  /** 브로드캐스트 요청 — 서버 API 우선, 실패 시 로컬 fallback */
-  async function broadcastWalkRequest(fromId, requestData) {
-    try {
-      const res    = await fetch('/api/matching/broadcast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fromUserId: fromId, requestData })
-      });
-      return await res.json();
-    } catch (e) {
-      // 로컬 fallback
-      const targets = getAvailableWalkers().filter(w => {
-        if (w.userId === fromId) return false;
-        if (!requestData.location || !w.location) return true;
-        return w.location.includes(requestData.location.trim().split(' ')[0]);
-      });
-      if (targets.length === 0) return { success: false, error: '현재 주변에 산책 가능한 도우미가 없습니다.' };
-      const broadcastId = StorageService.generateId();
-      const requests    = getAllRequests();
-      targets.forEach(walker => {
-        requests.push({ id: StorageService.generateId(), broadcastId, fromUserId: fromId, toUserId: walker.userId, requestData: { ...requestData }, status: 'pending', createdAt: StorageService.now() });
-      });
-      saveRequests(requests);
-      return { success: true, broadcastId, targetCount: targets.length };
-    }
-  }
-
   /** 받은 요청 조회 — 서버 API 우선 */
   async function getReceivedRequestsRemote(userId) {
     try {
-      const res    = await fetch(`/api/matching/requests?userId=${userId}`);
+      const res    = await fetch(`/api/walk-requests?walkerId=${userId}`);
       const result = await res.json();
-      return result.requests || [];
+      return (result.requests || []).map(normalizeWalkRequest);
     } catch (e) {
       return getAllRequests().filter(r => r.toUserId === userId && (r.status === 'pending' || r.status === 'accepted'));
+    }
+  }
+
+  /** 보낸 요청 조회 — 서버 API 우선 (모든 상태 포함, 최신순) */
+  async function getSentRequestsRemote(userId) {
+    try {
+      const res    = await fetch(`/api/walk-requests?requesterId=${userId}`);
+      const result = await res.json();
+      return (result.requests || []).map(normalizeWalkRequest);
+    } catch (e) {
+      return getAllRequests()
+        .filter(r => r.fromUserId === userId)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+  }
+
+  /** 보낸 요청 취소 */
+  async function cancelSentRequest(requestId) {
+    try {
+      const res = await fetch(`/api/walk-requests/${requestId}/cancel`, { method: 'PATCH' });
+      return await res.json();
+    } catch (e) {
+      // 로컬 fallback
+      const requests = getAllRequests();
+      const idx = requests.findIndex(r => r.id === requestId);
+      if (idx === -1) return { success: false };
+      if (requests[idx].status !== 'pending') return { success: false, error: '취소할 수 없는 상태입니다.' };
+      requests[idx].status = 'cancelled';
+      saveRequests(requests);
+      return { success: true };
     }
   }
 
   /** 브로드캐스트 요청 수락 — 서버 API 우선 */
   async function acceptBroadcastRequest(requestId) {
     try {
-      const res    = await fetch(`/api/matching/requests/${requestId}/accept`, { method: 'PATCH' });
+      const res    = await fetch(`/api/walk-requests/${requestId}/accept`, { method: 'PATCH' });
       return await res.json();
     } catch (e) {
       // 로컬 fallback
@@ -433,7 +633,7 @@ const MatchingService = (() => {
       }
       saveRequests(requests);
       const r        = requests[idx];
-      const schedule = { id: StorageService.generateId(), matchRequestId: r.id, participants: [r.fromUserId, r.toUserId], scheduledAt: new Date(Date.now() + 86400000).toISOString(), status: 'scheduled' };
+      const schedule = { id: StorageService.generateId(), matchRequestId: r.id, participants: [r.fromUserId, r.toUserId], scheduledAt: StorageService.now(), status: 'scheduled' };
       const schedules = getAllSchedules(); schedules.push(schedule); saveSchedules(schedules);
       return { success: true, schedule };
     }
@@ -442,7 +642,7 @@ const MatchingService = (() => {
   /** 요청 거절 — 서버 API 우선 */
   async function rejectRequestRemote(requestId) {
     try {
-      await fetch(`/api/matching/requests/${requestId}/reject`, { method: 'PATCH' });
+      await fetch(`/api/walk-requests/${requestId}/reject`, { method: 'PATCH' });
     } catch (e) {
       rejectRequest(requestId);
     }
@@ -457,16 +657,19 @@ const MatchingService = (() => {
     getAvailableWalkers,
     refreshFromServer,
     toggleAvailability,
+    updateProfileLocation,
+    setAvailability,
     toggleAvailabilityRemote,
     getNearbyWalkers,
     getRecommendations,
     sendRequest,
     acceptRequest,
     acceptBroadcastRequest,
-    broadcastWalkRequest,
     rejectRequest,
     rejectRequestRemote,
     getReceivedRequestsRemote,
+    getSentRequestsRemote,
+    cancelSentRequest,
     completeWalk,
     addReview,
     getReceivedRequests,

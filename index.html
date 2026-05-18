@@ -6,7 +6,8 @@
   <title>Pawsitive 🐾 반려견 종합 플랫폼</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/styles-modern.css">
+  <link rel="stylesheet" href="css/styles-modern.css?v=20260514b">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <!-- 네비게이션 바 -->
@@ -31,9 +32,11 @@
 
   <!-- 스크립트 로드 순서: 외부 라이브러리 → 데이터 → 서비스 → 앱 -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://js.tosspayments.com/v2/standard"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/data/breeds.js"></script>
   <script src="js/data/education.js"></script>
+  <script src="js/data/koreaRegions.js"></script>
   <script src="js/services/storage.js"></script>
   <script src="js/services/authService.js"></script>
   <script src="js/services/breedService.js"></script>
@@ -45,7 +48,30 @@
   <script src="js/services/realtimeService.js"></script>
   <script src="js/services/gpsTrackingService.js"></script>
   <script src="js/services/healthAnalysisService.js"></script>
-  <script src="js/app.js"></script>
+
+  <!-- Core modules -->
+  <script src="js/core/router.js"></script>
+  <script src="js/core/ui.js"></script>
+
+  <!-- Page modules -->
+  <script src="js/pages/home.js"></script>
+  <script src="js/pages/breeds.js"></script>
+  <script src="js/pages/education.js"></script>
+  <script src="js/pages/ai.js"></script>
+  <script src="js/pages/community.js"></script>
+  <script src="js/pages/wallet.js"></script>
+  <script src="js/pages/matching.js?v=20260514b"></script>
+  <script src="js/pages/profile.js"></script>
+  <script src="js/pages/auth.js"></script>
+  <script src="js/pages/experts.js"></script>
+  <script src="js/pages/dogwalker.js"></script>
+  <script src="js/pages/admin.js"></script>
+  <script src="js/pages/walkTracking.js"></script>
+  <script src="js/pages/health.js"></script>
+  <script src="js/pages/notfound.js"></script>
+
+  <!-- Main app (init, realtime, walk sessions) -->
+  <script src="js/app.js?v=20260514b"></script>
 
   <!-- 발자국 트레일 효과 -->
   <script>
